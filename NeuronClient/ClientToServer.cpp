@@ -1,7 +1,7 @@
 #include "pch.h"
 
 #include "NetLib.h"
-#include "UdpSocket.h"
+#include "Transport.h"
 
 #include <float.h>
 
@@ -44,9 +44,23 @@ namespace Neuron
     // "connected" to the server for sending, and a NetSocketListener on a
     // thread of its own for receiving. The file-scope ClientToServer* that
     // existed only so a socket callback could find it went with them.
-    const std::error_code failure = m_socket.Open(ClientPort);
+    auto transport = std::make_unique<UdpTransport>();
+    const std::error_code failure = transport->Open(ClientPort);
     if (failure)
       NetDebugOut("Client could not open port {}: {}", ClientPort, failure.message());
+
+    m_transport = std::move(transport);
+  }
+
+
+  ClientToServer::ClientToServer(std::unique_ptr<Transport> _transport, Endpoint const& _serverEndpoint)
+    : m_serverEndpoint(_serverEndpoint),
+      m_transport(std::move(_transport))
+  {
+    // No NetLib and no preferences: this constructor exists so a test can hold
+    // a client, and a test has neither. Nothing in the game calls it.
+    m_lastValidSequenceIdFromServer = -1;
+    m_startTime = DBL_MAX;
   }
 
 
@@ -62,21 +76,21 @@ namespace Neuron
 
     m_inbox.clear();
     m_outbox.clear();
-    m_socket.Close();
+    m_transport.reset();
     m_netLib.reset();
   }
 
 
   void ClientToServer::ReceiveDatagrams()
   {
-    if (!m_socket.IsOpen())
+    if (!m_transport)
       return;
 
     char datagram[MaxDatagramSize];
     int received = 0;
     Endpoint from;
 
-    while (m_socket.TryReceive(datagram, static_cast<int>(sizeof(datagram)), received, from))
+    while (m_transport->TryReceive(datagram, static_cast<int>(sizeof(datagram)), received, from))
     {
       auto letter = std::make_unique<ServerToClientLetter>(datagram, received);
 
@@ -92,6 +106,9 @@ namespace Neuron
 
   void ClientToServer::AdvanceSender()
   {
+    if (!m_transport)
+      return;
+
     int bytesSentThisFrame = 0;
 
     while (!m_outbox.empty())
@@ -102,7 +119,7 @@ namespace Neuron
       {
         int letterSize = 0;
         char const* byteStream = letter->GetByteStream(&letterSize);
-        const std::error_code failure = m_socket.SendTo(m_serverEndpoint, byteStream, letterSize);
+        const std::error_code failure = m_transport->Send(m_serverEndpoint, byteStream, letterSize);
         if (!failure)
           bytesSentThisFrame += letterSize;
         // reset() rather than letting the scope end it: the old code deleted

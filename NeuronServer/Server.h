@@ -5,7 +5,7 @@
 
 #include "NetworkUpdate.h"
 #include "SlotMap.h"
-#include "UdpSocket.h"
+#include "Transport.h"
 
 // NeuronCore types. They are still at global scope — namespace-migration works
 // bottom-up and T2 has not reached NeuronClient or the rest of the core yet — so
@@ -69,8 +69,10 @@ namespace Neuron
       // them at the front of the next tick's letter.
       std::vector<NetworkUpdate> m_pendingUpdates;
 
-      // The one socket, bound to ServerPort and polled from Advance.
-      UdpSocket m_socket;
+      // Where datagrams go and come from, polled by Advance. Initialise builds a
+      // UdpTransport on ServerPort; a test injects a LoopbackTransport and gets
+      // the same Server driving the same conversation with no socket in it.
+      std::unique_ptr<Transport> m_transport;
 
       Server();
       ~Server();
@@ -78,6 +80,10 @@ namespace Neuron
       // Handed its profiler rather than reaching for it through the application
       // object. Networking is always real UDP; there is no in-process shortcut.
       void Initialise(Profiler* _profiler);
+
+      // The same, with the transport supplied rather than built. Nothing in the
+      // game calls this; ServerProtocolTests does.
+      void Initialise(Profiler* _profiler, std::unique_ptr<Transport> _transport);
 
       // Drains everything the socket is holding into the inbox. Called at the
       // top of Advance; separate so that T7's transport seam has one place to

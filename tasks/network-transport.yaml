@@ -536,7 +536,52 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: >
+      UdpTransport IS IN Transport.h, NOT UdpSocket.h, and the first attempt put
+      it in UdpSocket.h and was wrong. Transport.h includes UdpSocket.h for
+      Endpoint; UdpSocket.h including Transport.h back makes a cycle that
+      #pragma once turns into an ORDER DEPENDENCY rather than an error - include
+      Transport.h first and UdpTransport's base class is not yet declared.
+      Caught by reading rather than by a compiler, which is the only way it
+      could have been caught here. The dependency now runs one way.
+
+      THE SCRIPTED CLIENT IS NOT A ClientToServer, deliberately. Driving the
+      real client against the real server would test that the two halves of one
+      codebase agree with each other, which they would even if both were wrong
+      about the protocol. The tests build NetworkUpdates by hand and read
+      ServerToClientLetters by hand.
+
+      NINE TESTS, and two of them pin things the acceptance did not ask for
+      because Advance's guards are otherwise untested: joining twice registers
+      one client (RegisterNewClient ASSERTS on a duplicate, so the guard is the
+      only thing between a repeated datagram and a Debug crash), and a team
+      request from an address that never joined is ignored (RegisterNewTeam
+      asserts the same way).
+
+      ONE TEST PINS A DEFECT AS A DEFECT. ASecondClientGetsItsOwnTeamAssign
+      asserts that two clients on one host register as ONE and that the second
+      hears nothing - which is what today's addressing does, because clients are
+      keyed by IP string and replied to on a fixed port. It is named for what it
+      should say and asserts what it does say, with the reason at the site. T9
+      rewrites it.
+
+      THE FAKE WIRE WAS COMPILED AND RUN. LoopbackTransport.cpp built clean
+      under -Wall -Wextra against the POSIX shim and passed 30 checks: ordering,
+      isolation between mailboxes, the source address, armed drops, a datagram
+      larger than the receiver's buffer being refused rather than truncated the
+      way Winsock refuses it, and the bad-argument paths. That matters more than
+      it looks - every assertion in ServerProtocolTests rests on the wire
+      behaving like a wire, and a fake that quietly delivered what a real socket
+      would not would make those tests pass for the wrong reason.
+
+      WHAT IS NOT COMPILED HERE is ServerProtocolTests.cpp itself and the
+      injection points in Server and ClientToServer. The traces were worked
+      through by hand against Advance's broadcast loop - sendFrom is
+      m_lastKnownSequenceId + 1 and history replays from there - and the
+      retransmission test was rewritten once because the first version assumed a
+      client that had acknowledged nothing would be sent one letter per tick
+      rather than its whole history.
 
   - id: T8
     title: Frame every datagram - magic, version, kind - and bump to protocol v2

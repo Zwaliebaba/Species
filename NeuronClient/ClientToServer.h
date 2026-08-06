@@ -5,7 +5,7 @@
 
 #include "TeamControls.h"
 #include "NeuronMath.h"
-#include "UdpSocket.h"
+#include "Transport.h"
 
 // TeamControls.h is included rather than forward-declared: SendIAmAlive takes it
 // by const reference, which a declaration would satisfy, but the declaration used
@@ -33,10 +33,13 @@ namespace Neuron
       void ReceiveDatagrams();
 
     public:
-      // One socket, bound and polled from the frame loop. It replaces a
-      // NetSocket for sending, a NetSocketListener on a blocking thread for
-      // receiving, and the two mutexes between them.
-      UdpSocket m_socket;
+      // Where datagrams go and come from, polled from the frame loop. It
+      // replaces a NetSocket for sending, a NetSocketListener on a blocking
+      // thread for receiving, and the two mutexes between them. The default
+      // constructor builds a UdpTransport bound to ClientPort; the other one
+      // takes whatever it is given, which is how a test drives a client with no
+      // socket in it.
+      std::unique_ptr<Transport> m_transport;
 
       std::vector<std::unique_ptr<ServerToClientLetter>> m_inbox;
       std::vector<std::unique_ptr<NetworkUpdate>> m_outbox;
@@ -50,6 +53,7 @@ namespace Neuron
 
     public:
       ClientToServer();
+      ClientToServer(std::unique_ptr<Transport> _transport, Endpoint const& _serverEndpoint);
       ~ClientToServer();
 
       int GetOurIP_Int();

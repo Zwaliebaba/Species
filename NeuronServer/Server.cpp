@@ -1,7 +1,7 @@
 #include "pch.h"
 
 #include "NetLib.h"
-#include "UdpSocket.h"
+#include "Transport.h"
 
 #include "Debug.h"
 #include "Profiler.h"
@@ -55,30 +55,42 @@ namespace Neuron
 
   void Server::Initialise(Profiler* _profiler)
   {
-    m_profiler = _profiler;
-
-    m_netLib = new NetLib();
-    m_netLib->Initialise();
-
     // The file-scope Server* that used to live here went with the listen
     // thread. It existed because a socket callback is a plain function pointer
     // and cannot carry state; nothing takes a callback now.
-    const std::error_code failure = m_socket.Open(ServerPort);
+    auto transport = std::make_unique<UdpTransport>();
+
+    const std::error_code failure = transport->Open(ServerPort);
     if (failure)
       NetDebugOut("Server could not open port {}: {}", ServerPort, failure.message());
+
+    Initialise(_profiler, std::move(transport));
+  }
+
+  void Server::Initialise(Profiler* _profiler, std::unique_ptr<Transport> _transport)
+  {
+    m_profiler = _profiler;
+    m_transport = std::move(_transport);
+
+    // Winsock is started even when the transport is a fake one. It is a
+    // process-wide reference count rather than anything this Server holds, and
+    // a test that skipped it would be running a different Initialise from the
+    // game's.
+    m_netLib = new NetLib();
+    m_netLib->Initialise();
   }
 
   // *** ReceiveDatagrams
   void Server::ReceiveDatagrams()
   {
-    if (!m_socket.IsOpen())
+    if (!m_transport)
       return;
 
     char datagram[MaxDatagramSize];
     int received = 0;
     Endpoint from;
 
-    while (m_socket.TryReceive(datagram, static_cast<int>(sizeof(datagram)), received, from))
+    while (m_transport->TryReceive(datagram, static_cast<int>(sizeof(datagram)), received, from))
     {
       auto update = std::make_unique<NetworkUpdate>(datagram, received);
       if (!update->IsValid())
@@ -242,6 +254,9 @@ namespace Neuron
 
   void Server::AdvanceSender()
   {
+    if (!m_transport)
+      return;
+
     int bytesSentThisFrame = 0;
 
     while (!m_outbox.empty())
@@ -271,7 +286,7 @@ namespace Neuron
           // client port. T9 is what makes it the address the datagram actually
           // arrived from.
           ServerToClient* client = m_clients[letter->GetClientId()].get();
-          const std::error_code failure = m_socket.SendTo(client->GetEndpoint(), datagram, linearSize);
+          const std::error_code failure = m_transport->Send(client->GetEndpoint(), datagram, linearSize);
           if (failure)
             NetDebugOut("Server send to {} failed: {}", client->GetEndpoint().ToString(), failure.message());
           else

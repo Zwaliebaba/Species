@@ -28,6 +28,9 @@
     <ClCompile Include="ServerToClientLetter.cpp">
       <Filter>Network</Filter>
     </ClCompile>
+    <ClCompile Include="LoopbackTransport.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
     <ClCompile Include="UdpSocket.cpp">
       <Filter>Network</Filter>
     </ClCompile>
@@ -51,6 +54,12 @@
     <ClInclude Include="Preferences.h" />
     <ClInclude Include="Profiler.h" />
     <ClInclude Include="ByteStream.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="LoopbackTransport.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="Transport.h">
       <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="UdpSocket.h">

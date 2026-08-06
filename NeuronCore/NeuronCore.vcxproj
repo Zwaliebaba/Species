@@ -35,6 +35,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="ServerToClientLetter.cpp" />
+    <ClCompile Include="LoopbackTransport.cpp" />
     <ClCompile Include="UdpSocket.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -54,6 +55,8 @@
     <ClInclude Include="Profiler.h" />
     <ClInclude Include="WorldObjectId.h" />
     <ClInclude Include="ByteStream.h" />
+    <ClInclude Include="LoopbackTransport.h" />
+    <ClInclude Include="Transport.h" />
     <ClInclude Include="UdpSocket.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="FileSys.h" />
