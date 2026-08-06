@@ -434,20 +434,19 @@ The game **does** run, so the smoke test is something you can actually perform
 rather than something to wait for. If you are working somewhere that cannot
 launch a Windows client, say so instead of implying you checked.
 
-**WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-06.** CI last built this
-branch green at `982e2e2`, which carries everything through `sound-xaudio2` T6
-and `input-native-events` T2 — that much compiles, links and passes the suite on
-x64 Debug. The two commits after it, T7 and T8, each went **red**, and the fix
-for the second is the commit this paragraph lands in, so **the head of this
-branch is not yet known to compile.** Correct this line once CI has answered.
-**THE UNCOMPILED BLOCK THIS ENTRY USED TO WARN ABOUT IS GONE**:
-`strings-modernised` T12, T11, T13, T17 and T9 were the largest ever recorded
-here, and CI has since built all of them.
+**WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-06.** CI is green at
+`d858b6b`, which carries everything through `sound-xaudio2` T8 and
+`input-native-events` T2: it compiles, links, passes the suite on x64 Debug, and
+the headless server reaches sequence 20 at the right rate. **THE UNCOMPILED
+BLOCK THIS ENTRY USED TO WARN ABOUT IS GONE**: `strings-modernised` T12, T11,
+T13, T17 and T9 were the largest ever recorded here, and CI has since built all
+of them.
 
-**Both red rounds were the same mistake.** An earlier version of this entry
-claimed CI had been green on every task landed here; it had not. Each failure
-was a deleted `#include` taking declarations with it that the deleting task
-never looked for. T7 removed `SoundLibrary3dDSound.h` from disk and left an
+**It took two red rounds to get there, and both were the same mistake.** An
+earlier version of this entry claimed CI had been green on every task landed
+here; it had not — `sound-xaudio2` T7 and T8 each failed to compile. Each
+failure was a deleted `#include` taking declarations with it that the deleting
+task never looked for. T7 removed `SoundLibrary3dDSound.h` from disk and left an
 `#include` of it in `Species/Main.cpp`; the fix for that then removed the
 include, and with it the only path by which that file saw `g_soundLibrary3d`,
 which its `Finalise()` deletes. **Deleting a header withdraws everything it
