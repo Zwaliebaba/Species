@@ -20,12 +20,13 @@ namespace NeuronCoreTests
   // expected, and index the sync table by it. It rides in the header of every
   // letter type.
   //
-  // The copy constructor is used on the broadcast path. Server::Advance replays
-  // history to each client with `new ServerToClientLetter(*theLetter)`, so a copy
-  // that dropped or aliased updates would corrupt what every client receives
-  // while the original letter still looked correct. The header carries the
-  // warning: "If you add any new data here, remember to update the copy
-  // constructor" — that is the failure this pins.
+  // Copying is used on the broadcast path. Server::Advance replays history to
+  // each client with `std::make_unique<ServerToClientLetter>(*theLetter)`, so a
+  // copy that dropped or aliased updates would corrupt what every client
+  // receives while the original letter still looked correct. That used to be a
+  // hand-written copy constructor with a "remember to update the copy
+  // constructor" warning above the members; network-transport T2 made the
+  // updates values and deleted both.
   TEST_CLASS(ServerToClientLetterTests)
   {
     private:
@@ -49,9 +50,9 @@ namespace NeuronCoreTests
         letter.SetSequenceId(0x21436587);
         letter.SetIp(0x0100007F);
 
-        int length = 0;
-        char* stream = letter.GetByteStream(&length);
-        ByteReader reader(stream, length);
+        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        const int length = letter.Serialise(datagram, static_cast<int>(sizeof(datagram)));
+        ByteReader reader(datagram, length);
 
         const int type = reader.Read<int>();
         const int sequenceId = reader.Read<int>();
@@ -74,9 +75,9 @@ namespace NeuronCoreTests
         letter.SetTeamType(1);
         letter.SetIp(0x0100007F);
 
-        int length = 0;
-        char* stream = letter.GetByteStream(&length);
-        ByteReader reader(stream, length);
+        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        const int length = letter.Serialise(datagram, static_cast<int>(sizeof(datagram)));
+        ByteReader reader(datagram, length);
 
         const int type = reader.Read<int>();
         const int sequenceId = reader.Read<int>();
@@ -102,12 +103,12 @@ namespace NeuronCoreTests
 
         NetworkUpdate first = MakeSelectUnit(1, 11);
         NetworkUpdate second = MakeSelectUnit(2, 22);
-        letter.AddUpdate(&first);
-        letter.AddUpdate(&second);
+        letter.AddUpdate(first);
+        letter.AddUpdate(second);
 
-        int length = 0;
-        char* stream = letter.GetByteStream(&length);
-        ByteReader reader(stream, length);
+        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        const int length = letter.Serialise(datagram, static_cast<int>(sizeof(datagram)));
+        ByteReader reader(datagram, length);
 
         const int type = reader.Read<int>();
         const int sequenceId = reader.Read<int>();
@@ -128,18 +129,18 @@ namespace NeuronCoreTests
         sent.SetSequenceId(42);
 
         NetworkUpdate update = MakeSelectUnit(3, 77);
-        sent.AddUpdate(&update);
+        sent.AddUpdate(update);
 
-        int length = 0;
-        char* stream = sent.GetByteStream(&length);
+        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        const int length = sent.Serialise(datagram, static_cast<int>(sizeof(datagram)));
 
-        ServerToClientLetter received(stream, length);
+        ServerToClientLetter received(datagram, length);
 
         Assert::AreEqual(static_cast<int>(ServerToClientLetter::LetterType::Update), static_cast<int>(received.m_type));
         Assert::AreEqual(42, received.GetSequenceId());
         Assert::AreEqual(1, static_cast<int>(received.m_updates.size()));
-        Assert::AreEqual(static_cast<unsigned char>(3), received.m_updates[0]->m_teamId);
-        Assert::AreEqual(77, received.m_updates[0]->m_unitId);
+        Assert::AreEqual(static_cast<unsigned char>(3), received.m_updates[0].m_teamId);
+        Assert::AreEqual(77, received.m_updates[0].m_unitId);
       }
 
       TEST_METHOD(AnEmptyUpdateLetterStillCarriesItsSequenceId)
@@ -151,37 +152,54 @@ namespace NeuronCoreTests
         sent.SetType(ServerToClientLetter::LetterType::Update);
         sent.SetSequenceId(101);
 
-        int length = 0;
-        char* stream = sent.GetByteStream(&length);
+        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        const int length = sent.Serialise(datagram, static_cast<int>(sizeof(datagram)));
 
-        ServerToClientLetter received(stream, length);
+        ServerToClientLetter received(datagram, length);
 
         Assert::AreEqual(101, received.GetSequenceId());
         Assert::AreEqual(0, static_cast<int>(received.m_updates.size()));
       }
 
-      TEST_METHOD(TheCopyConstructorDeepCopiesEveryUpdate)
+      TEST_METHOD(ACopyCarriesEveryUpdateAsAValue)
       {
         // Server::Advance re-broadcasts from history with
-        // `new ServerToClientLetter(*theLetter)`. A shallow copy would hand two
-        // letters the same NetworkUpdate pointers, and the first destructor to
-        // run would leave the other pointing at freed memory.
+        // `std::make_unique<ServerToClientLetter>(*theLetter)`. This used to be
+        // a hand-written copy constructor over a vector of raw owning pointers,
+        // and it was the reason the header carried a "remember to update the
+        // copy constructor" warning. The updates are values now, so the
+        // compiler's copy is the deep copy — what is left to check is that the
+        // members still arrive, which is the thing that warning was about.
         ServerToClientLetter original;
         original.SetType(ServerToClientLetter::LetterType::Update);
         original.SetSequenceId(7);
         original.SetClientId(3);
 
         NetworkUpdate update = MakeSelectUnit(1, 55);
-        original.AddUpdate(&update);
+        original.AddUpdate(update);
 
         ServerToClientLetter copy(original);
 
         Assert::AreEqual(original.GetSequenceId(), copy.GetSequenceId());
         Assert::AreEqual(original.GetClientId(), copy.GetClientId());
         Assert::AreEqual(original.m_updates.size(), copy.m_updates.size());
+        Assert::AreEqual(static_cast<int>(original.m_type), static_cast<int>(copy.m_type));
+        Assert::AreEqual(55, copy.m_updates[0].m_unitId);
+      }
 
-        Assert::IsTrue(original.m_updates[0] != copy.m_updates[0], L"the copy must own its own updates, not share pointers");
-        Assert::AreEqual(55, copy.m_updates[0]->m_unitId);
+      TEST_METHOD(AddUpdateStoresACopyRatherThanAReference)
+      {
+        // The server builds one NetworkUpdate, hands it to the letter, and
+        // reuses it. A letter that aliased the caller's update instead of
+        // copying it would broadcast whatever the server most recently built.
+        ServerToClientLetter letter;
+        letter.SetType(ServerToClientLetter::LetterType::Update);
+
+        NetworkUpdate update = MakeSelectUnit(1, 55);
+        letter.AddUpdate(update);
+        update.SetUnitId(999);
+
+        Assert::AreEqual(55, letter.m_updates[0].m_unitId);
       }
 
       TEST_METHOD(ACopyIsIndependentOfTheOriginal)
@@ -195,22 +213,22 @@ namespace NeuronCoreTests
         original.SetClientId(1);
 
         NetworkUpdate update = MakeSelectUnit(1, 55);
-        original.AddUpdate(&update);
+        original.AddUpdate(update);
 
         ServerToClientLetter copy(original);
         copy.SetClientId(2);
-        copy.m_updates[0]->m_unitId = 999;
+        copy.m_updates[0].m_unitId = 999;
 
         Assert::AreEqual(1, original.GetClientId());
         Assert::AreEqual(2, copy.GetClientId());
-        Assert::AreEqual(55, original.m_updates[0]->m_unitId);
+        Assert::AreEqual(55, original.m_updates[0].m_unitId);
       }
 
       TEST_METHOD(AFullTickOfUpdatesFitsTheLetterBuffer)
       {
-        // GetByteStream writes into a fixed 1024-byte buffer and only asserts
-        // the bound in Debug. A busy tick with every client sending is the case
-        // that would overrun it, so it is worth checking in Release too.
+        // Serialise writes into a fixed 1024-byte buffer and only asserts the
+        // bound in Debug. A busy tick with every client sending is the case that
+        // would overrun it, so it is worth checking in Release too.
         ServerToClientLetter letter;
         letter.SetType(ServerToClientLetter::LetterType::Update);
         letter.SetSequenceId(1);
@@ -219,19 +237,15 @@ namespace NeuronCoreTests
         for (int i = 0; i < 48; ++i)
         {
           NetworkUpdate update = MakeSelectUnit(static_cast<unsigned char>(i % NUM_TEAMS), i);
-          letter.AddUpdate(&update);
+          letter.AddUpdate(update);
         }
 
-        int length = 0;
-        letter.GetByteStream(&length);
+        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        const int length = letter.Serialise(datagram, static_cast<int>(sizeof(datagram)));
 
         Assert::IsTrue(length < SERVERTOCLIENTLETTER_BYTESTREAMSIZE);
       }
 
-      // Same reason as TheUpdateTypeValuesAreTheProtocol in NetworkUpdateTests:
-      // m_type goes out as four bytes and comes back as four bytes, so these five
-      // numbers are what a client and a server agree on. Five enumerators is a
-      // small enough set that inserting one in the middle looks harmless.
       // ------------------------------------------------------------------
       // What a datagram is allowed to do to the receiver.
       //
@@ -252,7 +266,7 @@ namespace NeuronCoreTests
         // Five bytes: enough for the type, not for the sequence id.
         const char truncated[5] = {4, 0, 0, 0, 9};
 
-        const ServerToClientLetter letter(truncated, sizeof(truncated));
+        const ServerToClientLetter letter(truncated, static_cast<int>(sizeof(truncated)));
 
         Assert::IsFalse(letter.IsValid());
         Assert::AreEqual(static_cast<int>(ServerToClientLetter::LetterType::Invalid), static_cast<int>(letter.m_type));
@@ -268,13 +282,15 @@ namespace NeuronCoreTests
         sent.SetSequenceId(31);
 
         NetworkUpdate update = MakeSelectUnit(1, 5);
-        sent.AddUpdate(&update);
+        sent.AddUpdate(update);
 
-        int length = 0;
-        char* stream = sent.GetByteStream(&length);
+        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        const int length = sent.Serialise(datagram, static_cast<int>(sizeof(datagram)));
+
+        Assert::AreEqual(12 + 21, length);
 
         // Keep the 12-byte header, drop all but four bytes of the 21-byte update.
-        const ServerToClientLetter received(stream, 16);
+        const ServerToClientLetter received(datagram, 16);
 
         Assert::IsFalse(received.IsValid());
       }
@@ -290,7 +306,7 @@ namespace NeuronCoreTests
         writer.Write<int>(77);
         writer.Write<int>(100000);
 
-        const ServerToClientLetter letter(datagram, sizeof(datagram));
+        const ServerToClientLetter letter(datagram, static_cast<int>(sizeof(datagram)));
 
         Assert::IsFalse(letter.IsValid());
         Assert::AreEqual(0, static_cast<int>(letter.m_updates.size()));
@@ -307,7 +323,7 @@ namespace NeuronCoreTests
         writer.Write<int>(77);
         writer.Write<int>(-1);
 
-        const ServerToClientLetter letter(datagram, sizeof(datagram));
+        const ServerToClientLetter letter(datagram, static_cast<int>(sizeof(datagram)));
 
         Assert::IsFalse(letter.IsValid());
         Assert::AreEqual(0, static_cast<int>(letter.m_updates.size()));
@@ -326,7 +342,7 @@ namespace NeuronCoreTests
         writer.Write<int>(1);
         writer.Write<int>(0);
 
-        const ServerToClientLetter letter(datagram, sizeof(datagram));
+        const ServerToClientLetter letter(datagram, static_cast<int>(sizeof(datagram)));
 
         Assert::IsFalse(letter.IsValid());
       }
@@ -353,15 +369,15 @@ namespace NeuronCoreTests
 
         NetworkUpdate first = MakeSelectUnit(1, 11);
         NetworkUpdate second = MakeSelectUnit(2, 22);
-        sent.AddUpdate(&first);
-        sent.AddUpdate(&second);
+        sent.AddUpdate(first);
+        sent.AddUpdate(second);
 
-        int length = 0;
-        char* stream = sent.GetByteStream(&length);
+        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        const int length = sent.Serialise(datagram, static_cast<int>(sizeof(datagram)));
         Assert::AreEqual(12 + 21 + 21, length);
 
         // Everything is present in the buffer; only _len says otherwise.
-        const ServerToClientLetter received(stream, 12 + 21);
+        const ServerToClientLetter received(datagram, 12 + 21);
 
         Assert::IsFalse(received.IsValid());
       }
@@ -380,12 +396,16 @@ namespace NeuronCoreTests
         writer.Write<int>(999); // update type
         writer.Write<int>(0);   // update sequence id
 
-        const ServerToClientLetter letter(datagram, sizeof(datagram));
+        const ServerToClientLetter letter(datagram, static_cast<int>(sizeof(datagram)));
 
         Assert::IsFalse(letter.IsValid());
         Assert::AreEqual(0, static_cast<int>(letter.m_updates.size()));
       }
 
+      // Same reason as TheUpdateTypeValuesAreTheProtocol in NetworkUpdateTests:
+      // m_type goes out as four bytes and comes back as four bytes, so these five
+      // numbers are what a client and a server agree on. Five enumerators is a
+      // small enough set that inserting one in the middle looks harmless.
       TEST_METHOD(TheLetterTypeValuesAreTheProtocol)
       {
         Assert::AreEqual(0, static_cast<int>(ServerToClientLetter::LetterType::Invalid));

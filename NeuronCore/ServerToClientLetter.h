@@ -26,12 +26,19 @@ class ServerToClientLetter
       Update
     };
 
-    LetterType m_type; // If you add any new data here, remember to update the copy constructor
+    LetterType m_type;
     unsigned char m_teamId;
     unsigned char m_teamType;
     int m_ip; // This tells you specifically which client gets the HelloClient or TeamAssign
 
-    std::vector<NetworkUpdate*> m_updates;
+    // By value. It held raw owning NetworkUpdate* and the class had no
+    // destructor, so every Update letter the client received and every history
+    // copy the server made leaked all of its updates — and the header used to
+    // carry a "remember to update the copy constructor" warning for a copy
+    // constructor that existed only to deep-copy these pointers. A vector of
+    // values needs neither: the compiler's copy is the deep copy, and the
+    // vector is the owner.
+    std::vector<NetworkUpdate> m_updates;
 
   private:
     int m_clientId; // An index into the server's slot map of ServerToClient objects
@@ -39,7 +46,6 @@ class ServerToClientLetter
 
   public:
     ServerToClientLetter();
-    ServerToClientLetter(ServerToClientLetter& copyMe);
     // _len is the datagram's real length, and it is now consulted: a letter that
     // claims more than _len holds comes back Invalid rather than reading past
     // the receive buffer.
@@ -55,7 +61,7 @@ class ServerToClientLetter
     int GetClientId() const;
     int GetSequenceId() const;
 
-    void AddUpdate(NetworkUpdate* _update);
+    void AddUpdate(NetworkUpdate const& _update);
 
     // False for anything that did not parse: a truncated datagram, a letter type
     // this build does not know, or an update count the datagram cannot back up.
@@ -63,8 +69,12 @@ class ServerToClientLetter
     // sequence id.
     [[nodiscard]] bool IsValid() const { return m_type != LetterType::Invalid; }
 
-    // Writes all the current data into a sequential byte stream suitable to
-    // be stuffed into a UDP packet. Sets linearSize to be the stream length.
-    // Do NOT DELETE the returned pointer - it is part of this object.
-    char* GetByteStream(int* _linearSize);
+    // Writes the letter into _buffer as one datagram and returns how many bytes
+    // it used, or 0 if it did not fit.
+    //
+    // The buffer belongs to the caller. It used to be one file-scope
+    // char[1024] shared by every letter in the process, so the bytes a letter
+    // "returned" stayed valid only until the next letter was serialised — with
+    // the sending loop being the only reason that ever held.
+    int Serialise(char* _buffer, int _capacity);
 };

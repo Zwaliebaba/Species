@@ -139,11 +139,11 @@ void NetworkUpdate::SetType(UpdateType _type) { m_type = _type; }
 
 void NetworkUpdate::SetClientIp(std::string_view ip)
 {
-  // m_clientIp stays a char[16] and this stays a copy into it. T1's audit
-  // found that ServerToClientLetter memcpy()s whole NetworkUpdate structs,
-  // so the type has to remain trivially copyable — converting the field to
-  // std::string is only legal together with turning those memcpys into
-  // assignments, which is not this task.
+  // m_clientIp stays a char[16] and this stays a copy into it. The type has to
+  // remain trivially copyable: ServerToClientLetter holds a vector of these by
+  // value, and network-transport T2 removed the hand-written copy assignment
+  // precisely so it would be. Converting the field to std::string is a change
+  // to what the letter's storage costs to copy, not a tidy-up.
   //
   // What does change is that the copy is bounded. The old unbounded copy
   // ran off the end of a 16-byte field for anything longer than a dotted
@@ -317,11 +317,3 @@ char* NetworkUpdate::GetByteStream(int* _linearSize)
 //     }
 //     _ostr << "\n";
 // }
-
-
-// *** Operator =
-NetworkUpdate const& NetworkUpdate::operator=(NetworkUpdate const& n)
-{
-  memcpy(this, &n, sizeof(NetworkUpdate));
-  return *this;
-}

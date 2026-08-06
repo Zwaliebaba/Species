@@ -1,14 +1,9 @@
 #include "pch.h"
 
-#include <string.h>
-
 #include "Debug.h"
 
 #include "ByteStream.h"
 #include "ServerToClientLetter.h"
-
-
-static char s_byteStream[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
 
 
 // *** Constructor
@@ -20,27 +15,6 @@ ServerToClientLetter::ServerToClientLetter()
     m_teamType(0),
     m_ip(0)
 {
-}
-
-
-// *** Constructor
-ServerToClientLetter::ServerToClientLetter(ServerToClientLetter& copyMe)
-  : m_clientId(copyMe.m_clientId),
-    m_type(copyMe.m_type),
-    m_sequenceId(copyMe.m_sequenceId),
-    m_teamId(copyMe.m_teamId),
-    m_teamType(copyMe.m_teamType),
-    m_ip(copyMe.m_ip)
-{
-  // memcpy( m_updates, copyMe.m_updates, MAX_SERVER_TO_CLIENT_UPDATES*sizeof(NetworkUpdate) );
-
-  for (int i = 0; i < static_cast<int>(copyMe.m_updates.size()); ++i)
-  {
-    NetworkUpdate* copyUpdate = copyMe.m_updates[i];
-    NetworkUpdate* newUpdate = new NetworkUpdate();
-    memcpy(newUpdate, copyUpdate, sizeof(NetworkUpdate));
-    m_updates.push_back(newUpdate);
-  }
 }
 
 
@@ -87,13 +61,13 @@ ServerToClientLetter::ServerToClientLetter(char const* _byteStream, int _len)
 
     for (int i = 0; i < numUpdates; ++i)
     {
-      // Built on the stack and copied in by AddUpdate, so an update that fails
-      // to read is never owned by anything and cannot leak on the way out.
+      // Read into a local and pushed only once it is whole, so a half-read
+      // update never reaches the letter.
       NetworkUpdate update;
       if (!update.ReadByteStream(reader))
         return; // fewer updates than the header claimed: the letter is a lie
 
-      AddUpdate(&update);
+      m_updates.push_back(update);
     }
     break;
   }
@@ -146,18 +120,14 @@ int ServerToClientLetter::GetSequenceId() const { return m_sequenceId; }
 void ServerToClientLetter::SetIp(int ip) { m_ip = ip; }
 
 // *** AddUpdate
-void ServerToClientLetter::AddUpdate(NetworkUpdate* _update)
-{
-  // Make sure we COPY the update
-  NetworkUpdate* update = new NetworkUpdate();
-  memcpy(update, _update, sizeof(NetworkUpdate));
-  m_updates.push_back(update);
-}
+// The letter takes a copy, as it always did. What is gone is the copy being
+// made by hand out of a raw new and a memcpy.
+void ServerToClientLetter::AddUpdate(NetworkUpdate const& _update) { m_updates.push_back(_update); }
 
-// *** GetByteStream
-char* ServerToClientLetter::GetByteStream(int* _linearSize)
+// *** Serialise
+int ServerToClientLetter::Serialise(char* _buffer, int _capacity)
 {
-  ByteWriter writer(s_byteStream, sizeof(s_byteStream));
+  ByteWriter writer(_buffer, _capacity > 0 ? static_cast<size_t>(_capacity) : 0);
 
   writer.Write<int>(static_cast<int>(m_type));
   writer.Write<int>(m_sequenceId);
@@ -182,8 +152,13 @@ char* ServerToClientLetter::GetByteStream(int* _linearSize)
 
     for (int i = 0; i < numUpdates; ++i)
     {
+      // Each update is flattened into its own buffer first and copied in as a
+      // block, rather than written straight through this writer. That costs a
+      // copy of at most 42 bytes and buys the thing T3 needs: whether the next
+      // update fits is answerable BEFORE any of it is committed, so a full
+      // letter can stop cleanly instead of leaving half an update behind it.
       int updateSize = 0;
-      char const* updateBytes = m_updates[i]->GetByteStream(&updateSize);
+      char const* updateBytes = m_updates[i].GetByteStream(&updateSize);
       writer.WriteBytes(updateBytes, static_cast<size_t>(updateSize));
     }
     break;
@@ -193,16 +168,14 @@ char* ServerToClientLetter::GetByteStream(int* _linearSize)
     break;
   }
 
-  *_linearSize = static_cast<int>(writer.BytesWritten());
-
-  // Still only a Debug check, and it is now a check that the buffer was big
-  // enough rather than a report that it was not: an over-full letter loses its
-  // tail instead of overrunning s_byteStream. Losing the tail is still wrong —
-  // the count in the header would then exceed what follows, so the receiver
-  // drops the whole letter and the server retransmits it unchanged, forever.
-  // T3 is what makes the case unreachable, by capping the letter as it is
-  // built.
+  // A letter that did not fit reports nothing written rather than a truncated
+  // datagram: the count in its header would otherwise promise more updates than
+  // followed it, the receiver would drop the whole thing, and the server would
+  // retransmit the same over-long letter forever. T3 is what stops the case
+  // arising, by capping the letter as it is built.
   DEBUG_ASSERT(writer.Ok());
+  if (!writer.Ok())
+    return 0;
 
-  return s_byteStream;
+  return static_cast<int>(writer.BytesWritten());
 }

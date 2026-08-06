@@ -421,7 +421,7 @@ namespace NeuronCoreTests
         writer.Write<int>(31337);
         writer.Write<int>(0);
 
-        const NetworkUpdate received(datagram, sizeof(datagram));
+        const NetworkUpdate received(datagram, static_cast<int>(sizeof(datagram)));
 
         Assert::IsFalse(received.IsValid());
       }

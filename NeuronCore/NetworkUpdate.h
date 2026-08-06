@@ -112,9 +112,12 @@ class NetworkUpdate
 
     [[nodiscard]] bool IsValid() const { return m_type != UpdateType::Invalid; }
 
-    //    void SendToDebugStream(FILE *_out, int _seqNum);
+    // No hand-written copy assignment. It was memcpy(this, &n, sizeof(*this)),
+    // which is what the implicit one does for a class of scalars anyway — and
+    // declaring it stopped the type being trivially copyable, which is the
+    // property ServerToClientLetter's vector of these now relies on.
 
-    NetworkUpdate const& operator=(NetworkUpdate const& n);
+    //    void SendToDebugStream(FILE *_out, int _seqNum);
 };
 
 // Inlines

@@ -184,7 +184,50 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: >
+      MEASURED, NOT ASSERTED: the leak is 24 allocations for three letters
+      carrying eight updates each - one built, one broadcast copy, one parsed
+      off the wire - counted by a global operator new/delete pair in the g++
+      harness. The same program over this task's code balances at zero.
+      LeakSanitizer is disabled in this container (a deliberate `new int[10]`
+      goes unreported), which is why the counter exists rather than a sanitizer
+      run being cited.
+
+      THE FILES LIST WAS RIGHT this time, with one addition:
+      NeuronCore/NetworkUpdate.h and .cpp, because NetworkUpdate's own
+      hand-written operator= - memcpy(this, &n, sizeof(*this)) - is the other
+      half of "copies no bytes by hand", and declaring it stopped the type being
+      trivially copyable. A vector of these by value is the whole task, so the
+      thing standing in the way of the vector had to go with it. The implicit
+      copy assignment is memberwise over scalars, which is what the memcpy was.
+
+      GetByteStream BECAME Serialise(char*, int) ON THE LETTER, and the rename
+      is the honest part of the change rather than churn: the buffer is the
+      caller's now. What it replaces is a file-scope char[1024] shared by every
+      letter in the process, so the bytes a letter "returned" stayed valid only
+      until the next letter was serialised anywhere. Nothing was relying on
+      that, because the one caller sent immediately - but it is a static that
+      two sending threads would have raced over, and T4 and T5 are about to
+      delete the threads that made it survivable. NetworkUpdate::GetByteStream
+      keeps its shape and its member buffer; only the letter changed.
+
+      WHY UPDATES ARE STILL FLATTENED THROUGH A SCRATCH BUFFER rather than
+      written straight into the letter's writer: T3 needs to know whether the
+      next update fits BEFORE committing any of it, so that a full letter stops
+      cleanly and the remainder spills into the next tick. Writing through
+      directly would leave a partial update behind the cursor with no way back.
+      That is why ByteWriter::WriteBytes exists and is kept.
+
+      NOT COMPILED BY MSVC AND NOT RUN AS A SUITE, same as T1. The harness was
+      refreshed onto this task's sources: the byte comparison against the
+      pre-T1 macro serialisers still passes for all twelve update types and all
+      four letter types, the truncation and hostile-datagram sweeps still pass
+      under ASan and UBSan, and the allocation balance is the new section. What
+      it does not cover is Species/ServerUpdates.cpp and NeuronServer/Server.cpp
+      - the two call sites that had to change shape (`m_updates[i]` is a value,
+      `AddUpdate` takes a reference, the send path owns its buffer). Both are
+      compile errors if they are wrong, not silent ones.
 
   - id: T3
     title: One datagram size, enforced at both ends, with per-letter spillover

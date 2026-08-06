@@ -296,12 +296,18 @@ namespace Neuron
 
       if (m_clients.ValidIndex(letter->GetClientId()))
       {
-        int linearSize = 0;
-        ServerToClient* client = m_clients[letter->GetClientId()].get();
-        NetSocket* socket = client->GetSocket();
-        char* linearisedLetter = letter->GetByteStream(&linearSize);
-        socket->WriteData(linearisedLetter, linearSize);
-        bytesSentThisFrame += linearSize;
+        // The buffer is this loop's, not the letter's: serialising used to
+        // write into one file-scope array shared by every letter in the
+        // process.
+        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        const int linearSize = letter->Serialise(datagram, static_cast<int>(sizeof(datagram)));
+        if (linearSize > 0)
+        {
+          ServerToClient* client = m_clients[letter->GetClientId()].get();
+          NetSocket* socket = client->GetSocket();
+          socket->WriteData(datagram, linearSize);
+          bytesSentThisFrame += linearSize;
+        }
       }
     }
 
@@ -384,11 +390,11 @@ namespace Neuron
         }
       }
       else if (incoming->m_teamId != 255)
-        // .get(), not a move: AddUpdate copies the struct into the letter's own
-        // storage ("Make sure we COPY the update" — new + memcpy), so ownership
-        // stays here. The reassignment at the bottom of this loop frees it,
-        // which is what `delete incoming` used to do.
-        letter->AddUpdate(incoming.get());
+        // A copy, not a move: AddUpdate copies the update into the letter's own
+        // vector, so ownership of `incoming` stays here. The reassignment at the
+        // bottom of this loop frees it, which is what `delete incoming` used to
+        // do.
+        letter->AddUpdate(*incoming);
 
       int clientId = GetClientId(incoming->m_clientIp);
       if (clientId != -1)
