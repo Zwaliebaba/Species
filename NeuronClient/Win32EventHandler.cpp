@@ -18,11 +18,13 @@ namespace Neuron
   typedef std::vector<W32EventProcessor*> ProcList;
   typedef ProcList::iterator ProcIt;
 
-  // The externs for the driver's g_keys and g_keyDeltas are GONE. This file
-  // reached into them to clear a stuck ALT on focus loss; that job now belongs
-  // to the driver, through OnFocusLost, which is where the state lives and the
-  // only place that can report the release properly. What is left here is the
-  // focus flag itself.
+  // The externs for the driver's g_keys and g_keyDeltas are GONE, and so are
+  // the globals themselves as of T5 — the driver holds one InputFrameState and
+  // nothing outside it can reach the arrays at all. This file reached into them
+  // to clear a stuck ALT on focus loss; that job belongs to the driver, through
+  // OnFocusLost, which now enqueues a FocusLost event so the release edges are
+  // produced in order with every other message. What is left here is the focus
+  // flag itself.
   bool g_windowHasFocus = true;
 
 

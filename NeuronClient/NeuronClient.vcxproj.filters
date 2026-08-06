@@ -79,6 +79,9 @@
     <ClCompile Include="InputDriverWin32.cpp">
       <Filter>Input</Filter>
     </ClCompile>
+    <ClCompile Include="InputEvents.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
     <ClCompile Include="InputSpec.cpp">
       <Filter>Input</Filter>
     </ClCompile>
@@ -201,6 +204,9 @@
       <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="InputDriverWin32.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputEvents.h">
       <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="InputSpec.h">

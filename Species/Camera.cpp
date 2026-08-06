@@ -333,43 +333,6 @@ void Camera::AdvanceSphereWorldScriptedMode()
   glPopMatrix();
 }
 
-/*
-void Camera::AdvanceSphereWorldIntroMode()
-{
-    m_targetFov = 100.0f;
-
-    static float fixMeUp = 45000.0f;
-
-    if( g_keys[KEY_G] )
-    {
-        fixMeUp = 45000.0;
-    }
-
-    if( fixMeUp == 45000.0f )
-    {
-        m_pos.Set( 0, 0, -1000000.0f );
-        m_front.Set( 1, 0, -1 );
-        m_up.Set( 1, 0, 0 );
-    }
-
-    fixMeUp -= g_advanceTime * 500.0f;
-
-    Vector3 targetFront = Vector3(200, 200, 200) - m_pos;
-    float distance = targetFront.Mag();
-
-    float forwardSpeed = 3000.0f;
-
-    targetFront.Normalise();
-
-    float rotateSpeed = forwardSpeed / (fixMeUp*0.66f);
-    float factor1 = g_advanceTime * rotateSpeed;
-    float factor2 = 1.0f - factor1;
-    m_front = m_front * factor2 + targetFront * factor1;
-    m_up.RotateAround( m_front * g_advanceTime * rotateSpeed * 0.2f );
-
-    m_pos += m_front * forwardSpeed;
-}*/
-
 void Camera::AdvanceSphereWorldIntroMode()
 {
   m_targetFov = 70.0f;

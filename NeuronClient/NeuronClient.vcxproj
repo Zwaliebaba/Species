@@ -48,6 +48,7 @@
     <ClCompile Include="InputDriverInvert.cpp" />
     <ClCompile Include="InputDriverSimple.cpp" />
     <ClCompile Include="InputDriverWin32.cpp" />
+    <ClCompile Include="InputEvents.cpp" />
     <ClCompile Include="InputSpec.cpp" />
     <ClCompile Include="InputTypes.cpp" />
     <ClCompile Include="InvertMatrix.cpp" />
@@ -111,6 +112,7 @@
     <ClInclude Include="InputDriverInvert.h" />
     <ClInclude Include="InputDriverSimple.h" />
     <ClInclude Include="InputDriverWin32.h" />
+    <ClInclude Include="InputEvents.h" />
     <ClInclude Include="InputSpec.h" />
     <ClInclude Include="InputSpecList.h" />
     <ClInclude Include="InputTypes.h" />

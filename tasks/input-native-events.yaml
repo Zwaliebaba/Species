@@ -389,7 +389,70 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: |
+      Landed 2026-08-06.
+
+      THE SHAPE OF THE CHANGE: WndProc appends an InputEvent and does nothing
+      else — no state writes, no Eclipse call, no window call. Advance pumps the
+      queue, then DeriveFrameState builds the frame's state from it. The rule
+      that recovers the lost information is one line: AT MOST ONE EDGE PER
+      CONTROL PER FRAME, and an event that would need a second is left for the
+      next frame. Press and release inside one frame now reports a down edge,
+      then an up edge on the frame after.
+
+      Stopping early defers everything BEHIND the deferred event too, not just
+      that control. That is deliberate: consuming later events out of order
+      would reorder edges, which is the thing this task exists to stop.
+
+      g_keys and g_keyDeltas are gone as globals — not moved, deleted. The
+      driver holds one InputFrameState and six former driver arrays collapsed
+      into it. The last read outside the driver was in a 37-line commented-out
+      Camera::AdvanceSphereWorldIntroMode, which went with them, so the grep is
+      genuinely zero rather than zero-except-in-comments.
+
+      FOUR THINGS THE REWRITE HAD TO PRESERVE DELIBERATELY, each found by
+      reading the old code rather than by it failing:
+
+      1. Modifier state for EclUpdateKeyboard is tracked ACROSS the walk from a
+         snapshot taken before derivation. Reading it off the finished frame
+         state would give every keystroke in a frame the same final answer, so
+         shift-then-letter and letter-then-shift would look identical.
+      2. System keys carry a flag and are NOT forwarded to Eclipse. The old
+         window procedure hooked WM_KEYDOWN and not WM_SYSKEYDOWN, so Eclipse
+         has never heard about Alt+anything; this task is not the one to change
+         that.
+      3. Alt-F4 still quits from inside the window procedure, not from a
+         binding. It has to work with the queue full and the frame loop stalled.
+      4. SetMousePosNoVelocity drops queued MouseMove events. A warp that left
+         them in would report travel from the position it just overwrote, which
+         is exactly the velocity the function exists to suppress.
+
+      AUTO-REPEAT IS NOW DISTINGUISHABLE and is not an edge. Windows sets bit 30
+      of lParam when it is repeating a held key; the old pipeline had no way to
+      express the difference and the state made every repeat look like nothing,
+      so the effect is unchanged and the information is now available to T6.
+
+      A PRE-EXISTING BUG THIS FIXES, with no consumer to notice: WM_SYSKEYUP
+      wrote g_keys[k] = 0 and never wrote a delta, so releasing ALT produced no
+      up edge and `key alt up` could never fire. It fires now. The three
+      GesturesTaskManager control types that bind ALT are declared in
+      ControlTypes.inc and bound in InputPreferences.txt and NO CODE CALLS
+      controlEvent FOR ANY OF THEM — dead controls, so nothing observes either
+      the old bug or the fix. Handed to T11.
+
+      VERIFIED TWICE. InputEventTests is 14 tests over DeriveFrameState, which
+      needs no window: the fast press-and-release case the task names, deferral
+      ordering, auto-repeat, click-in-one-frame, move coalescing and per-frame
+      velocity, partial wheel detents accumulating, focus loss releasing held
+      controls, focus loss DEFERRING behind a press made the same frame,
+      characters, out-of-range keys, and an empty frame clearing deltas while
+      keeping held state. The same rules were also run as a standalone g++
+      program under ASan and UBSan before the driver was touched at all, which
+      is what let the design be wrong cheaply.
+
+      The queue is bounded at 4096 events and drops the NEWEST when full.
+      Dropping the oldest would reorder edges.
 
   - id: T6
     title: Route WM_CHAR to text input
