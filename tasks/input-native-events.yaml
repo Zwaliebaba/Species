@@ -1119,7 +1119,7 @@ tasks:
       - python3 tools/check_hygiene.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: in_progress
     notes: |
       DEAD CONTROL TYPES, audited 2026-08-06 while doing T5. THIRTY-EIGHT of the
       131 names in ControlTypes.inc have no reference anywhere in any .cpp or
