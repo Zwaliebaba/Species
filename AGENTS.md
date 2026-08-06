@@ -436,12 +436,12 @@ rather than something to wait for. If you are working somewhere that cannot
 launch a Windows client, say so instead of implying you checked.
 
 **WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-06.** CI is green at
-`d858b6b`, which carries everything through `sound-xaudio2` T8 and
-`input-native-events` T2: it compiles, links, passes the suite on x64 Debug, and
-the headless server reaches sequence 20 at the right rate. **THE UNCOMPILED
-BLOCK THIS ENTRY USED TO WARN ABOUT IS GONE**: `strings-modernised` T12, T11,
-T13, T17 and T9 were the largest ever recorded here, and CI has since built all
-of them.
+`ffc5105`, which carries `sound-xaudio2` T1-T10 and `input-native-events` T1-T2:
+it compiles, links, passes the suite on x64 Debug, and the headless server
+reaches sequence 20 at the right rate. Every task since `d858b6b` has gone green
+first round. **THE UNCOMPILED BLOCK THIS ENTRY USED TO WARN ABOUT IS GONE**:
+`strings-modernised` T12, T11, T13, T17 and T9 were the largest ever recorded
+here, and CI has since built all of them.
 
 **It took two red rounds to get there, and both were the same mistake.** An
 earlier version of this entry claimed CI had been green on every task landed
@@ -455,13 +455,19 @@ included, not just what it declared.** Grep for the symbols the survivors still
 use, not for the name of the type you removed.
 
 **Compiled is still not run, with one exception.** The XAudio2 backend has been
-heard: the `sound-xaudio2` T5 audio gate below is an owner-reported run on a
-2026-08-06 build, and it exists precisely because CI cannot hear. Nothing else
-from that day has been in front of a running game — not the input changes, and
-not the three tasks that followed the gate — and no seven-step Garden run has
-been done on any of it, so the baseline below is unchanged at `acf283b`. The
-input work is the kind a green build says least about: it changes what happens
-on focus loss and on a wheel message, neither of which any test exercises.
+heard once: the `sound-xaudio2` T5 audio gate below is an owner-reported run on
+a 2026-08-06 build, and it exists precisely because CI cannot hear. **That gate
+predates five tasks that changed what comes out of the speakers** — T6 made
+XAudio2 the default, T7 and T8 deleted the other two backends, T4 rewrote every
+DirectSound effect usage in `Sounds.txt`, and T9 made the music voice stereo. So
+the audio has been heard, but not this audio. `sound-xaudio2` T11 is the gate
+that closes that, and it is a full seven-step Garden run rather than a listen.
+
+Nothing else from 2026-08-06 has been in front of a running game — not the input
+changes, and no seven-step Garden run on any of it — so the baseline below is
+unchanged at `acf283b`. The input work is the kind a green build says least
+about: it changes what happens on focus loss and on a wheel message, neither of
+which any test exercises.
 
 The `strings-modernised` block is worth remembering for what it taught rather
 than for its size, which is why the description stays here now. It was 127
