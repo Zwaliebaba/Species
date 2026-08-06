@@ -12,7 +12,6 @@
 #include "MessageDialog.h"
 
 
-#include "Win32EventHandler.h"
 #include "WindowManagerWin32.h"
 #include "WorldPointers.h"
 #include "AppCommands.h"
@@ -118,7 +117,6 @@ void RestartWindowManagerAndRenderer()
   bool hack = !g_windowManager->Windowed() && !g_prefsManager->GetInt("ScreenWindowed");
 
   // shutdown old window
-  // getW32EventHandler()->UnbindAltTab(); // was unbind done by someone else? it will be too late when window is destroyed
   g_windowManager->DestroyWin();
   g_appCommands->DestroyRenderer();
 

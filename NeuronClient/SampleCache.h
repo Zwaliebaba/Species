@@ -27,12 +27,14 @@ namespace Neuron
     public:
       unsigned int m_numChannels;
       unsigned int m_freq;
-      unsigned int m_numSamples;
+      unsigned int m_numSamples; // FRAMES. m_rawSampleData holds m_numChannels times as many shorts.
 
       CachedSample(char const* _sampleName);
       ~CachedSample();
 
-      void Read(signed short* _data, unsigned int _startSample, unsigned int _numSamples);
+      // Copies _numFrames frames starting at frame _startFrame. _data must hold
+      // _numFrames * m_numChannels shorts.
+      void Read(signed short* _data, unsigned int _startFrame, unsigned int _numFrames);
   };
 
 
@@ -43,7 +45,7 @@ namespace Neuron
   class CachedSampleHandle
   {
     protected:
-      unsigned int m_nextSampleIndex; // Index of first sample to return when Read is called
+      unsigned int m_nextSampleIndex; // Index of the first FRAME to return when Read is called
 
     public:
       CachedSample* m_cachedSample;
@@ -51,8 +53,12 @@ namespace Neuron
       CachedSampleHandle(CachedSample* _sample);
       ~CachedSampleHandle();
 
-      unsigned int Read(signed short* _data, unsigned int _numSamples);
+      // Reads up to _numFrames frames and returns how many it got. _data must
+      // hold _numFrames * GetNumChannels() shorts.
+      unsigned int Read(signed short* _data, unsigned int _numFrames);
       void Restart();
+
+      unsigned int GetNumChannels() const { return m_cachedSample->m_numChannels; }
   };
 
 

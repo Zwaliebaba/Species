@@ -11,7 +11,6 @@
 #include "Resource.h"
 #include "TextRenderer.h"
 #include "UserProfileWindow.h"
-#include "Win32EventHandler.h"
 #include "WindowManager.h"
 #include "WorldPointers.h"
 #include "AppState.h"
@@ -264,7 +263,6 @@ namespace Species
           g_windowManager->DestroyWin();
           g_appCommands->DestroyRenderer();
           g_appCommands->CreateRenderer();
-          getW32EventHandler()->ResetWindowHandle();
           g_resource->FlushOpenGlState();
           g_resource->RegenerateOpenGlState();
 

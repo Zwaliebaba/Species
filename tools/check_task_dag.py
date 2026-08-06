@@ -74,8 +74,37 @@ def display(path: Path) -> str:
         return str(path)
 
 
+class StrictLoader(yaml.SafeLoader):
+    """SafeLoader that refuses duplicate mapping keys.
+
+    PyYAML accepts a repeated key and lets the last one win, discarding
+    everything the earlier one held without a word. That is not a theoretical
+    hazard here. Two completed tasks each grew a second `notes:` when a
+    collision warning was appended below a long completion note, and every
+    parser -- this checker included -- then read the warning and nothing else.
+    The record of what the task actually did was sitting in the file, fully
+    written, and invisible to every tool that reads the plan.
+    """
+
+
+def _no_duplicate_keys(loader: StrictLoader, node: yaml.MappingNode, deep: bool = False) -> dict:
+    seen: set = set()
+    for key_node, _ in node.value:
+        key = loader.construct_object(key_node, deep=True)
+        if key in seen:
+            raise PlanError(
+                f"line {key_node.start_mark.line + 1}: duplicate key '{key}' -- YAML keeps "
+                "only the last one, so the earlier value is silently discarded"
+            )
+        seen.add(key)
+    return yaml.SafeLoader.construct_mapping(loader, node, deep=deep)
+
+
+StrictLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _no_duplicate_keys)
+
+
 def load_plan(path: Path) -> dict:
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    data = yaml.load(path.read_text(encoding="utf-8"), StrictLoader)
     if not isinstance(data, dict):
         raise PlanError("plan must be a YAML mapping")
 

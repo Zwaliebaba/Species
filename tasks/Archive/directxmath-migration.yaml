@@ -889,7 +889,7 @@ tasks:
       AGENTS.md Known issues, an open desync question that is NOT this plan's
       to fix. Do not touch those lines, do not "tidy" the surrounding
       expressions, and do not let a conversion change how many times they run.
-    notes: |
+
       LANDED. CI run 380 green at 45049cd, after run 378 failed to compile.
 
       PROCESS SLIP, RECORDED BECAUSE THE PLAN IS A RECORD: this task was worked
@@ -967,7 +967,7 @@ tasks:
       layout-identical and T1 makes them convert implicitly, an interface can
       change signature while every implementor and caller stays as it is —
       which is what stops this plan needing one 200-file commit.
-    notes: |
+
       BLOCKED 2026-08-03, ON A MISTAKE IN THIS TASK'S OWN PREMISE, found by
       trying to do it.
 

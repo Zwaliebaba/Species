@@ -49,26 +49,15 @@ namespace Neuron
   };
 
 
-  signed char g_keyDeltas[KEY_MAX];
-  signed char g_keys[KEY_MAX];
-
   W32InputDriver* g_win32InputDriver = nullptr;
 
   W32InputDriver::W32InputDriver()
   {
     setName("W32");
 
-    memset(m_mb, 0, sizeof(bool) * NUM_MB);
-    memset(m_mbOld, 0, sizeof(bool) * NUM_MB);
-    memset(m_mbDeltas, 0, sizeof(int) * NUM_MB);
-
-    memset(m_mousePos, 0, sizeof(int) * NUM_AXES);
-    memset(m_mousePosOld, 0, sizeof(int) * NUM_AXES);
-    memset(m_mouseVel, 0, sizeof(int) * NUM_AXES);
-
-    memset(g_keys, 0, KEY_MAX);
-    memset(g_keyDeltas, 0, KEY_MAX);
-    memset(m_keyNewDeltas, 0, KEY_MAX);
+    // InputFrameState value-initialises every array, so there is nothing to
+    // memset. m_events starts empty.
+    m_events.reserve(64);
 
     getW32EventHandler()->AddEventProcessor(this);
 
@@ -104,11 +93,11 @@ namespace Neuron
     switch (static_cast<InputCondition>(spec.condition))
     {
     case InputCondition::COND_DOWN:
-      return (g_keyDeltas[button] == 1);
+      return (m_state.m_keyDeltas[button] == 1);
     case InputCondition::COND_UP:
-      return (g_keyDeltas[button] == -1);
+      return (m_state.m_keyDeltas[button] == -1);
     case InputCondition::COND_PRESSED:
-      return (g_keys[button] == 1);
+      return (m_state.m_keys[button] == 1);
     default:
       return false; // We should never get here!
     }
@@ -148,11 +137,11 @@ namespace Neuron
       switch (static_cast<InputCondition>(spec.condition))
       {
       case InputCondition::COND_DOWN:
-        return (m_mbDeltas[button] == 1);
+        return (m_state.m_mbDeltas[button] == 1);
       case InputCondition::COND_UP:
-        return (m_mbDeltas[button] == -1);
+        return (m_state.m_mbDeltas[button] == -1);
       case InputCondition::COND_PRESSED:
-        return (m_mb[button]);
+        return (m_state.m_mb[button]);
       default:
         return false; // We should never get here!
       }
@@ -167,13 +156,13 @@ namespace Neuron
     case InputCondition::COND_MOVED:
       if (MOUSE_MOVEMENT == spec.control_id)
       {
-        details.x = m_mouseVel[X];
-        details.y = m_mouseVel[Y];
+        details.x = m_state.m_mouseVel[X];
+        details.y = m_state.m_mouseVel[Y];
         return reading || (details.x != 0 || details.y != 0);
       }
       else if (MOUSE_WHEEL == spec.control_id)
       {
-        details.x = m_mouseVel[Z];
+        details.x = m_state.m_mouseVel[Z];
         return reading || (details.x != 0);
       }
       else
@@ -187,28 +176,44 @@ namespace Neuron
 
   bool W32InputDriver::isIdle()
   {
-    signed char keysZero[KEY_MAX];
-    bool mbZero[NUM_MB];
-    int maZero[NUM_AXES];
-    memset(keysZero, 0, KEY_MAX);
-    memset(mbZero, 0, sizeof(bool) * NUM_MB);
-    memset(maZero, 0, sizeof(int) * NUM_AXES);
+    static const InputFrameState idle;
 
-    return memcmp(keysZero, g_keys, KEY_MAX) == 0 && memcmp(keysZero, g_keyDeltas, KEY_MAX) == 0 &&
-           memcmp(mbZero, m_mb, sizeof(bool) * NUM_MB) == 0 && memcmp(maZero, m_mouseVel, sizeof(int) * NUM_AXES) == 0;
+    return memcmp(idle.m_keys, m_state.m_keys, sizeof(idle.m_keys)) == 0 &&
+           memcmp(idle.m_keyDeltas, m_state.m_keyDeltas, sizeof(idle.m_keyDeltas)) == 0 && memcmp(idle.m_mb, m_state.m_mb, sizeof(idle.m_mb)) == 0 &&
+           memcmp(idle.m_mouseVel, m_state.m_mouseVel, sizeof(idle.m_mouseVel)) == 0;
   }
 
 
   InputMode W32InputDriver::getInputMode() { return InputMode::INPUT_MODE_KEYBOARD; }
 
 
+  void W32InputDriver::OnFocusLost()
+  {
+    // Windows sends no WM_KEYUP or WM_LBUTTONUP for anything held when focus
+    // goes, so without this the game keeps believing those are down — which is
+    // what the ALT special case in the event handler used to paper over, for
+    // ALT alone.
+    //
+    // An EVENT, in the queue, in order with the messages around it. The
+    // previous version wrote release edges straight into the state and had to
+    // explain at length which array it was safe to write them into; now it is
+    // the derivation's problem, and the derivation defers focus loss behind an
+    // edge made in the same frame rather than overwriting it.
+    Enqueue(InputEventType::FocusLost, [](InputEvent&) {});
+  }
+
+
   void W32InputDriver::SetMousePosNoVelocity(int _x, int _y)
   {
-    // Warp Mouse without velocity
-    m_mousePosOld[X] = m_mousePos[X] = _x;
-    m_mousePosOld[Y] = m_mousePos[Y] = _y;
-    m_mouseVel[X] = 0;
-    m_mouseVel[Y] = 0;
+    // A warp, so the position moves and the velocity does not follow. Any
+    // MouseMove still queued would undo that by reporting travel from the OLD
+    // position, so they go: the caller has just told us where the mouse is.
+    std::erase_if(m_events, [](InputEvent const& _event) { return _event.m_type == InputEventType::MouseMove; });
+
+    m_state.m_mousePos[X] = _x;
+    m_state.m_mousePos[Y] = _y;
+    m_state.m_mouseVel[X] = 0;
+    m_state.m_mouseVel[Y] = 0;
   }
 
 
@@ -233,7 +238,7 @@ namespace Neuron
     // Check for pressed keys
     for (unsigned i = 0; i < KEY_TILDE; ++i)
     {
-      if (1 == g_keyDeltas[i] && // key was pressed
+      if (1 == m_state.m_keyDeltas[i] && // key was pressed
           strstr(getKeyNames()[i], " ") == nullptr)
       { // Key is bindable
         spec.handler_id = KEY_DRIVER;
@@ -255,20 +260,77 @@ namespace Neuron
 
   void W32InputDriver::Advance()
   {
+    // Pump first, so everything Windows has for us is in the queue, then
+    // derive one frame from it. What the frame cannot represent stays queued
+    // and is the first thing the next frame sees.
     PollForEvents();
-    memcpy(g_keyDeltas, m_keyNewDeltas, KEY_MAX);
-    memset(m_keyNewDeltas, 0, KEY_MAX);
 
-    for (unsigned i = 0; i < NUM_MB; ++i)
-    {
-      m_mbDeltas[i] = (m_mb[i] ? 1 : 0) - (m_mbOld[i] ? 1 : 0);
-      m_mbOld[i] = m_mb[i];
-    }
+    // The modifier state BEFORE the frame is derived, because
+    // ApplyConsumedEventSideEffects has to report what the modifiers were at
+    // each event rather than what they ended up as. Reading m_state afterwards
+    // would give every keystroke in the frame the same, final, answer.
+    const ModifierState modifiersAtFrameStart{m_state.m_keys[KEY_SHIFT] == 1, m_state.m_keys[KEY_CONTROL] == 1, m_state.m_keys[KEY_ALT] == 1};
 
-    for (unsigned i = 0; i < NUM_AXES; ++i)
+    const size_t consumed = DeriveFrameState(m_events.data(), m_events.size(), m_state);
+    ApplyConsumedEventSideEffects(consumed, modifiersAtFrameStart);
+    m_events.erase(m_events.begin(), m_events.begin() + static_cast<std::ptrdiff_t>(consumed));
+  }
+
+
+  // The two things a consumed event does BESIDES change the state. They are
+  // here rather than in DeriveFrameState because that function is pure -- it is
+  // what the tests exercise -- and because both of these reach outside the
+  // driver entirely.
+  void W32InputDriver::ApplyConsumedEventSideEffects(size_t _consumed, ModifierState _modifiers)
+  {
+    for (size_t i = 0; i < _consumed; ++i)
     {
-      m_mouseVel[i] = m_mousePos[i] - m_mousePosOld[i];
-      m_mousePosOld[i] = m_mousePos[i];
+      InputEvent const& event = m_events[i];
+
+      // Tracked as the walk goes, so shift-then-letter inside one frame
+      // reports the letter as shifted and the letter-then-shift case does not.
+      if (event.m_type == InputEventType::KeyDown || event.m_type == InputEventType::KeyUp)
+      {
+        const bool down = (event.m_type == InputEventType::KeyDown);
+        if (event.m_key == KEY_SHIFT)
+          _modifiers.m_shift = down;
+        else if (event.m_key == KEY_CONTROL)
+          _modifiers.m_control = down;
+        else if (event.m_key == KEY_ALT)
+          _modifiers.m_alt = down;
+      }
+      else if (event.m_type == InputEventType::FocusLost)
+      {
+        _modifiers = ModifierState{};
+      }
+
+      switch (event.m_type)
+      {
+      case InputEventType::MouseButtonDown:
+        // Capture at frame time rather than message time costs nothing: this
+        // runs immediately after the pump, so no further message is delivered
+        // in between, and capture only affects messages still to come.
+        g_windowManager->CaptureMouse();
+        break;
+
+      case InputEventType::MouseButtonUp:
+        g_windowManager->UncaptureMouse();
+        break;
+
+      case InputEventType::KeyDown:
+        // Eclipse's keyboard hook, with the modifier state AS OF THIS EVENT,
+        // which is why it is called from the loop rather than once afterwards.
+        //
+        // NOT for a system key: the old window procedure hooked WM_KEYDOWN and
+        // not WM_SYSKEYDOWN, so Eclipse has never been told about Alt+anything
+        // and this is not the task that changes that.
+        if (!event.m_systemKey)
+          EclUpdateKeyboard(event.m_key, _modifiers.m_shift, _modifiers.m_control, _modifiers.m_alt);
+        break;
+
+      default:
+        break;
+      }
     }
   }
 
@@ -276,111 +338,110 @@ namespace Neuron
   void W32InputDriver::PollForEvents() { g_windowManager->NastyPollForMessages(); }
 
 
-  LRESULT CALLBACK W32InputDriver::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+  // ENQUEUE ONLY. Nothing here reads or writes the frame state, calls into
+  // Eclipse, or touches the window -- all of that moved to Advance, where it
+  // happens in event order with everything else. That is what makes a key
+  // pressed and released between two frames survive: two messages become two
+  // records rather than one overwriting the other.
+  //
+  // hWnd is unused because this driver never needed it; the event handler owns
+  // the window.
+  LRESULT CALLBACK W32InputDriver::WndProc(HWND, UINT message, WPARAM wParam, LPARAM lParam)
   {
     switch (message)
     {
     case WM_LBUTTONDOWN:
-      m_mb[L] = true;
-      g_windowManager->CaptureMouse();
+      Enqueue(InputEventType::MouseButtonDown, [](InputEvent& _e) { _e.m_button = L; });
       break;
     case WM_LBUTTONUP:
-      m_mb[L] = false;
-      g_windowManager->UncaptureMouse();
+      Enqueue(InputEventType::MouseButtonUp, [](InputEvent& _e) { _e.m_button = L; });
       break;
     case WM_MBUTTONDOWN:
-      m_mb[M] = true;
-      g_windowManager->CaptureMouse();
+      Enqueue(InputEventType::MouseButtonDown, [](InputEvent& _e) { _e.m_button = M; });
       break;
     case WM_MBUTTONUP:
-      m_mb[M] = false;
-      g_windowManager->UncaptureMouse();
+      Enqueue(InputEventType::MouseButtonUp, [](InputEvent& _e) { _e.m_button = M; });
       break;
     case WM_RBUTTONDOWN:
-      m_mb[R] = true;
-      g_windowManager->CaptureMouse();
+      Enqueue(InputEventType::MouseButtonDown, [](InputEvent& _e) { _e.m_button = R; });
       break;
     case WM_RBUTTONUP:
-      m_mb[R] = false;
-      g_windowManager->UncaptureMouse();
+      Enqueue(InputEventType::MouseButtonUp, [](InputEvent& _e) { _e.m_button = R; });
       break;
 
-    case 0x020A: // case WM_MOUSEWHEEL:
+    case WM_MOUSEWHEEL:
     {
-      int move = (short)HIWORD(wParam) / 120;
-      m_mousePos[Z] += move;
+      // The RAW delta. Turning it into detents needs the remainder carried
+      // between messages, and that accumulation is part of the derivation so
+      // that it can be tested — a high-resolution wheel sends fractions of
+      // WHEEL_DELTA and dividing each one on its own threw all of them away.
+      const int raw = GET_WHEEL_DELTA_WPARAM(wParam);
+      Enqueue(InputEventType::Wheel, [raw](InputEvent& _e) { _e.m_wheelDelta = raw; });
       break;
     }
 
     case WM_MOUSEMOVE:
     {
-      short newPosX = lParam & 0xFFFF;
-      short newPosY = short(lParam >> 16);
-      m_mousePos[X] = newPosX;
-      m_mousePos[Y] = newPosY;
+      const short newPosX = lParam & 0xFFFF;
+      const short newPosY = short(lParam >> 16);
+      Enqueue(InputEventType::MouseMove,
+              [newPosX, newPosY](InputEvent& _e)
+              {
+                _e.m_x = newPosX;
+                _e.m_y = newPosY;
+              });
       break;
     }
 
-    case WM_HOTKEY:
-      if (wParam == 0)
-      {
-        g_keys[KEY_TAB] = 1;
-        m_keyNewDeltas[KEY_TAB] = 1;
-      }
+    case WM_CHAR:
+    {
+      // Windows has already applied the keyboard layout and the dead keys, so
+      // this is the character the user typed rather than a guess from a virtual
+      // key code. Nothing consumes it yet — T6 routes it to text input — but it
+      // is produced here because this is the message that carries it.
+      const unsigned int character = static_cast<unsigned int>(wParam);
+      Enqueue(InputEventType::Char, [character](InputEvent& _e) { _e.m_char = character; });
       break;
+    }
 
     case WM_SYSKEYUP:
-      if (wParam == KEY_ALT)
-      {
-        // ALT pressed
-        g_keys[wParam] = 0;
-      }
-      else
-      {
-        g_keys[wParam] = 0;
-      }
-      break;
-
-    case WM_SYSKEYDOWN:
-    {
-      int flags = (short)HIWORD(lParam);
-      if (wParam == KEY_ALT)
-      {
-        g_keys[wParam] = 1;
-      }
-      else if (flags & KF_ALTDOWN)
-      {
-        m_keyNewDeltas[wParam] = 1;
-        g_keys[wParam] = 1;
-        if (wParam == KEY_F4)
-        {
-          g_requestQuit = true;
-        }
-      }
-      break;
-    }
-
     case WM_KEYUP:
     {
-      DEBUG_ASSERT(wParam >= 0 && wParam < KEY_MAX);
-      if (g_keys[wParam] != 0)
-      {
-        m_keyNewDeltas[wParam] = -1;
-        g_keys[wParam] = 0;
-      }
+      const int key = static_cast<int>(wParam);
+      const bool systemKey = (message == WM_SYSKEYUP);
+      Enqueue(InputEventType::KeyUp,
+              [key, systemKey](InputEvent& _e)
+              {
+                _e.m_key = key;
+                _e.m_systemKey = systemKey;
+              });
       break;
     }
 
+    case WM_SYSKEYDOWN:
     case WM_KEYDOWN:
     {
-      DEBUG_ASSERT(wParam >= 0 && wParam < KEY_MAX);
+      const int key = static_cast<int>(wParam);
 
-      if (g_keys[wParam] != 1)
-      {
-        m_keyNewDeltas[wParam] = 1;
-        g_keys[wParam] = 1;
-      }
-      EclUpdateKeyboard(wParam, g_keys[KEY_SHIFT] == 1, g_keys[KEY_CONTROL] == 1, g_keys[KEY_ALT] == 1);
+      // Bit 30 of lParam is set when the key was ALREADY down, which is
+      // Windows auto-repeating. The old pipeline had no way to express the
+      // difference and treated every repeat as a fresh press.
+      const bool repeat = (lParam & (1 << 30)) != 0;
+
+      // Alt-F4 still quits, and it is still handled here rather than as a
+      // binding: it must work with the queue full, the frame loop stalled, or
+      // the game refusing to advance.
+      if (message == WM_SYSKEYDOWN && key == KEY_F4 && (HIWORD(lParam) & KF_ALTDOWN))
+        g_requestQuit = true;
+
+      const bool systemKey = (message == WM_SYSKEYDOWN);
+      Enqueue(InputEventType::KeyDown,
+              [key, repeat, systemKey](InputEvent& _e)
+              {
+                _e.m_key = key;
+                _e.m_repeat = repeat;
+                _e.m_systemKey = systemKey;
+              });
       break;
     }
 

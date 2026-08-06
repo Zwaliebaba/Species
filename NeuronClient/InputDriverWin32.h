@@ -2,17 +2,23 @@
 
 
 #include <string>
+#include <vector>
 
 #include "InputDriverSimple.h"
+#include "InputEvents.h"
 #include "KeyDefs.h"
 #include "Win32EventProc.h"
-
-#define NUM_MB 3
-#define NUM_AXES 3
 
 
 namespace Neuron
 {
+  // A frame's worth of messages is a handful. This bound exists so a window
+  // flooded while the frame loop is stalled — a breakpoint, a long load —
+  // cannot grow the queue without limit. Dropping the OLDEST would reorder
+  // edges, so the NEWEST are dropped: the state stays consistent with what was
+  // delivered, it just stops partway.
+  constexpr size_t MaxQueuedEvents = 4096;
+
   class W32InputDriver : public SimpleInputDriver, W32EventProcessor
   {
     private:
@@ -74,15 +80,53 @@ namespace Neuron
       // Warp the mouse to a particular position and pretend it has always been there
       void SetMousePosNoVelocity(int _x, int _y);
 
+      // Release every key and button this driver believes is held, reporting an
+      // up edge for each. Called when the window loses focus, because Windows
+      // sends no release for anything held at that moment. Enqueues a FocusLost
+      // event like every other message; the release edges are produced by the
+      // derivation, in frame order with everything else.
+      void OnFocusLost() override;
+
     private:
-      bool m_mb[NUM_MB];      // Mouse button states from this frame
-      bool m_mbOld[NUM_MB];   // Mouse button states from last frame
-      int m_mbDeltas[NUM_MB]; // Mouse button diffs
+      // THE MESSAGES, NOT THE STATE. WndProc appends here and does nothing
+      // else, so two messages about the same key in one frame are two records
+      // rather than one overwriting the other. Advance drains what a frame can
+      // represent and leaves the rest; see DeriveFrameState.
+      std::vector<InputEvent> m_events;
 
-      int m_mousePos[NUM_AXES];    // X Y Z
-      int m_mousePosOld[NUM_AXES]; // X Y Z
-      int m_mouseVel[NUM_AXES];    // X Y Z
+      // Everything the bindings read, rebuilt from m_events once per frame.
+      // These used to be the file-scope g_keys and g_keyDeltas plus six driver
+      // arrays; nothing outside this class reads them now.
+      InputFrameState m_state;
 
-      signed char m_keyNewDeltas[KEY_MAX];
+      // Shift, control and alt as they were at one particular moment. Passed
+      // through the side-effect walk rather than read off the frame state,
+      // because the frame state is what the modifiers ended up as and Eclipse
+      // needs what they were when each key was struck.
+      struct ModifierState
+      {
+          bool m_shift{false};
+          bool m_control{false};
+          bool m_alt{false};
+      };
+
+      // Applies the side effects of the events a frame consumed -- mouse
+      // capture and the Eclipse keyboard notification. Separate from
+      // DeriveFrameState so that stays pure and testable.
+      void ApplyConsumedEventSideEffects(size_t _consumed, ModifierState _modifiers);
+
+      // Appends one event, or drops it if the queue has hit its bound. The
+      // callable fills in the fields the type uses; everything else stays
+      // zero. Templated so each call site's lambda inlines away.
+      template <typename Fill> void Enqueue(InputEventType _type, Fill _fill)
+      {
+        if (m_events.size() >= MaxQueuedEvents)
+          return;
+
+        InputEvent event;
+        event.m_type = _type;
+        _fill(event);
+        m_events.push_back(event);
+      }
   };
 } // namespace Neuron

@@ -25,16 +25,10 @@
     <ClCompile Include="SoundInstance.cpp">
       <Filter>Audio</Filter>
     </ClCompile>
-    <ClCompile Include="SoundLibrary2d.cpp">
-      <Filter>Audio</Filter>
-    </ClCompile>
     <ClCompile Include="SoundLibrary3d.cpp">
       <Filter>Audio</Filter>
     </ClCompile>
-    <ClCompile Include="SoundLibrary3dDSound.cpp">
-      <Filter>Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="SoundLibrary3dSoftware.cpp">
+    <ClCompile Include="SoundLibraryXAudio2.cpp">
       <Filter>Audio</Filter>
     </ClCompile>
     <ClCompile Include="SoundParameter.cpp">
@@ -67,9 +61,6 @@
     <ClCompile Include="InputDriver.cpp">
       <Filter>Input</Filter>
     </ClCompile>
-    <ClCompile Include="InputDriverAlias.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
     <ClCompile Include="InputDriverChord.cpp">
       <Filter>Input</Filter>
     </ClCompile>
@@ -82,34 +73,13 @@
     <ClCompile Include="InputDriverInvert.cpp">
       <Filter>Input</Filter>
     </ClCompile>
-    <ClCompile Include="InputDriverPipe.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
-    <ClCompile Include="InputDriverPrefs.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
     <ClCompile Include="InputDriverSimple.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
-    <ClCompile Include="InputDriverValue.cpp">
       <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="InputDriverWin32.cpp">
       <Filter>Input</Filter>
     </ClCompile>
-    <ClCompile Include="InputFilter.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
-    <ClCompile Include="InputFilterDirection.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
-    <ClCompile Include="InputFilterWithDelta.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
-    <ClCompile Include="InputFilterManager.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
-    <ClCompile Include="InputFilterSpec.cpp">
+    <ClCompile Include="InputEvents.cpp">
       <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="InputSpec.cpp">
@@ -176,16 +146,10 @@
     <ClInclude Include="SoundInstance.h">
       <Filter>Audio</Filter>
     </ClInclude>
-    <ClInclude Include="SoundLibrary2d.h">
-      <Filter>Audio</Filter>
-    </ClInclude>
     <ClInclude Include="SoundLibrary3d.h">
       <Filter>Audio</Filter>
     </ClInclude>
-    <ClInclude Include="SoundLibrary3dDSound.h">
-      <Filter>Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="SoundLibrary3dSoftware.h">
+    <ClInclude Include="SoundLibraryXAudio2.h">
       <Filter>Audio</Filter>
     </ClInclude>
     <ClInclude Include="SoundParameter.h">
@@ -224,9 +188,6 @@
     <ClInclude Include="InputDriver.h">
       <Filter>Input</Filter>
     </ClInclude>
-    <ClInclude Include="InputDriverAlias.h">
-      <Filter>Input</Filter>
-    </ClInclude>
     <ClInclude Include="InputDriverChord.h">
       <Filter>Input</Filter>
     </ClInclude>
@@ -239,37 +200,13 @@
     <ClInclude Include="InputDriverInvert.h">
       <Filter>Input</Filter>
     </ClInclude>
-    <ClInclude Include="InputDriverPipe.h">
-      <Filter>Input</Filter>
-    </ClInclude>
-    <ClInclude Include="InputDriverPrefs.h">
-      <Filter>Input</Filter>
-    </ClInclude>
     <ClInclude Include="InputDriverSimple.h">
-      <Filter>Input</Filter>
-    </ClInclude>
-    <ClInclude Include="InputDriverValue.h">
-      <Filter>Input</Filter>
-    </ClInclude>
-    <ClInclude Include="InputDriverValues.inc">
       <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="InputDriverWin32.h">
       <Filter>Input</Filter>
     </ClInclude>
-    <ClInclude Include="InputFilter.h">
-      <Filter>Input</Filter>
-    </ClInclude>
-    <ClInclude Include="InputFilterDirection.h">
-      <Filter>Input</Filter>
-    </ClInclude>
-    <ClInclude Include="InputFilterWithDelta.h">
-      <Filter>Input</Filter>
-    </ClInclude>
-    <ClInclude Include="InputFilterManager.h">
-      <Filter>Input</Filter>
-    </ClInclude>
-    <ClInclude Include="InputFilterSpec.h">
+    <ClInclude Include="InputEvents.h">
       <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="InputSpec.h">

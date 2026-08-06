@@ -35,9 +35,15 @@ namespace NeuronClientTests
       {
         // The last DEF_CONTROL_TYPE line. Together with the test above, a
         // table that had drifted by one row would fail here.
-        std::optional<ControlType> const id = ControlBindings::getControlID("ControllerPlugged");
+        //
+        // This used to name ControllerPlugged, which was the last row until
+        // input-native-events T2 deleted the gamepad pair. If you remove the
+        // last row again, repoint this at the new one rather than deleting the
+        // test — what it pins is that the generated table and the enum agree
+        // at BOTH ends, and only the pair of tests together does that.
+        std::optional<ControlType> const id = ControlBindings::getControlID("IconsTaskManagerQuickUnitRight");
         Assert::IsTrue(id.has_value());
-        Assert::IsTrue(ControlType::ControlControllerPlugged == *id);
+        Assert::IsTrue(ControlType::ControlIconsTaskManagerQuickUnitRight == *id);
       }
 
       TEST_METHOD(NameMatchingIsCaseInsensitive)

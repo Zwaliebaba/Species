@@ -134,8 +134,6 @@ using namespace Neuron;
 #define _WIN32_WINDOWS 0x0500 // for IsDebuggerPresent
 #include "windows.h"
 
-#define HAVE_DSOUND
-
 #include <GL/gl.h>
 #include <GL/glu.h>
 

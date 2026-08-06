@@ -690,18 +690,19 @@ void TeamControls::Advance()
   InputDetails details;
   if (g_inputManager->controlEvent(ControlType::ControlUnitMove, details))
   {
-    DirectX::XMFLOAT3 const controlVector = g_camera->GetControlVector();
-
-    DirectX::XMVECTOR const right = DirectX::XMLoadFloat3(&controlVector);
-    DirectX::XMVECTOR const front = DirectX::XMVector3Cross(DirectX::g_XMIdentityR1, DirectX::XMVectorNegate(right));
-
-    DirectX::XMFLOAT3 waypoint;
-    DirectX::XMStoreFloat3(&waypoint,
-                           DirectX::XMVectorMultiplyAdd(front, DirectX::XMVectorReplicate(-details.y), DirectX::XMVectorScale(right, -details.x)));
-
+    // THE WAYPOINT CALCULATION THAT USED TO BE HERE IS GONE WITH ITS
+    // DESTINATION. It projected details.x and details.y onto the camera's
+    // control vector and stored the result in m_directUnitMoveDx/Dy — two
+    // TeamControls members that NetworkUpdate's Alive codec never wrote, so
+    // InsertionSquad read zeros for them on every machine, including this one.
+    // Every letter is serialised, single player included, so there was no path
+    // by which the value survived. Only m_directUnitMove crosses the wire, and
+    // it is still set here.
+    //
+    // g_camera is therefore no longer read on this line. That matters beyond
+    // tidiness: this runs while building the 10Hz IAmAlive payload, and a
+    // camera read there is a per-machine value feeding a simulation input.
     m_directUnitMove = true;
-    m_directUnitMoveDx = waypoint.x;
-    m_directUnitMoveDy = waypoint.z;
 
     g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondMoveCameraOrUnit);
   }
@@ -709,9 +710,10 @@ void TeamControls::Advance()
   if (g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected, details) &&
       !g_inputManager->controlEvent(ControlType::ControlCameraRotate))
   {
+    // details.x and details.y were stored in two more never-serialised members
+    // that NOTHING read, on either side of the wire. Pure dead stores; the flag
+    // is the whole payload.
     m_primaryFireDirected = true;
-    m_directUnitFireDx = details.x;
-    m_directUnitFireDy = details.y;
 
     g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondSquaddieFire);
   }

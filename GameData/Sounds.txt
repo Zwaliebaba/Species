@@ -433,12 +433,10 @@ ENTITY Spider
 		VOLUME             PARAMETER TypeFixedValue       10.00  UpdateConstantly
 		FREQUENCY          PARAMETER TypeLinked            1.20     0.58    34.40     0.82     0.00  Velocity  UpdateConstantly
 		RELEASE            PARAMETER TypeFixedValue       16.65  UpdateConstantly
-		EFFECT             DSound_Echo
+		EFFECT             Echo
 			WetDryMix          PARAMETER TypeFixedValue       50.00  UpdateConstantly
-			Feedback           PARAMETER TypeFixedValue       50.00  UpdateConstantly
-			LeftDelay          PARAMETER TypeFixedValue      207.35  UpdateConstantly
-			RightDelay         PARAMETER TypeFixedValue      194.45  UpdateConstantly
-			PanDelay           PARAMETER TypeFixedValue        0.00  UpdateConstantly
+			Delay              PARAMETER TypeFixedValue      207.35  UpdateConstantly
+			Attenuation        PARAMETER TypeFixedValue       50.00  UpdateConstantly
 		END
 	END
 	EVENT Attack              
@@ -601,12 +599,10 @@ ENTITY Citizen
 		VOLUME             PARAMETER TypeFixedValue        9.03  UpdateConstantly
 		FREQUENCY          PARAMETER TypeFixedValue        0.77  UpdateConstantly
 		RELEASE            PARAMETER TypeFixedValue       11.81  UpdateConstantly
-		EFFECT             DSound_Echo
+		EFFECT             Echo
 			WetDryMix          PARAMETER TypeFixedValue       50.00  UpdateConstantly
-			Feedback           PARAMETER TypeFixedValue       50.00  UpdateConstantly
-			LeftDelay          PARAMETER TypeFixedValue      500.00  UpdateConstantly
-			RightDelay         PARAMETER TypeFixedValue      500.00  UpdateConstantly
-			PanDelay           PARAMETER TypeFixedValue        0.00  UpdateConstantly
+			Delay              PARAMETER TypeFixedValue      500.00  UpdateConstantly
+			Attenuation        PARAMETER TypeFixedValue       50.00  UpdateConstantly
 		END
 	END
 	EVENT Attack              
@@ -662,12 +658,10 @@ ENTITY Officer
 		VOLUME             PARAMETER TypeFixedValue       10.00  UpdateConstantly
 		FREQUENCY          PARAMETER TypeFixedValue        1.02  UpdateConstantly
 		RELEASE            PARAMETER TypeFixedValue       10.26  UpdateConstantly
-		EFFECT             DSound_Echo
+		EFFECT             Echo
 			WetDryMix          PARAMETER TypeFixedValue       50.00  UpdateConstantly
-			Feedback           PARAMETER TypeFixedValue       50.00  UpdateConstantly
-			LeftDelay          PARAMETER TypeFixedValue      104.17  UpdateConstantly
-			RightDelay         PARAMETER TypeFixedValue      500.00  UpdateConstantly
-			PanDelay           PARAMETER TypeFixedValue        0.00  UpdateConstantly
+			Delay              PARAMETER TypeFixedValue      104.17  UpdateConstantly
+			Attenuation        PARAMETER TypeFixedValue       50.00  UpdateConstantly
 		END
 	END
 	EVENT SetOrderFollow      
@@ -1267,7 +1261,8 @@ BUILDING Mine
 		MINDISTANCE        150.00
 		VOLUME             PARAMETER TypeFixedValue        8.97  UpdateConstantly
 		FREQUENCY          PARAMETER TypeFixedValue        0.95  UpdateOncePerLoop
-		EFFECT             DSound_I3DL2Reverb
+		EFFECT             I3DL2Reverb
+			WetDryMix          PARAMETER TypeFixedValue      100.00  UpdateConstantly
 			Room               PARAMETER TypeFixedValue     -193.55  UpdateConstantly
 			RoomHF             PARAMETER TypeFixedValue     -100.00  UpdateOncePerLoop
 			RoomRolloffFactor  PARAMETER TypeFixedValue        0.00  UpdateConstantly
@@ -1280,7 +1275,6 @@ BUILDING Mine
 			Diffusion          PARAMETER TypeFixedValue      100.00  UpdateConstantly
 			Density            PARAMETER TypeFixedValue      100.00  UpdateConstantly
 			HFReference        PARAMETER TypeFixedValue     5000.00  UpdateConstantly
-			Quality            PARAMETER TypeFixedValue        2.00  UpdateConstantly
 		END
 	END
 END
@@ -1439,12 +1433,10 @@ BUILDING BlueprintStore
 		MINDISTANCE        100.00
 		VOLUME             PARAMETER TypeFixedValue        9.00  UpdateConstantly
 		FREQUENCY          PARAMETER TypeFixedValue        0.42  UpdateConstantly
-		EFFECT             DSound_Echo
+		EFFECT             Echo
 			WetDryMix          PARAMETER TypeFixedValue       50.00  UpdateConstantly
-			Feedback           PARAMETER TypeFixedValue       24.19  UpdateConstantly
-			LeftDelay          PARAMETER TypeFixedValue      194.45  UpdateConstantly
-			RightDelay         PARAMETER TypeFixedValue      291.18  UpdateConstantly
-			PanDelay           PARAMETER TypeFixedValue        0.00  UpdateConstantly
+			Delay              PARAMETER TypeFixedValue      194.45  UpdateConstantly
+			Attenuation        PARAMETER TypeFixedValue       24.19  UpdateConstantly
 		END
 	END
 END
@@ -1500,12 +1492,10 @@ BUILDING Spam
 		VOLUME             PARAMETER TypeFixedValue       10.00  UpdateConstantly
 		FREQUENCY          PARAMETER TypeFixedValue        1.67  UpdateConstantly
 		RELEASE            PARAMETER TypeFixedValue       13.16  UpdateConstantly
-		EFFECT             DSound_Echo
+		EFFECT             Echo
 			WetDryMix          PARAMETER TypeFixedValue       50.00  UpdateConstantly
-			Feedback           PARAMETER TypeFixedValue       50.00  UpdateConstantly
-			LeftDelay          PARAMETER TypeFixedValue      500.00  UpdateConstantly
-			RightDelay         PARAMETER TypeFixedValue      500.00  UpdateConstantly
-			PanDelay           PARAMETER TypeFixedValue        0.00  UpdateConstantly
+			Delay              PARAMETER TypeFixedValue      500.00  UpdateConstantly
+			Attenuation        PARAMETER TypeFixedValue       50.00  UpdateConstantly
 		END
 	END
 	EVENT Attack              
@@ -1527,12 +1517,10 @@ BUILDING Spam
 		MINDISTANCE        200.00
 		VOLUME             PARAMETER TypeFixedValue       10.00  UpdateConstantly
 		FREQUENCY          PARAMETER TypeRangedRandom      0.92     1.21     0.00  UpdateOncePerLoop
-		EFFECT             DSound_Echo
+		EFFECT             Echo
 			WetDryMix          PARAMETER TypeFixedValue       50.00  UpdateConstantly
-			Feedback           PARAMETER TypeFixedValue       50.00  UpdateConstantly
-			LeftDelay          PARAMETER TypeFixedValue      500.00  UpdateConstantly
-			RightDelay         PARAMETER TypeFixedValue      500.00  UpdateConstantly
-			PanDelay           PARAMETER TypeFixedValue        0.00  UpdateConstantly
+			Delay              PARAMETER TypeFixedValue      500.00  UpdateConstantly
+			Attenuation        PARAMETER TypeFixedValue       50.00  UpdateConstantly
 		END
 	END
 	EVENT CreateResearch      
@@ -1816,11 +1804,20 @@ OTHER Grenade
 		MINDISTANCE        200.00
 		VOLUME             PARAMETER TypeFixedValue       10.00  UpdateConstantly
 		RELEASE            PARAMETER TypeFixedValue       10.00  UpdateConstantly
-		EFFECT             DSound_WavesReverb
-			InGain             PARAMETER TypeFixedValue       -0.31  UpdateConstantly
-			ReverbMix          PARAMETER TypeFixedValue       -8.98  UpdateConstantly
-			ReverbTime         PARAMETER TypeFixedValue     3000.00  UpdateConstantly
-			HighFreqRTRatio    PARAMETER TypeFixedValue        0.65  UpdateConstantly
+		EFFECT             I3DL2Reverb
+			WetDryMix          PARAMETER TypeFixedValue       35.56  UpdateConstantly
+			Room               PARAMETER TypeFixedValue    -1000.00  UpdateConstantly
+			RoomHF             PARAMETER TypeFixedValue     -100.00  UpdateConstantly
+			RoomRolloffFactor  PARAMETER TypeFixedValue        0.00  UpdateConstantly
+			DecayTime          PARAMETER TypeFixedValue        3.00  UpdateConstantly
+			DecayHFRatio       PARAMETER TypeFixedValue        0.65  UpdateConstantly
+			Reflections        PARAMETER TypeFixedValue    -2602.00  UpdateConstantly
+			ReflectionsDelay   PARAMETER TypeFixedValue        0.01  UpdateConstantly
+			Reverb             PARAMETER TypeFixedValue      200.00  UpdateConstantly
+			ReverbDelay        PARAMETER TypeFixedValue        0.01  UpdateConstantly
+			Diffusion          PARAMETER TypeFixedValue      100.00  UpdateConstantly
+			Density            PARAMETER TypeFixedValue      100.00  UpdateConstantly
+			HFReference        PARAMETER TypeFixedValue     5000.00  UpdateConstantly
 		END
 	END
 	EVENT Create              

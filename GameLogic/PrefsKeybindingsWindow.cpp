@@ -7,7 +7,6 @@
 #include "TextRenderer.h"
 #include "LanguageTable.h"
 #include "TextStreamReaders.h"
-#include "Win32EventHandler.h"
 #include "ControlTypes.h"
 #include "FilePaths.h"
 
@@ -141,17 +140,6 @@ namespace Species
         g_prefsManager->SetInt(CONTROL_METHOD, parent->m_controlMethod);
 
         g_appCommands->ReplaceTaskManagerInterface();
-
-
-        /*W32EventHandler *w = getW32EventHandler();
-        if ( w ) {
-          w->UnbindAltTab();
-
-              if( parent->m_controlMethod == 0 )
-            {
-              w->BindAltTab();
-          }
-        }*/
 
         g_prefsManager->Save();
         prefsMan.Save();

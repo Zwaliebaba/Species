@@ -1,0 +1,809 @@
+# Schema: docs/TASK_DAG.md    Validate: python3 tools/check_task_dag.py
+
+plan: input-native-events
+title: Event-driven native input - OS events in, subscriptions for the UI, one sampled view for the game
+summary: >
+  Mouse and keyboard are already native Win32 messages - there is no
+  DirectInput anywhere - but the pipeline flattens those messages into polled
+  state and then re-derives events from it twice: ControlBindings turns
+  per-frame deltas back into down/up edges, and EclUpdateMouse
+  (Eclipse.cpp:49-120) synthesises MouseDown/MouseUp widget calls from polled
+  booleans. Information is lost each way - a key pressed and released within
+  one frame vanishes (the m_keyNewDeltas overwrite, InputDriverWin32.cpp:368
+  and :380), character identity and key repeat are discarded (no WM_CHAR, so
+  text input guesses from VK codes and breaks on non-US layouts), and
+  suppressEvent exists because polling has no way to say "the UI took that
+  click".
+
+  The owner directed the target on 2026-08-06: an event-driven design where
+  windows and buttons subscribe to what they need. The design honours that
+  with one deliberate boundary, stated here so no task drifts across it: THE
+  SIMULATION DOES NOT SUBSCRIBE. Lockstep determinism requires sim input to
+  flow only through TeamControls into the 10Hz IAmAlive letter; an input
+  handler that mutates game state directly is a desync generator. So events
+  drive the UI and discrete actions, and a per-frame SampledInput snapshot -
+  built FROM the same event stream - serves the camera, unit steering and
+  TeamControls. controlEvent() is reimplemented over the snapshot as a
+  compatibility shim, which is what lets 156 call sites across 29 files keep
+  compiling and migrate opportunistically instead of in one unreviewable diff.
+
+  Measured facts this plan is scoped from (2026-08-06): 8 drivers are
+  registered (Main.cpp:812-820); InputDriverPipe is NOT among them and the
+  InputFilter* family serves only it. The binding data uses conjoin (&&),
+  invert (not), idle, and chord (one line - InputPreferences.txt:118, key
+  control ++ key c) - so Chord STAYS - and never uses the value, alias or pref
+  tokens. 69 XInput lines in InputPreferences.txt fail to parse at every
+  startup because no XInput driver exists; INPUT_MODE_GAMEPAD is never
+  produced, so SwitchTaskManagerForX360Controller (Main.cpp:645) and the
+  controller-unplugged dialog pair in HandleCommonConditions cannot fire; and
+  TeamControls carries four gamepad delta ints that never cross the wire
+  (NetworkUpdate serialises the flags word only) yet are still read by
+  InsertionSquad.cpp:322. The gamepad may return one day - it re-enters as a
+  new event source; the InputMode enum stays, every dead consumer goes.
+
+  KEEP, explicitly: the InputSpec/ControlBindings architecture and its prefs
+  files - that is the user rebinding system and it works; the ControlMethod
+  preference and the gestures task manager - that is a mouse-interface choice,
+  not gamepad residue (TaskManagerInterface.cpp:153 and the keybindings window
+  use it); Conjoin, Invert, Idle and Chord drivers.
+
+  ORDERING vs THE OTHER PLANS: no blocked_by edges. T1, T2 and T8 touch
+  Species/Main.cpp, which sound-xaudio2 T8 and network-transport T9 also name
+  - do not run those concurrently. T3 touches NeuronCore/TeamControls.h, which
+  the network plan's codec tasks read but do not modify - no ordering, just do
+  not run T3 concurrently with network-transport T1.
+
+tasks:
+  - id: T1
+    title: Delete the unregistered and data-unused input drivers
+    intent: >
+      InputDriverPipe is never registered, the InputFilter family exists only
+      to serve it, and no line of binding data uses the value, alias or pref
+      tokens. Code that cannot run teaches wrong lessons about what the input
+      system needs to support; it goes before the redesign starts so the
+      redesign is sized against reality.
+    project: NeuronClient
+    depends_on: []
+    files:
+      - NeuronClient/InputDriverPipe.h
+      - NeuronClient/InputDriverPipe.cpp
+      - NeuronClient/InputFilter.h
+      - NeuronClient/InputFilter.cpp
+      - NeuronClient/InputFilterDirection.h
+      - NeuronClient/InputFilterDirection.cpp
+      - NeuronClient/InputFilterManager.h
+      - NeuronClient/InputFilterManager.cpp
+      - NeuronClient/InputFilterSpec.h
+      - NeuronClient/InputFilterSpec.cpp
+      - NeuronClient/InputFilterWithDelta.h
+      - NeuronClient/InputFilterWithDelta.cpp
+      - NeuronClient/InputDriverValue.h
+      - NeuronClient/InputDriverValue.cpp
+      - NeuronClient/InputDriverValues.inc
+      - NeuronClient/InputDriverAlias.h
+      - NeuronClient/InputDriverAlias.cpp
+      - NeuronClient/InputDriverPrefs.h
+      - NeuronClient/InputDriverPrefs.cpp
+      - NeuronClient/Input.cpp
+      # Declares InputDetailsList, whose only consumer is the filter family.
+      # Added to the list during the work, per docs/TASK_DAG.md - a file list
+      # is written from where a thing is declared and the work is wherever it
+      # is named.
+      - NeuronClient/InputTypes.h
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
+      - Species/Main.cpp
+    acceptance:
+      - The audit is re-run and recorded in notes before deleting - grep the value/alias/pref tokens over GameData/Input and grep for programmatic InputSpec construction naming those drivers; both must be zero
+      - The Pipe, Value, Alias and Prefs drivers and the five InputFilter files are gone from disk and vcxproj; Main.cpp registers W32, Conjoin, Chord, Invert and Idle
+      - Chord, Conjoin, Invert and Idle demonstrably still parse - the bindings file loads with zero parse errors from those lines
+      - check_project_files passes
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: done
+    notes: |
+      Landed 2026-08-06. CI green at 7e7b57d, first round: 19 files and 1210
+      lines gone, and the tree still builds, links and passes the suite. The
+      build and test verify commands were run by CI rather than locally.
+
+      THE AUDIT, re-run 2026-08-06 before anything was deleted, as the first
+      acceptance criterion requires.
+
+      Data. Every binding right-hand side across InputPreferences.txt and both
+      Keyboards/*.txt files, counted by leading token: key 99, XInput 64,
+      mouse 23, idle 1, plus 18 icon paths on ~ lines. A whole-word grep for
+      value, alias, pref and pipe over the same files returns NOTHING - not as
+      a leading token, not anywhere. The combinators do not appear as leading
+      tokens because they scan for their operator mid-spec, and all three are
+      present in the data: && (Conjoin) and not (Invert) on
+      UnitSetTarget/UnitSecondaryFireTarget, ++ (Chord) on
+      GesturesTaskManagerEndTask, and idle on StopAttractMode.
+
+      Code. The only callers that build a spec from a string are the three
+      surviving combinators (recursing into parseInputSpec*) and
+      PrefsKeybindingsWindow's ApplyKeybindingsButton. That last one was the
+      one worth checking, and it is safe: its val comes from
+      m_bindings[i]->pref, which is an InputDescription produced by
+      getInputDescription - "key a pressed", "mouse left down" - never a
+      driver keyword. Every other mention of the four deleted classes was
+      inside their own files or the three addDriver lines in Main.cpp.
+
+      A FINDING THAT STRENGTHENS THE CASE. ValueInputDriver could never have
+      parsed its own syntax: its guard reads
+      `if (tokens.length() < idx + 1 || stricmp(tokens[idx++], "value") == 0)
+      return state;` - it returns FAILURE when the first token IS "value".
+      So a "value ..." spec was always rejected, and what it actually accepted
+      was a bare value name with no driver prefix, reachable only after every
+      other driver had refused. It was not unused-but-working; it was
+      inverted. Nothing in the data reached it either way.
+
+      InputDetailsList and InputDetailsPtr went too. Both were declared in
+      InputTypes.h and named ONLY by the deleted files - the two filter()
+      overloads and InputFilterWithDelta's history buffers - so the deletion
+      orphaned them. <memory> and <vector> stay in that header: nothing in it
+      needs them now, but roughly twenty files include it and some rely on the
+      transitive include, which is not a trade worth a build round.
+
+  - id: T2
+    title: Delete the gamepad vestige - dead switch, dead dialogs, 69 dead binding lines
+    intent: >
+      No driver can produce INPUT_MODE_GAMEPAD, so everything conditioned on it
+      is unreachable, and the 69 XInput binding lines cost a parse failure each
+      at every startup. Deleting the vestige - not the InputMode enum - leaves
+      a clean seat for a future controller as a new event source.
+    project: Species
+    # The edge to T1 is file-collision serialisation over Species/Main.cpp,
+    # not a logical dependency - docs/TASK_DAG.md, Waves and concurrency.
+    depends_on: [T1]
+    files:
+      - Species/Main.cpp
+      - Species/Main.h
+      - Species/Renderer.cpp
+      - NeuronClient/ControlTypes.inc
+      - GameData/Input/InputPreferences.txt
+      - Tests/NeuronClientTests/ControlBindingsTests.cpp
+    acceptance:
+      - SwitchTaskManagerForX360Controller and its call site are gone; the ControllerUnplugged/ControllerPlugged dialog block in HandleCommonConditions and both control types are gone
+      - InputPreferences.txt contains no XInput line (baseline 69) and no gamepad glyph icon line (baseline 18); startup parses the file with zero errors
+      # AMENDED 2026-08-06, DURING the work, original wording kept: it read
+      # "The InputMode enum keeps its gamepad value; grep shows no remaining
+      # consumer of INPUT_MODE_GAMEPAD outside the enum and the
+      # mode-preference plumbing". Measured, there are TWENTY consumers across
+      # eight files, and they are not what that sentence assumed. They are the
+      # controller USER INTERFACE: a per-mode localised phrase table
+      # (LanguageTable's m_phrasesXin, 6 sites), 360 button prompts in the task
+      # manager (8), the whole ControlHelpSystem - whose Advance early-returns
+      # unless the mode IS gamepad, so the overlay is gamepad-only by
+      # construction (2) - plus camera tracking defaults, cursor rendering, a
+      # task-manager branch and one order-given test. Deleting those removes a
+      # feature and makes reintroducing a controller a UI rewrite rather than a
+      # new driver, which is the opposite of what this plan says it wants. The
+      # line between what went and what stayed is therefore: code that fires on
+      # gamepad EVENTS cannot work and is gone; code that RENDERS differently
+      # while in gamepad mode is a coherent feature waiting for a driver and
+      # stays, unreached, exactly as the enum does.
+      - Every consumer that reacts to a gamepad EVENT is gone; the ~20 that select rendering or defaults by current input mode stay with the enum, and are listed in the notes so the count is checkable
+      - The ControlMethod preference and the gestures task manager are untouched - stated here so nobody deletes them as gamepad residue
+      - ControlBindingsTests still passes, with its end-of-table test repointed rather than deleted
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: done
+    notes: |
+      Landed 2026-08-06. CI green at 8f1e54a, first round.
+
+      WHAT WENT: SwitchTaskManagerForX360Controller and its per-frame call, the
+      ControllerUnplugged/ControllerPlugged dialog pair in
+      HandleCommonConditions, both control types, 69 XInput binding lines and
+      the 18 gamepad glyph icon lines that decorated them. Every one of those
+      waited on a gamepad EVENT that no driver in the tree can report.
+
+      WHAT STAYED, and the acceptance criterion above was amended during the
+      work rather than quietly missed: twenty INPUT_MODE_GAMEPAD consumers
+      across eight files. They are the controller USER INTERFACE, not vestige -
+      LanguageTable's per-mode phrase table m_phrasesXin (6 sites),
+      TaskManagerInterfaceIcons' 360 button prompts (8), ControlHelp (2, and
+      ControlHelpSystem::Advance early-returns unless the mode IS gamepad, so
+      that whole overlay is gamepad-only by construction), plus Camera's
+      tracking default, GameCursor's cursor rendering, TaskManager, Main's
+      order-given test and Renderer's debug readout. Deleting them removes a
+      feature and turns reintroducing a controller into a UI rewrite instead of
+      a new driver.
+
+      A FINDING, recorded rather than acted on: controlIcon has NO consumer
+      outside the input system - nothing renders a control icon anywhere. The
+      icon data is parsed into a map that is never read. Removing the icon
+      plumbing is ControlBindings surgery and belongs with T8/T9, which rework
+      that area; only the gamepad icon DATA went here.
+
+      The end-of-table test was repointed at IconsTaskManagerQuickUnitRight
+      rather than deleted. What it and FindsTheFirstGeneratedControlByName pin
+      together is that the generated table and the enum agree at both ends; one
+      without the other pins nothing. Suite still holds 198 tests.
+
+      Collides with sound-xaudio2 T8 and network-transport T9 over
+      Species/Main.cpp - do not run concurrently with them.
+
+  - id: T3
+    title: Remove the never-serialised gamepad fields from TeamControls
+    intent: >
+      Four delta ints ride in every TeamControls but never cross the wire -
+      NetworkUpdate writes the flags word only - so the InsertionSquad code
+      that reads them after deserialisation has been reading zeros since the
+      protocol was written. Removing fields and readers together makes the
+      struct honest about what multiplayer actually transmits.
+    project: NeuronCore
+    depends_on: [T2]
+    files:
+      - NeuronCore/TeamControls.h
+      - NeuronCore/TeamControls.cpp
+      - GameLogic/Team.cpp
+      - GameLogic/InsertionSquad.cpp
+      - Tests/NeuronCoreTests/NetworkUpdateTests.cpp
+    acceptance:
+      - The four m_directUnit* delta fields are gone from TeamControls; the writers in Team.cpp and the reader block in InsertionSquad.cpp go with them
+      - The wire pinning tests pass UNCHANGED - the serialised bytes never contained these fields
+      - The commit message states that sizeof(NetworkUpdate) changes and that this is internal-only - nothing serialises the struct raw across the wire
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: done
+    notes: |
+      Landed 2026-08-06.
+
+      THE PREMISE WAS VERIFIED BEFORE ANYTHING WAS TOUCHED, because this is
+      simulation input and being wrong about it is a desync rather than a bug.
+      NetworkUpdate::GetByteStream for UpdateType::Alive writes teamId, three
+      world-position floats, m_teamControls.GetFlags() and m_sync;
+      ReadByteStream reads the same five. Neither touches the deltas. And there
+      is no shortcut path: ClientToServer::SendLetter queues the object, but
+      AdvanceSender calls GetByteStream on every letter and writes bytes to a
+      socket — in single player too, over loopback — so the TeamControls that
+      reaches Location::UpdateTeam is always a default-constructed one with
+      SetFlags called on it. TeamControls() runs Clear(), which memsets. The
+      deltas were structurally zero at every read on every machine.
+
+      WHAT THE DELETION REVEALS, and it is not what the task expected to find:
+      direct unit move does nothing. InsertionSquad set a waypoint at
+      pointMan->m_pos plus two zeros, which is pointMan->m_pos — the squaddie is
+      told to walk to where it already stands. The flag crosses the wire and the
+      offset never did, so the feature has been inert since the protocol was
+      written. Removing the fields did not break it; it made the breakage
+      legible. Fixing it means deciding what the wire should carry, which is a
+      task and not a tidy-up. NOT DONE HERE.
+
+      A SECOND DEAD PAIR went with them: m_directUnitFireDx/Dy were written by
+      Team.cpp and read by NOBODY, on either side of the wire. Pure dead stores.
+
+      AND ONE THING WORTH MORE THAN THE FIELDS. The waypoint calculation in
+      Team.cpp read g_camera->GetControlVector(). That code runs while building
+      the 10Hz IAmAlive payload, so it was a per-machine camera value feeding a
+      simulation input — harmless only because the result was then thrown away.
+      It is gone with the members it fed.
+
+      LEFT FOR T11: CameraAccess::GetControlVector now has ZERO callers, and
+      Camera::m_controlVector exists only to feed it. Both are input-plan
+      residue and belong in the closing sweep, not here — this task's file list
+      does not include the camera and a virtual leaving an interface deserves
+      its own diff.
+
+      The wire tests passed unchanged, as the acceptance required: the
+      serialised bytes never contained these fields, so nothing in
+      NetworkUpdateTests had anything to say about them.
+
+      Do not run concurrently with network-transport T1 - that task rewrites
+      the serialisers that include TeamControls.h.
+
+  - id: T4
+    title: Fix the native message handling in place - focus, wheel, dead paths
+    intent: >
+      Small correctness debts in the existing driver that neither depend on nor
+      wait for the event rework: focus is computed by calling
+      GetForegroundWindow on EVERY message, the stuck-ALT hack covers only one
+      key, the wheel divides by a literal 120, and the Alt-Tab RegisterHotKey
+      machinery has been dead since its only caller was commented out.
+    project: NeuronClient
+    depends_on: []
+    files:
+      - NeuronClient/InputDriverWin32.h
+      - NeuronClient/InputDriverWin32.cpp
+      - NeuronClient/Win32EventHandler.h
+      - NeuronClient/Win32EventHandler.cpp
+      # Gains the focus-lost hook, so the driver can release its own state
+      # instead of the handler reaching into it through externs.
+      - NeuronClient/Win32EventProc.h
+      # THE ALT-TAB MACHINERY REACHES INTO GameLogic, which this list did not
+      # say and the summary got wrong - see the corrected note below. These
+      # three hold the calls and dead comments that go with it.
+      - GameLogic/MainMenus.cpp
+      - GameLogic/PrefsKeybindingsWindow.cpp
+      - GameLogic/PrefsScreenWindow.cpp
+      - Species/Main.cpp
+    acceptance:
+      - Focus state comes from WM_ACTIVATE handling; GetForegroundWindow no longer appears in the message path
+      - Losing focus releases ALL held keys and buttons, generalising the ALT special case
+      - BindAltTab, UnbindAltTab, ResetWindowHandle, the WM_HOTKEY handler and the duplicate WM_SYSKEYUP branch are gone, along with the one live ResetWindowHandle call and the three dead comment blocks that name the others
+      - The wheel handler uses the named WM_MOUSEWHEEL constant and GET_WHEEL_DELTA_WPARAM, accumulating fractional detents instead of truncating
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: done
+    notes: |
+      CORRECTION, 2026-08-06, before the work. This plan's summary said the
+      Alt-Tab machinery was "dead since its only caller was commented out
+      (Main.cpp:865)". That was written from a grep of Species/ alone and it
+      is wrong twice over. BindAltTab and UnbindAltTab are named in GameLogic
+      too - PrefsKeybindingsWindow.cpp and PrefsScreenWindow.cpp - though both
+      of those are inside comment blocks, so the conclusion that nothing calls
+      them survives. What does NOT survive is the file list: ResetWindowHandle
+      has a LIVE caller at MainMenus.cpp:267, on the resolution-change path,
+      and it exists only to re-register the hotkey against the new window.
+
+      It is a no-op in practice, which is why nobody noticed: g_altTabBound is
+      set true only by BindAltTab, BindAltTab is never called, so
+      ResetWindowHandle reduces to UnbindAltTab, which unregisters a hotkey
+      that was never registered. Deleting it and its one call is the honest
+      outcome; keeping an empty stub would preserve a function whose whole
+      subject is gone.
+
+      This is the failure mode tasks/_next-batch.md names: a file list written
+      from where a thing is DECLARED when the work is wherever it is NAMED.
+      Three GameLogic and Species files joined the list above because of it.
+
+  - id: T5
+    title: Make OS messages an InputEvent stream and derive driver state from it
+    intent: >
+      The foundation move - WndProc produces typed, timestamped InputEvents
+      into a queue, and the W32 driver builds its per-frame state by draining
+      that queue, instead of scattering writes into file-scope arrays. The
+      g_keys/g_keyDeltas globals and their block-scope-extern workarounds
+      disappear, and a key pressed and released inside one frame finally
+      reports both edges.
+    project: NeuronClient
+    depends_on: [T4]
+    files:
+      - NeuronClient/InputEvents.h
+      - NeuronClient/InputDriverWin32.h
+      - NeuronClient/InputDriverWin32.cpp
+      - NeuronClient/Win32EventHandler.cpp
+      - NeuronClient/WindowManager.cpp
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
+      - Species/Camera.cpp
+      - Tests/NeuronClientTests/InputEventTests.cpp
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj.filters
+    acceptance:
+      - InputEvents.h defines the event types (key down/up with repeat flag, char, mouse button, mouse move, wheel, focus); the window procedure only enqueues
+      - g_keys and g_keyDeltas are driver members; the extern declarations in Win32EventHandler.cpp and the direct read in Camera.cpp:343 are gone (grep zero)
+      - The queue-to-state derivation is a free function testable without a window, and InputEventTests covers it - including the press-and-release-within-one-frame case producing a down edge then an up edge on consecutive frames
+      - Every existing controlEvent condition (down, up, pressed, read, moved) behaves identically at frame granularity
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: done
+    notes: |
+      Landed 2026-08-06.
+
+      THE SHAPE OF THE CHANGE: WndProc appends an InputEvent and does nothing
+      else — no state writes, no Eclipse call, no window call. Advance pumps the
+      queue, then DeriveFrameState builds the frame's state from it. The rule
+      that recovers the lost information is one line: AT MOST ONE EDGE PER
+      CONTROL PER FRAME, and an event that would need a second is left for the
+      next frame. Press and release inside one frame now reports a down edge,
+      then an up edge on the frame after.
+
+      Stopping early defers everything BEHIND the deferred event too, not just
+      that control. That is deliberate: consuming later events out of order
+      would reorder edges, which is the thing this task exists to stop.
+
+      g_keys and g_keyDeltas are gone as globals — not moved, deleted. The
+      driver holds one InputFrameState and six former driver arrays collapsed
+      into it. The last read outside the driver was in a 37-line commented-out
+      Camera::AdvanceSphereWorldIntroMode, which went with them, so the grep is
+      genuinely zero rather than zero-except-in-comments.
+
+      FOUR THINGS THE REWRITE HAD TO PRESERVE DELIBERATELY, each found by
+      reading the old code rather than by it failing:
+
+      1. Modifier state for EclUpdateKeyboard is tracked ACROSS the walk from a
+         snapshot taken before derivation. Reading it off the finished frame
+         state would give every keystroke in a frame the same final answer, so
+         shift-then-letter and letter-then-shift would look identical.
+      2. System keys carry a flag and are NOT forwarded to Eclipse. The old
+         window procedure hooked WM_KEYDOWN and not WM_SYSKEYDOWN, so Eclipse
+         has never heard about Alt+anything; this task is not the one to change
+         that.
+      3. Alt-F4 still quits from inside the window procedure, not from a
+         binding. It has to work with the queue full and the frame loop stalled.
+      4. SetMousePosNoVelocity drops queued MouseMove events. A warp that left
+         them in would report travel from the position it just overwrote, which
+         is exactly the velocity the function exists to suppress.
+
+      AUTO-REPEAT IS NOW DISTINGUISHABLE and is not an edge. Windows sets bit 30
+      of lParam when it is repeating a held key; the old pipeline had no way to
+      express the difference and the state made every repeat look like nothing,
+      so the effect is unchanged and the information is now available to T6.
+
+      A PRE-EXISTING BUG THIS FIXES, with no consumer to notice: WM_SYSKEYUP
+      wrote g_keys[k] = 0 and never wrote a delta, so releasing ALT produced no
+      up edge and `key alt up` could never fire. It fires now. The three
+      GesturesTaskManager control types that bind ALT are declared in
+      ControlTypes.inc and bound in InputPreferences.txt and NO CODE CALLS
+      controlEvent FOR ANY OF THEM — dead controls, so nothing observes either
+      the old bug or the fix. Handed to T11.
+
+      VERIFIED TWICE. InputEventTests is 14 tests over DeriveFrameState, which
+      needs no window: the fast press-and-release case the task names, deferral
+      ordering, auto-repeat, click-in-one-frame, move coalescing and per-frame
+      velocity, partial wheel detents accumulating, focus loss releasing held
+      controls, focus loss DEFERRING behind a press made the same frame,
+      characters, out-of-range keys, and an empty frame clearing deltas while
+      keeping held state. The same rules were also run as a standalone g++
+      program under ASan and UBSan before the driver was touched at all, which
+      is what let the design be wrong cheaply.
+
+      The queue is bounded at 4096 events and drops the NEWEST when full.
+      Dropping the oldest would reorder edges.
+
+  - id: T6
+    title: Route WM_CHAR to text input
+    intent: >
+      Typing is currently synthesised from virtual-key codes plus a shift flag,
+      which is wrong on any non-US layout - the per-locale keyboard files patch
+      game controls, not text. Char events flowing to the focused InputField
+      make typing correct on every layout at once, while VK codes remain the
+      currency of control bindings.
+    project: GameLogic
+    depends_on: [T5]
+    files:
+      - NeuronClient/InputDriverWin32.cpp
+      - NeuronClient/Eclipse.h
+      - NeuronClient/Eclipse.cpp
+      - NeuronClient/EclWindow.h
+      - NeuronClient/EclWindow.cpp
+      - GameLogic/InputField.h
+      - GameLogic/InputField.cpp
+      - Tests/GameLogicTests/InputFieldTests.cpp
+    acceptance:
+      - WM_CHAR (and WM_SYSCHAR suppression) feed Char events; the focused InputField consumes characters, not virtual-key guesses
+      - Editing keys - backspace, delete, arrows, enter, escape - still arrive as key events
+      - The InputField keystroke tests are extended with a shifted character and a character that differs between US and German layouts, asserting the character, not the VK
+      - While an InputField has focus, character-producing keys do not also fire game bindings (the capture rule the router formalises in T8)
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T7
+    title: Raw Input for relative mouse motion
+    intent: >
+      Camera aiming is derived from client-coordinate WM_MOUSEMOVE deltas,
+      which saturate at screen edges and force the warp-and-suppress-velocity
+      hacks. WM_INPUT deltas are unclamped and DPI-independent; the visible
+      cursor keeps riding WM_MOUSEMOVE for the UI.
+    project: NeuronClient
+    # T6 in the edge is file-collision serialisation over InputDriverWin32.cpp,
+    # not a logical dependency; the real prerequisite is T5.
+    depends_on: [T5, T6]
+    files:
+      - NeuronClient/InputEvents.h
+      - NeuronClient/InputDriverWin32.h
+      - NeuronClient/InputDriverWin32.cpp
+      - NeuronClient/WindowManager.h
+      - NeuronClient/WindowManager.cpp
+    acceptance:
+      - RegisterRawInputDevices is called for the mouse; WM_INPUT deltas accumulate into the frame's relative axis
+      - The MOUSE_MOVEMENT read condition serves raw deltas; absolute cursor position still comes from WM_MOUSEMOVE
+      - SetMousePosNoVelocity shrinks to warping the visible cursor - raw deltas need no velocity suppression
+      - Manual check recorded in notes - camera rotation continues while the cursor is pinned at a screen edge, which the old path could not do
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T8
+    title: Dispatch events through a router with consuming sinks, UI first
+    intent: >
+      The subscription model's spine. Events flow UI-first with consume
+      semantics - a click the UI handles never reaches the game bindings -
+      which retires suppressEvent, the AdvanceMenus poll-and-push seam, and
+      the clear-the-flags-when-a-window-is-open special case, replacing all
+      three with one ordering rule.
+    project: NeuronClient
+    depends_on: [T5, T6]
+    files:
+      - NeuronClient/InputRouter.h
+      - NeuronClient/InputRouter.cpp
+      - NeuronClient/Input.h
+      - NeuronClient/Input.cpp
+      - NeuronClient/Eclipse.cpp
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
+      - Species/UserInput.cpp
+      - Species/Main.cpp
+    acceptance:
+      - The Eclipse sink receives mouse and key events directly; EclUpdateMouse's boolean-to-event synthesis and the AdvanceMenus polling of ControlEclipse controls are gone
+      - suppressEvent is deleted from InputManager (grep zero - two sites today)
+      - The window-open flag-clearing at Species/Main.cpp:501 is replaced by consumption, and the acceptance note records the equivalence argument - TeamControls flags in a UI-open frame are identical before and after, because the events that would set them were consumed
+      - Widget behaviour is unchanged - MouseDown/MouseUp/Keypress signatures on EclWindow/EclButton stay as they are
+    verify:
+      - python3 tools/check_format.py
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+    notes: >
+      Collides with sound-xaudio2 T8 and network-transport T9 over
+      Species/Main.cpp - do not run concurrently with them.
+
+  - id: T9
+    title: Subscriptions for controls, with pilot conversions
+    intent: >
+      The owner-requested shape - a window or button subscribes to the control
+      it cares about instead of polling it every frame. RAII tokens keep
+      lifetime honest, two real consumers convert as the worked example, and
+      controlEvent() is documented as the compatibility shim the remaining 150+
+      call sites migrate through at their own pace.
+    project: NeuronClient
+    depends_on: [T8]
+    files:
+      - NeuronClient/InputRouter.h
+      - NeuronClient/InputRouter.cpp
+      - NeuronClient/Input.h
+      - Species/UserInput.cpp
+      - GameLogic/SpeciesWindow.cpp
+    acceptance:
+      - subscribe(ControlType, handler) returns an RAII token; destruction unsubscribes; edge-type controls fire subscribers from binding evaluation over the event stream
+      - At least two real consumers are converted end to end (candidates - the pause request in UserInput::Advance and a menu window's escape handling) and behave identically
+      - controlEvent() carries a comment naming it the compatibility path over the router, so new code knows which door to use
+      - A stated rule in Input.h - simulation code must not subscribe; sim input reaches the wire only through TeamControls - with the reviewer instruction to reject violations
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T10
+    title: Collapse the event-handler layers and pump messages once per frame
+    intent: >
+      Three abstractions - EventHandler, W32EventHandler, W32EventProcessor -
+      each with exactly one implementation, exist to fan one WndProc out to one
+      consumer; with events in a queue the fan-out is the router's job. The
+      message pump runs exactly once per frame from the main loop instead of
+      being reachable through the input driver's PollForEvents chain.
+    project: NeuronClient
+    # T9 in the edge is file-collision serialisation over Input.h, not a
+    # logical dependency; the real prerequisite is T8.
+    depends_on: [T8, T9]
+    files:
+      - NeuronClient/EventHandler.h
+      - NeuronClient/EventHandler.cpp
+      - NeuronClient/Win32EventHandler.h
+      - NeuronClient/Win32EventHandler.cpp
+      - NeuronClient/Win32EventProc.h
+      - NeuronClient/InputDriver.h
+      - NeuronClient/InputDriverWin32.h
+      - NeuronClient/InputDriverWin32.cpp
+      - NeuronClient/Input.h
+      - NeuronClient/Input.cpp
+      - NeuronClient/WindowManager.h
+      - NeuronClient/WindowManager.cpp
+      - NeuronClient/SoundLibrary3dDSound.cpp
+      - Species/StartSequence.cpp
+      - Species/Renderer.cpp
+      - Species/Main.cpp
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
+    acceptance:
+      - One window-event type remains; W32EventProcessor and the dynamic_cast accessor are gone; WindowHasFocus is served from event-derived state
+      - NastyPollForMessages is called from exactly one place per frame; InputManager::PollForEvents and the driver-level PollForEvents chain are deleted
+      - The name Nasty appears nowhere in WindowManager
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+    notes: >
+      SoundLibrary3dDSound.cpp is in the touch set only for its
+      WindowManagerWin32 include if the handle accessor moves; if sound-xaudio2
+      T7 has already deleted the file, drop it from this list.
+
+  - id: T11
+    title: Closing sweep - greps at zero, checks green
+    intent: >
+      Baselines recorded the day this node was written, per docs/TASK_DAG.md,
+      so the closing criteria are testable now and meaningful later.
+    depends_on: [T1, T2, T3, T7, T9, T10]
+    files:
+      - GameData/Input/InputPreferences.txt
+      - NeuronClient/ControlTypes.inc
+    acceptance:
+      - CameraAccess::GetControlVector and Camera::m_controlVector are gone - T3 removed their last caller and recorded them here
+      - Decide whether the Chord and Idle drivers stay: T13 deleted the last binding data exercising either, so both are now registered and reachable by nothing (see T13 notes)
+      - grep XInput over GameData returns nothing (baseline 2026-08-06 - 69 lines)
+      - grep for InputDriverPipe, InputDriverValue, InputDriverAlias, InputDriverPrefs and InputFilterManager returns nothing outside tasks/Archive
+      - grep for "extern signed char g_keys" and "g_keys\[" returns nothing (baseline - 1 extern site, 2 live readers outside the driver)
+      - grep suppressEvent returns nothing (baseline - 2 sites)
+      - All seven tools/ checks pass, the x64 Debug build is green, the full suite passes
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+      - python3 tools/check_task_dag.py
+      - python3 tools/check_containers.py
+      - python3 tools/check_math_types.py
+      - python3 tools/check_format.py
+      - python3 tools/check_hygiene.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+    notes: |
+      DEAD CONTROL TYPES, audited 2026-08-06 while doing T5. THIRTY-EIGHT of the
+      131 names in ControlTypes.inc have no reference anywhere in any .cpp or
+      .h — nothing calls controlEvent for them and nothing names the
+      enumerator. The audit is trustworthy in both directions: the only
+      static_cast<ControlType> in the tree is ControlBindings.cpp:85, the
+      name-to-index lookup itself, so there is no enum arithmetic anywhere that
+      could be reaching one of these under a computed name.
+
+      They fall into two kinds and the sweep should not treat them alike:
+
+      * DECLARED, BOUND, NEVER ASKED. A binding is parsed out of
+        InputPreferences.txt, stored, and no code ever queries it. The three
+        GesturesTaskManager* controls are the clearest case — Display on
+        `key alt pressed`, Hide on `key alt up`, EndTask on
+        `key control ++ key c`, which is the ONLY chord in the whole data set.
+        StopAttractMode is another, bound four times.
+      * DECLARED AND NOT EVEN BOUND. MouseMovement and TaskManagerDisplay have
+        no line in any prefs file and no consumer. Pure declarations.
+
+      DELETE THE THREE GesturesTaskManager* CONTROLS AND THEIR BINDINGS. They
+      are what prompted this note, and they are the safest of the 38: T5 found
+      that `key alt up` could never have fired anyway, because WM_SYSKEYUP wrote
+      the key state and never a delta. So the pair is dead twice over — no
+      consumer, and a binding that could not have reached one. Removing
+      GesturesTaskManagerEndTask also removes the only `++` line in the data,
+      which means the Chord driver would afterwards have NO data exercising it;
+      that is a fact to record when it happens, not a reason to keep a dead
+      control, and T1's audit already established Chord parses correctly.
+
+      The other 35 need judging individually rather than sweeping. Several
+      (RTLoader*, GOLLoader*) look like they belong to loader screens that may
+      still be wanted; deleting a control type is cheap to reverse but the
+      decision is about intent, not code. Removing any of them is safe for
+      players' own prefs files: ControlBindings already tolerates a name it does
+      not know — that is what the 69 XInput lines did at every startup before T2.
+
+      Three lines out of ControlTypes.inc shifts every enumerator after them,
+      which is FINE and worth stating so nobody worries: bindings resolve by
+      NAME, not index, no control index is written to disk or the wire, and the
+      two ControlBindingsTests that pin the table's ends pin MenuLeft (line 2)
+      and IconsTaskManagerQuickUnitRight (line 165) — the Gestures block is at
+      67-69 and touches neither.
+
+      NOT THIS TASK'S WORK, but it lands in this task's territory and the sweep
+      needs to know. The owner deleted the 22 gamepad button BMPs under
+      GameData/Icons on 2026-08-06 (commit ca1a5c5), finishing what T2 started
+      when it removed the 18 gamepad glyph LINES from InputPreferences.txt.
+
+      VERIFIED SAFE before this note was written, because live code still names
+      those files: ControlHelp.cpp builds HelpIcons for them in
+      InitialiseIcons, and TaskManagerInterfaceIcons.cpp calls RenderIcon on
+      two of them. Neither loads anything. HelpIcon's constructor only stores
+      the filename strings; the GetTexture call is at ControlHelp.cpp:206, on a
+      render path that returns early unless getInputMode() is
+      INPUT_MODE_GAMEPAD, and both TaskManagerInterfaceIcons sites sit behind a
+      render360Controls flag with the same condition. No driver produces that
+      mode, so none of the loads is reachable.
+
+      WHAT IT CHANGES ABOUT T2'S DECISION, and this is the part worth reading.
+      T2 deliberately KEPT the twenty INPUT_MODE_GAMEPAD consumers, arguing
+      that they are the controller user interface and deleting them would turn
+      re-introducing a gamepad into a UI rewrite rather than a new driver. That
+      argument still holds for the CODE. It no longer holds for the ART: the
+      icons a re-introduced controller would render are gone from the tree and
+      would have to come back with it. Decide in this task whether the UI code
+      follows the art out, or whether the art is restored — do not leave the
+      two disagreeing.
+
+  - id: T13
+    title: Delete the 38 control types nothing consumes
+    intent: >
+      Thirty-eight of the 131 names in ControlTypes.inc have no reference in
+      any .cpp or .h - nothing calls controlEvent for them and nothing names
+      the enumerator. Most belong to the GOL and ray-tracer loader screens and
+      the gesture task manager, all of which were removed from the game. A
+      declared control that nothing asks about is a binding the user can set
+      and never observe, and it teaches the wrong lesson about what the input
+      system has to support.
+    project: NeuronClient
+    # No graph dependency: this is a deletion of things nothing references, so
+    # nothing in the plan blocks it. Directed by the owner on 2026-08-06 after
+    # T11's audit surfaced the list - the loader screens they belong to are
+    # gone, which is the fact the audit could not establish from the code.
+    depends_on: []
+    files:
+      - NeuronClient/ControlTypes.inc
+      - GameData/Input/InputPreferences.txt
+      - GameData/Input/Keyboards/de_DE.txt
+      - GameData/Input/Keyboards/fr_FR.txt
+    acceptance:
+      - The 38 unused control types are gone from ControlTypes.inc and every binding naming one is gone from every file under GameData/Input
+      - The audit is re-run afterwards and reports zero unused control types
+      - RTLoaderPixelWaveIncrease and RTLoaderPixelWaveDecrease STAY - they have a live consumer at GameLogic/Location.cpp:1124 behind CHEATMENU_ENABLED, and are the reason this is a per-name audit rather than a prefix sweep
+      - Both ControlBindingsTests end-of-table tests still name MenuLeft and IconsTaskManagerQuickUnitRight and still pass; neither is in the deletion set
+      - The consequences for the Chord and Idle drivers are recorded in notes
+    verify:
+      - python3 tools/check_format.py
+      - python3 tools/check_hygiene.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: done
+    notes: |
+      Landed 2026-08-06 on the owner's direction: "loader screens was something
+      we had in the past, but they are removed, so you can remove the 35 unused
+      control types". That is the fact the audit could not get from the code —
+      an unreferenced control is indistinguishable from one waiting for a
+      feature — so it was asked rather than assumed.
+
+      38 control types gone, 131 down to 93, and the audit re-run afterwards
+      reports ZERO unused. 39 binding lines went with them: 37 from
+      InputPreferences.txt (including three commented-out ones that named a
+      deleted control) and one each from the de_DE and fr_FR keyboard layouts.
+      Every remaining binding in GameData/Input names a control that still
+      exists — checked, not assumed.
+
+      A PER-NAME AUDIT, NOT A PREFIX SWEEP, and RTLoaderPixelWaveIncrease and
+      RTLoaderPixelWaveDecrease are why. Sixteen of the eighteen RTLoader
+      controls were dead; those two have a live consumer at
+      GameLogic/Location.cpp:1124 behind CHEATMENU_ENABLED, where they toggle
+      RenderSpecialLighting. Deleting by prefix would have taken them and the
+      cheat-menu lighting toggle with them.
+
+      THE CONSEQUENCE, and it is the reason this note matters more than the
+      deletion: THE CHORD AND IDLE DRIVERS NOW HAVE NO DATA EXERCISING THEM.
+      `GesturesTaskManagerEndTask = key control ++ key c` was the only ++ line
+      in the tree and `StopAttractMode = idle no longer` was the only live idle
+      line. Both are now zero. T1 kept Chord and Idle precisely BECAUSE the
+      binding data used them — that justification is gone, and the two drivers
+      are now in the same position InputDriverPipe was in when T1 deleted it:
+      registered, functional, and reachable by nothing.
+
+      They are NOT deleted here. That was not directed, and it is a judgement
+      about whether the binding language keeps a feature with no current user.
+      T11 decides. What is NOT affected either way: InputManager::isIdle() and
+      the m_idle computation at Input.cpp:176-190 are independent of the Idle
+      DRIVER — the manager polls every driver's isIdle() each frame regardless
+      of bindings, and W32InputDriver::isIdle() still answers it.
+
+      The two ControlBindingsTests that pin the table's ends were untouched and
+      needed no repointing: MenuLeft is still the first row and
+      IconsTaskManagerQuickUnitRight still the last, because the deletions were
+      all interior.
+  - id: T12
+    title: Owner-run Garden smoke test on the event-driven input
+    intent: >
+      Steps 1 and 6 lean hardest on this plan - the menu renders and responds,
+      the Task Manager opens and its buttons work - and creating a profile
+      exercises InputField typing through the new Char path. Camera movement
+      through a whole session vouches for the sampled view.
+    depends_on: [T11]
+    acceptance:
+      - Owner-reported Garden run, all seven steps, on a build containing T1-T11
+      - Typing a profile name works, including a shifted character; reported explicitly
+      - Camera control feels unchanged, and rotation continues at screen edges (the Raw Input improvement), reported explicitly
+      - The result is recorded in AGENTS.md "What working looks like"
+    parallel_safe: false
+    status: todo

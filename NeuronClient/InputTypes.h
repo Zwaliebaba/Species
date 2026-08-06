@@ -67,11 +67,10 @@ namespace Neuron
       int y;          // Only meaningful if type is INPUT_TYPE_2D
   };
 
-  // Owning — see InputSpecList.h. Note for anyone constructing one: auto_vector's
-  // one-argument constructor RESERVED that many slots and left the vector empty.
-  // std::vector's creates that many null elements instead. Call reserve().
-  typedef std::vector<std::unique_ptr<const InputDetails>> InputDetailsList;
-  typedef std::unique_ptr<InputDetails> InputDetailsPtr;
+  // InputDetailsList and InputDetailsPtr went with the InputFilter family. Both
+  // were declared here and named ONLY there — the two filter() overloads and
+  // InputFilterWithDelta's history buffers — serving a pipe driver that was
+  // never registered.
 
   class InputDescription
   {

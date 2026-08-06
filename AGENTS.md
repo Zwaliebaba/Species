@@ -25,9 +25,9 @@ survive persistently.
 
 It is not that yet. The codebase began as the Darwinia source and is partway
 through being reshaped: renamed, relayered, and modernised into something a
-persistent authoritative server can be built on. Roughly 115,000 lines of C++
-across six MSBuild projects. It links only against the OS (OpenGL, GLU, WinMM,
-DirectSound, Winsock) and takes one header-only dependency, **DirectXMath**,
+persistent authoritative server can be built on. Roughly 113,000 lines of C++
+across six MSBuild projects. It links only against the OS (OpenGL, GLU,
+XAudio2, Winsock) and takes one header-only dependency, **DirectXMath**,
 which ships in the Windows SDK — no library to link and nothing vendored.
 `tasks/Archive/directxmath-migration.yaml` replaced the inherited hand-rolled math with
 it and then deleted it: there is no Neuron vector or matrix type, storage is
@@ -44,8 +44,23 @@ making the existing code capable of supporting it, not by building it alongside.
 
 **Cleanup and modernisation first — and as of 2026-08-05 THE PLANNED
 MODERNISATION IS FINISHED.** Eleven plans, 147 tasks, every one done or
-deliberately abandoned, all of them in `tasks/Archive/`. Nothing is open, and
-`tasks/` holds no plan to pick up.
+deliberately abandoned, all of them in `tasks/Archive/`.
+
+**THREE PLANS OPENED ON 2026-08-06 on the owner's direction** — the first work
+since the modernisation that is not cleanup. One of them, `sound-xaudio2`,
+closed the same day at 11 of 11 and is in
+[`tasks/Archive/sound-xaudio2.yaml`](tasks/Archive/sound-xaudio2.yaml): one
+native XAudio2 backend with X3DAudio positioning and the effects on XAudio2,
+and DirectSound, the software mixer, the waveOut layer and the `SoundLibrary`
+preference all deleted. Two remain open:
+
+| Plan | What it does | State |
+|---|---|---|
+| [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse | 5 of 12 |
+| [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | 0 of 12 |
+
+`python3 tools/check_task_dag.py --next tasks/<plan>.yaml` is the authority on
+what can be started; read it rather than this table, which will go stale.
 
 That converted the inherited Darwinia code into Neuron-style C++23 with enforced
 layer boundaries: zero upward includes, standard containers, `std::string` and
@@ -124,7 +139,7 @@ NeuronCore/       ~4.8k   Foundation: sockets, threads, byte streams, the wire
                           Vector2/3, Matrix33/34 and Plane were deleted, and
                           storage is DirectXMath's own. Static library.
                           PARTLY in namespace Neuron — see Namespaces below.
-NeuronClient/     ~24k    Presentation: OpenGL renderer, sound, input drivers,
+NeuronClient/     ~22k    Presentation: OpenGL renderer, sound, input drivers,
                           the Eclipse UI toolkit, resource loading. Static
                           library, all of it in namespace Neuron.
 NeuronServer/     ~0.6k   Authoritative simulation host: Server, ServerToClient,
@@ -272,8 +287,11 @@ Resource::ListResources
   start from the fact that it has no end.
 - **The real risk was ownership that was already shared.** `g_renderer` and
   `g_taskManagerInterface` are deleted and rebuilt at RUNTIME from GameLogic
-  and `Main.cpp` — on a resolution change and a gamepad switch, paths that
-  really execute. Taking `unique_ptr` ownership without touching those would
+  and `Main.cpp` — on a resolution change and, until 2026-08-06, on a gamepad
+  switch. **Only the resolution change is left**: the gamepad switch was
+  `SwitchTaskManagerForX360Controller`, and `input-native-events` T2 deleted
+  it, because no driver in the tree can report the mode it waited for, so it
+  never actually executed. Taking `unique_ptr` ownership without touching those would
   have left App holding a freed pointer. Replacement now routes through
   `AppCommands`, whose factories install what they build. **Before converting
   a member, grep for who else deletes or reassigns it, not just who reads
@@ -315,7 +333,7 @@ troubleshooting — is in [`docs/BUILD.md`](docs/BUILD.md).
 
 ## Before you push
 
-Run all seven. CI runs the same seven and will fail on anything you skip.
+Run all eight. CI runs the same eight and will fail on anything you skip.
 
 ```bash
 python3 tools/check_project_files.py   # .vcxproj matches the files on disk
@@ -323,6 +341,7 @@ python3 tools/check_layering.py        # no new upward includes
 python3 tools/check_task_dag.py        # task plans are valid DAGs
 python3 tools/check_containers.py      # no legacy container call left on a vector
 python3 tools/check_math_types.py      # no legacy math call left on a native type
+python3 tools/check_sound_effects.py   # Effects.txt and the FX enum still line up
 python3 tools/check_format.py          # changed lines match .clang-format
 python3 tools/check_hygiene.py         # changed lines do not reintroduce NULL,
                                        # _included guards, strcpy or plain enum
@@ -412,7 +431,7 @@ the standard, and it is not optional reading for anything that touches wire
 format, the simulation, or a file being converted.
 
 **Does the game work?** The suite cannot tell you. It covers a few hundred
-lines out of 115,000 — encoding, string helpers, object identity — so "it
+lines out of 113,000 — encoding, string helpers, object identity — so "it
 compiles and the suite passes" is not the same claim, and a green suite must
 never stand in for the smoke test below.
 
@@ -420,18 +439,49 @@ The game **does** run, so the smoke test is something you can actually perform
 rather than something to wait for. If you are working somewhere that cannot
 launch a Windows client, say so instead of implying you checked.
 
-**WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-05.** CI is green at
-`17b0778` — that build carries `language-hygiene` T11 and the whole of
-`namespace-migration`, so the namespaced tree compiles, links and passes the
-suite. **Everything after `17b0778` has NOT been compiled by anyone**: that is
-`strings-modernised` T12, T11, and then the three that closed the plan — T13,
-T17 and T9 — all written on Linux against the seven Python checks alone.
+**WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-06.** CI is green at
+`ffc5105`, which carries all of `sound-xaudio2` and `input-native-events` T1-T2:
+it compiles, links, passes the suite on x64 Debug, and the headless server
+reaches sequence 20 at the right rate. Every task since `d858b6b` has gone green
+first round. `input-native-events` T3 and T5 are pushed behind it and awaiting
+their own CI answer — T5 is the largest single change in that plan, so treat
+this line as covering `ffc5105` and not the branch head until it is updated. **THE UNCOMPILED BLOCK THIS ENTRY USED TO WARN ABOUT IS GONE**:
+`strings-modernised` T12, T11, T13, T17 and T9 were the largest ever recorded
+here, and CI has since built all of them.
 
-Those last three are the largest uncompiled block this file has ever recorded:
-127 rewritten format strings, nine members changed from `char*` to
-`std::string`, and four signatures narrowed. **What a Python check cannot see
-is a type that no longer matches its use**, and that is the whole failure mode
-here. Three things were compiled and run with g++ 13 to narrow it — every
+**It took two red rounds to get there, and both were the same mistake.** An
+earlier version of this entry claimed CI had been green on every task landed
+here; it had not — `sound-xaudio2` T7 and T8 each failed to compile. Each
+failure was a deleted `#include` taking declarations with it that the deleting
+task never looked for. T7 removed `SoundLibrary3dDSound.h` from disk and left an
+`#include` of it in `Species/Main.cpp`; the fix for that then removed the
+include, and with it the only path by which that file saw `g_soundLibrary3d`,
+which its `Finalise()` deletes. **Deleting a header withdraws everything it
+included, not just what it declared.** Grep for the symbols the survivors still
+use, not for the name of the type you removed.
+
+**Compiled is still not run, with one exception.** The XAudio2 backend has been
+heard once: the `sound-xaudio2` T5 audio gate below is an owner-reported run on
+a 2026-08-06 build, and it exists precisely because CI cannot hear. **That gate
+predates five tasks that changed what comes out of the speakers** — T6 made
+XAudio2 the default, T7 and T8 deleted the other two backends, T4 rewrote every
+DirectSound effect usage in `Sounds.txt`, and T9 made the music voice stereo. So
+the audio has been heard, but not this audio. `sound-xaudio2` T11 is the gate
+that closes that, and it is a full seven-step Garden run rather than a listen.
+
+Nothing else from 2026-08-06 has been in front of a running game — not the input
+changes, and no seven-step Garden run on any of it — so the baseline below is
+unchanged at `acf283b`. The input work is the kind a green build says least
+about: it changes what happens on focus loss and on a wheel message, neither of
+which any test exercises.
+
+The `strings-modernised` block is worth remembering for what it taught rather
+than for its size, which is why the description stays here now. It was 127
+rewritten format strings, nine members changed from `char*` to `std::string`,
+and four signatures narrowed, all written on Linux against the seven Python
+checks alone. **What a Python check cannot see is a type that no longer matches
+its use**, and that was the whole failure mode. Three things were compiled and
+run with g++ 13 to narrow it before it ever reached MSVC — every
 printf-to-`std::format` spec pair, the old and new `FileWriter::printf` side by
 side on the real call-site formats, and the two non-mechanical rewrites against
 their originals — and all three agree byte for byte. None of that is MSVC, and
@@ -468,8 +518,41 @@ Launch, start a new profile, enter The Garden, and check:
 Those counts are read from `MissionGardenLiberate.txt`, so they are checkable
 rather than approximate. Any step failing localises the break to a subsystem.
 
+**TWO AUDIO RUNS, 2026-08-06, both owner-reported.** Nothing in CI can hear,
+so these are the only evidence that exists for the whole `sound-xaudio2` plan.
+
+The first was the T5 A/B gate, on the branch with `SoundLibrary = xaudio2`
+while DirectSound was still present and still the default for everyone else:
+*"the audio works fine"*. That is what unblocked deleting the DirectSound
+backend, the software mixer and the waveOut layer.
+
+The second was the T11 final gate, on a **default** build — no preference
+overrides, because there is no longer a preference to override with, and no
+legacy backend left in the binary to fall back to: *"the audio smoke test is
+done and everything works fine"*. It closes the plan at 11 of 11.
+
+**Both are verdicts on a run, not per-step breakdowns**, and this file does not
+claim breakdowns it was not given. Three things the second gate specifically
+did NOT establish, listed because a pass is easy to over-read:
+
+- The audio checklist was not itemised. Positioned effects, the six rewritten
+  echo events, the two converted reverbs, stereo music and the volume slider
+  were all in the build and none was reported wrong — which is weaker than each
+  having been confirmed.
+- **The device-loss path was never exercised.** Nobody unplugged anything. T10's
+  `OnCriticalError` teardown and the five-second rebuild in
+  `SoundSystem::Advance` have been traced under ASan and UBSan and compiled by
+  CI, and that is the whole of it. It is the least-evidenced code in the plan.
+- Distance attenuation is still the open question from the first gate.
+  X3DAudio's curve is not bit-identical to DS3D's and the two were never
+  compared directly, so sounds fading at the wrong range is what neither run
+  was equipped to catch.
+
+**Neither replaces the baseline below.** No seven-step Garden run with an
+explicit per-step breakdown has been performed on any 2026-08-06 build.
+
 **CURRENT BASELINE: `acf283b` (2026-08-05), owner-reported, ALL SEVEN STEPS
-PASS.** This is the most recent run, the most recent run with an explicit
+PASS.** This is the most recent full run, the most recent run with an explicit
 per-step breakdown, and the build any future divergence is measured against.
 
 It closes `determinism` T6 and with it that whole plan, 6 of 6 —
@@ -619,9 +702,12 @@ The full standard — schema, status semantics, how to write acceptance criteria
 how concurrency works — is [`docs/TASK_DAG.md`](docs/TASK_DAG.md). Read it before
 writing your first plan.
 
-**If you are asking "what should I do next", there is no answer in `tasks/`
-any more — every plan is finished.** The next piece of work needs its own plan
-written before code is written.
+**If you are asking "what should I do next", ask the tool** —
+`python3 tools/check_task_dag.py --next tasks/<plan>.yaml` across the three
+open plans listed under *Current priority*. This paragraph used to say there
+was no answer because every plan was finished; that stopped being true on
+2026-08-06. Work outside those three still needs its own plan written before
+code is written.
 
 [`tasks/_next-batch.md`](tasks/_next-batch.md) is kept as the record of how the
 seven batches were scheduled: what was ready, measured; which ready tasks
@@ -632,33 +718,43 @@ transferable part: a task's declared `files` list is written from where a thing
 is DECLARED and the work is wherever it is NAMED, and eight of the nine lists
 measured against the tree were wrong.
 
-**ELEVEN PLANS ARE COMPLETE AND IN `tasks/Archive/`, AND NOTHING IS OPEN.**
+**ELEVEN PLANS ARE COMPLETE AND IN `tasks/Archive/`. THREE MORE ARE OPEN
+BESIDE THEM** — see *Current priority* for what they are and where they stand.
 `determinism`, `ownership`, `language-hygiene` and `namespace-migration` all
 closed on 2026-08-05, and `strings-modernised` — the last one — closed the same
 day at 20 of 20. T13 narrowed the read-only name parameters to `string_view`,
 T17 replaced `FileWriter::printf` with `std::format` templates, and T9 swept
 the `strcpy`/`sprintf` family to a tree-wide zero and deleted `NewStr` with it.
 
-**There is no ready task anywhere.** `tasks/` holds the reading orders, the
-template and the archive, and nothing else. The next piece of work needs a plan
-written for it before code is written — see *How work is broken down* below and
+**Ready tasks exist again**, in the three plans under *Current priority* —
+`--next` will name them. This paragraph used to say there were none, when
+`tasks/` held only the reading orders, the template and the archive. Work
+outside those three plans still needs a plan written for it before code is
+written — see *How work is broken down* below and
 [`docs/TASK_DAG.md`](docs/TASK_DAG.md). What the closed plans left behind, each
-recorded and unowned, is the honest starting list: the three raw-ownership
+recorded and still unowned, is unchanged by them: the three raw-ownership
 survivors above, the unswept LCG sites below, entity and building behaviour
 having no tests, and `GlobalWorld` not being constructible in a test DLL.
 
 The tree is namespaced; that is its own section, [above](#namespaces).
 
-**Nothing is gated on the owner, and migration stage 5 is finished.** The
-scheduling problem the batch files exist to solve is gone with the last plan:
-there is nothing to schedule against.
+**Migration stage 5 is finished**, and the scheduling problem the batch files
+exist to solve went with the last of those plans. It came back on 2026-08-06:
+three plans are open, 22 of their 35 tasks are not done, and
+`check_task_dag.py --next` answers what to schedule rather than any of the batch
+files, which describe the eleven that closed. `sound-xaudio2` T11 IS gated on
+the owner — it is a Garden run — so the "nothing is gated" this paragraph used
+to open with is no longer true either.
 
 **`ownership` T6 is still the one to be sceptical about.** Its acceptance asked
 for the game to reach the main menu after each of its four commits, and that
 check was NOT performed; CI compiled them and nothing more. See its notes for
 what a smoke test can and cannot say about it — the destructor it rewrote is
-unreachable code, and the two runtime paths it did change need a resolution
-change and a gamepad switch to reach, neither of which is a Garden step.
+unreachable code, and of the two runtime paths it did change, one needs a
+resolution change to reach and is not a Garden step, while the other, the
+gamepad switch, turned out to be unreachable in any case and was deleted by
+`input-native-events` T2 on 2026-08-06. So T6 is now MORE doubtful, not less:
+half of what it changed can never have run.
 
 The two older reading orders are still there and still worth reading, but
 neither answers "what next" any more:
@@ -708,7 +804,7 @@ reachable from `Location::Advance`.
 
 **Do not reformat files you are not otherwise changing.** Formatting is enforced
 on changed lines only, deliberately: a repo-wide reformat would destroy `git
-blame` across 115,000 lines. Whole-file formatting is a migration task, done
+blame` across 113,000 lines. Whole-file formatting is a migration task, done
 deliberately, one file at a time, in its own commit.
 
 **Test what you build.** New behaviour ships with the tests that cover it, in
@@ -745,6 +841,20 @@ Real, currently true, and worth knowing before you trip over them:
     CI evidence alone; CI then caught two real compile errors a name-keyed
     sweep had missed, and the owner's run afterwards is the only thing that
     says the tree still plays. Neither check substitutes for the other.
+- **RESOLVED BY DELETION, and recorded because the shape recurs:** both legacy
+  sound backends read one element past the end of `SoundSystem::m_channels`
+  once per audio tick. That array is sized from `GetNumMainChannels()`, which
+  is `m_numChannels - 1`, but `SoundLibrary3dDSound` and
+  `SoundLibrary3dSoftware` both pumped channels up to `m_numChannels` and
+  handed the index straight to the main callback, which subscripts the array
+  with it. Benign in practice — the garbage `SoundInstanceId` failed a
+  bounds-checked slot map lookup and that channel wrote silence — but real UB
+  in the path that shipped. It was deliberately NOT fixed when found, because
+  `sound-xaudio2` T7 and T8 were going to delete both files and a fix would
+  have needed justifying against a smoke test nobody would run on code that was
+  going away. They are gone, and `SoundLibraryXAudio2` sizes its channel vector
+  from `GetNumMainChannels()` so the callback can only ever be handed an index
+  the array holds.
 - **THERE ARE TWO RANDOM STREAMS, AND THE DOCUMENTATION SAID THERE WAS ONE.**
   This is the correction that retired the two determinism bullets that used to
   stand here, and it is the thing to know before reading any RNG call in this

@@ -57,6 +57,9 @@ jobs:
       - name: No legacy math call left on a native type
         run: python3 tools/check_math_types.py
 
+      - name: Sound effect data and the FX enum agree
+        run: python3 tools/check_sound_effects.py
+
       - name: Changed lines are formatted
         run: |
           python3 tools/check_format.py \

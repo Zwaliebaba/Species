@@ -644,9 +644,6 @@ dialog_mousebuttons                    Mouse Buttons
 
 dialog_soundoptions                    Sound Options
 dialog_unavailable                     unavailable
-dialog_soundlibrary                    Sound Library
-dialog_directsound                     DirectSound
-dialog_softwaresound                   Software Sound
 dialog_mixfrequency                    Mix Frequency
 dialog_11khz                           11 KHz Low Quality
 dialog_22khz                           22 KHz Medium Quality

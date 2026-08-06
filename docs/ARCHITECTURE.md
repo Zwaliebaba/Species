@@ -90,10 +90,33 @@ Presentation and platform services for a graphical client.
 
 - **Rendering:** OpenGL, `Shape`/`ShapeFragment` model system, `Texture`,
   `Bitmap`, sprites, text renderers, `OGLExtensions`.
-- **Sound:** `SoundSystem`, `SoundLibrary2d`, `SoundLibrary3dDSound` and a
-  software mixer fallback, `SoundInstance`, `SoundParameter`.
-- **Input:** a composable driver stack — `InputDriverSimple`, `Chord`, `Conjoin`,
-  `Alias`, `Invert`, `Pipe`, `Idle`, `Prefs` — resolving to `ControlTypes`.
+- **Sound:** `SoundSystem`, `SoundInstance`, `SoundParameter` above a
+  `SoundLibrary3d` backend. ONE backend remains: `SoundLibraryXAudio2` — a mono
+  source voice per channel plus a stereo one for music, X3DAudio positioning and
+  doppler, the resonant low pass on XAudio2's own per-voice biquad, echo on
+  FXECHO and reverb on XAUDIO2FX. `SoundLibrary3dDSound`,
+  `SoundLibrary3dSoftware` and `SoundLibrary2d`'s WinMM output layer were
+  deleted by `sound-xaudio2` T7 and T8, and the `SoundLibrary` preference that
+  chose between them by T10. The seam stays virtual because it is what let the
+  replacement be A/B'd against them. A device that disappears mid-game is
+  reported through `IXAudio2EngineCallback::OnCriticalError`, which parks the
+  backend silent; `SoundSystem::Advance` then rebuilds it every five seconds
+  until a device comes back.
+- **Input:** the window procedure in `InputDriverWin32` **only enqueues**. Each
+  Win32 message becomes an `InputEvent` (`InputEvents.h`), and `DeriveFrameState`
+  — a free function with no Windows call in it — builds the per-frame view the
+  bindings read. Its governing rule is one edge per control per frame, with
+  anything that would need a second left in the queue, which is how a key
+  pressed and released between two frames reports both edges instead of
+  neither. Above that sits the unchanged binding stack: `InputDriverSimple`,
+  `Chord`, `Conjoin`, `Invert`, `Idle`, resolving a spec to a `ControlType`.
+  `input-native-events` T1 deleted nine drivers and filters no binding data
+  used — `Alias`, `Pipe` (never even registered), `Prefs`, `Value` and the whole
+  `InputFilter` family. T2 removed the X360 controller path; T4 the
+  `RegisterHotKey` Alt-Tab binding and the per-message `GetForegroundWindow`
+  polling, so focus arrives as `WM_ACTIVATE`; T5 deleted the `g_keys` and
+  `g_keyDeltas` globals outright. Still to come in that plan: `WM_CHAR` text,
+  Raw Input, and a consuming router the UI subscribes to.
 - **UI:** the **Eclipse** toolkit (`Eclipse`, `EclWindow`, `EclButton`), which
   every in-game window derives from.
 - **Networking:** `ClientToServer`, the client's endpoint — inbox, outbox,
@@ -117,7 +140,7 @@ headless server impossible again.
 
 ### GameLogic
 
-The bulk of the inherited code, ~48k lines. Entities (`Citizen`, `Engineer`,
+The bulk of the inherited code, ~66k lines. Entities (`Citizen`, `Engineer`,
 `Officer`, `Armour`, `Spider`, `Centipede`, `SoulDestroyer`, …), buildings
 (`Factory`, `Generator`, `RadarDish`, `GunTurret`, `LaserFence`, `Teleport`, …),
 `Ai`, `Weapons`, and the in-game windows built on Eclipse.

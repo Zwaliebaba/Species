@@ -19,7 +19,6 @@ namespace Neuron
 
   SoundLibrary3d::SoundLibrary3d()
     : m_masterVolume(0),
-      m_hw3dDesired(false),
       m_mainCallback(nullptr),
       m_musicCallback(nullptr),
       m_musicChannelId(-1),
@@ -44,10 +43,7 @@ void SoundLibrary3d::SetMainCallback( bool (*_callback) (unsigned int, signed sh
 }
 
 
-void SoundLibrary3d::SetMusicCallback( bool (*_callback) (signed short *, unsigned int, int *) )
-{
-    m_musicCallback = _callback;
-}
+void SoundLibrary3d::SetMusicCallback(bool (*_callback)(signed short*, unsigned int, int, int*)) { m_musicCallback = _callback; }
 
 
 // 0 = silence, 255 = full volume
