@@ -3,9 +3,12 @@
 > **HISTORICAL AS OF 2026-08-05. Every count below is a snapshot of
 > `4b7ebbc`, and the restart it describes has been executed and finished.**
 > ALL ELEVEN PLANS ARE COMPLETE AND ARCHIVED — nothing named as open below is
-> open, and every plan path in this file points into `tasks/Archive/`. There is
-> no batch running and no ready task anywhere; the next piece of work starts by
-> writing a plan.
+> open, and every plan path in this file points into `tasks/Archive/`.
+>
+> **Three unrelated plans opened on 2026-08-06** — `sound-xaudio2`,
+> `input-native-events` and `network-transport` — so "no ready task anywhere",
+> which this banner used to say, is no longer true. None of them is described
+> below; this file is about the eleven that closed.
 >
 > This file is kept because the *reasoning* has outlived the numbers: why the
 > plans are shaped the way they are, why `strings-modernised` T5 was re-scoped

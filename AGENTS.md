@@ -25,7 +25,7 @@ survive persistently.
 
 It is not that yet. The codebase began as the Darwinia source and is partway
 through being reshaped: renamed, relayered, and modernised into something a
-persistent authoritative server can be built on. Roughly 115,000 lines of C++
+persistent authoritative server can be built on. Roughly 113,000 lines of C++
 across six MSBuild projects. It links only against the OS (OpenGL, GLU,
 XAudio2, Winsock) and takes one header-only dependency, **DirectXMath**,
 which ships in the Windows SDK — no library to link and nothing vendored.
@@ -135,7 +135,7 @@ NeuronCore/       ~4.8k   Foundation: sockets, threads, byte streams, the wire
                           Vector2/3, Matrix33/34 and Plane were deleted, and
                           storage is DirectXMath's own. Static library.
                           PARTLY in namespace Neuron — see Namespaces below.
-NeuronClient/     ~24k    Presentation: OpenGL renderer, sound, input drivers,
+NeuronClient/     ~22k    Presentation: OpenGL renderer, sound, input drivers,
                           the Eclipse UI toolkit, resource loading. Static
                           library, all of it in namespace Neuron.
 NeuronServer/     ~0.6k   Authoritative simulation host: Server, ServerToClient,
@@ -427,7 +427,7 @@ the standard, and it is not optional reading for anything that touches wire
 format, the simulation, or a file being converted.
 
 **Does the game work?** The suite cannot tell you. It covers a few hundred
-lines out of 115,000 — encoding, string helpers, object identity — so "it
+lines out of 113,000 — encoding, string helpers, object identity — so "it
 compiles and the suite passes" is not the same claim, and a green suite must
 never stand in for the smoke test below.
 
@@ -717,9 +717,13 @@ having no tests, and `GlobalWorld` not being constructible in a test DLL.
 
 The tree is namespaced; that is its own section, [above](#namespaces).
 
-**Nothing is gated on the owner, and migration stage 5 is finished.** The
-scheduling problem the batch files exist to solve is gone with the last plan:
-there is nothing to schedule against.
+**Migration stage 5 is finished**, and the scheduling problem the batch files
+exist to solve went with the last of those plans. It came back on 2026-08-06:
+three plans are open, 22 of their 35 tasks are not done, and
+`check_task_dag.py --next` answers what to schedule rather than any of the batch
+files, which describe the eleven that closed. `sound-xaudio2` T11 IS gated on
+the owner — it is a Garden run — so the "nothing is gated" this paragraph used
+to open with is no longer true either.
 
 **`ownership` T6 is still the one to be sceptical about.** Its acceptance asked
 for the game to reach the main menu after each of its four commits, and that
@@ -779,7 +783,7 @@ reachable from `Location::Advance`.
 
 **Do not reformat files you are not otherwise changing.** Formatting is enforced
 on changed lines only, deliberately: a repo-wide reformat would destroy `git
-blame` across 115,000 lines. Whole-file formatting is a migration task, done
+blame` across 113,000 lines. Whole-file formatting is a migration task, done
 deliberately, one file at a time, in its own commit.
 
 **Test what you build.** New behaviour ships with the tests that cover it, in

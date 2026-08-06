@@ -102,10 +102,15 @@ Presentation and platform services for a graphical client.
   reported through `IXAudio2EngineCallback::OnCriticalError`, which parks the
   backend silent; `SoundSystem::Advance` then rebuilds it every five seconds
   until a device comes back.
-- **Input:** a composable driver stack — `InputDriverSimple`, `Chord`,
-  `Conjoin`, `Invert`, `Idle` — resolving to `ControlTypes`. `Alias`, `Pipe`
-  and `Prefs` were deleted by `input-native-events` T1: no binding data used
-  them and `Pipe` was never even registered.
+- **Input:** `InputDriverWin32` pumps the Win32 message queue and holds the
+  key and button state; above it a composable driver stack — `InputDriverSimple`,
+  `Chord`, `Conjoin`, `Invert`, `Idle` — resolves a binding to a `ControlType`.
+  `input-native-events` T1 deleted nine drivers and filters that no binding data
+  used: `Alias`, `Pipe` (never even registered), `Prefs`, `Value` and the whole
+  `InputFilter` family. T2 removed the X360 controller path, T4 the `RegisterHotKey`
+  Alt-Tab binding and the per-message `GetForegroundWindow` polling — focus now
+  arrives as `WM_ACTIVATE`, and losing it releases every key. The rest of the
+  plan turns this into an event stream with a consuming router.
 - **UI:** the **Eclipse** toolkit (`Eclipse`, `EclWindow`, `EclButton`), which
   every in-game window derives from.
 - **Networking:** `ClientToServer`, the client's endpoint — inbox, outbox,
@@ -129,7 +134,7 @@ headless server impossible again.
 
 ### GameLogic
 
-The bulk of the inherited code, ~48k lines. Entities (`Citizen`, `Engineer`,
+The bulk of the inherited code, ~66k lines. Entities (`Citizen`, `Engineer`,
 `Officer`, `Armour`, `Spider`, `Centipede`, `SoulDestroyer`, …), buildings
 (`Factory`, `Generator`, `RadarDish`, `GunTurret`, `LaserFence`, `Teleport`, …),
 `Ai`, `Weapons`, and the in-game windows built on Eclipse.
