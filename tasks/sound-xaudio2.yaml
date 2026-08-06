@@ -150,7 +150,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: in_progress
 
   - id: T3
     title: Carry the DSP effects on XAudio2 - built-in filter, stock XAPOs, one adapter

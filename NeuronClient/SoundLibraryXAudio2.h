@@ -47,6 +47,17 @@ namespace Neuron
       void TopUpChannel(int _channel);
       void FillBlock(int _channel, signed short* _block);
 
+      // Runs X3DAudio for one positioned channel and writes the result: an
+      // output matrix onto the voice, and a doppler factor into the frequency
+      // ratio. A channel that is not positioned has its matrix put back.
+      void UpdatePositioning(int _channel);
+
+      // The ONE place a frequency ratio reaches a voice. Pitch and doppler are
+      // tracked separately and multiplied here, because they are set from
+      // different callers at different times and whichever ran last would
+      // otherwise erase the other.
+      void ApplyFrequencyRatio(XAudio2Voice& _voice);
+
       void Shutdown();
 
     public:

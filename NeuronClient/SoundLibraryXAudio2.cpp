@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include <xaudio2.h>
+#include <x3daudio.h>
 
 #include <algorithm>
 #include <cmath>
@@ -32,6 +33,23 @@ namespace Neuron
     // GameData/Sounds.txt), and a voice cannot exceed the ratio it was created
     // with. Four is that with room, and well inside XAUDIO2_MAX_FREQ_RATIO.
     constexpr float MaxFrequencyRatio = 4.0f;
+
+    // The value DirectSound was given through SetDopplerFactor, kept so the
+    // pitch shift on a moving sound is the one the game was tuned against
+    // rather than the physically correct one.
+    constexpr float DopplerScaler = 0.1f;
+
+    // Enough for any endpoint XAudio2 will hand us; 5.1 and 7.1 both fit.
+    constexpr int MaxOutputChannels = 8;
+
+    X3DAUDIO_VECTOR ToX3DAudio(DirectX::XMFLOAT3 const& _v)
+    {
+      X3DAUDIO_VECTOR out;
+      out.x = _v.x;
+      out.y = _v.y;
+      out.z = _v.z;
+      return out;
+    }
 
     // m_masterVolume and the per-channel calculation below are both in
     // hundredths of a decibel of ATTENUATION, which is DirectSound's unit and
@@ -77,12 +95,24 @@ namespace Neuron
       unsigned int m_sourceRate = 0;
       int m_pendingRate = 0;
 
+      // Pitch and doppler are held apart and combined by ApplyFrequencyRatio.
+      // SetChannelFrequency owns the first and the X3DAudio pass owns the
+      // second, they run at different moments, and a single stored ratio would
+      // mean whichever wrote last silently discarded the other's contribution.
+      float m_pitchRatio = 1.0f;
+      float m_doppler = 1.0f;
+      float m_appliedRatio = 1.0f;
+
       // Last values written, so a repeated set is not an XAudio2 call. The
-      // DirectSound backend cached the same four for the same reason.
-      float m_ratio = 1.0f;
+      // DirectSound backend cached the same for the same reason.
       float m_volume = -1.0f;
       float m_minDist = -1.0f;
       int m_3DMode = -1;
+
+      // True while an X3DAudio matrix is on the voice, so a channel that stops
+      // being positioned — channels are reused by whatever sound wins them —
+      // gets its panning put back rather than inheriting the last sound's.
+      bool m_positionalMatrix = false;
 
       DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
       DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
@@ -101,6 +131,15 @@ namespace Neuron
       IXAudio2* m_engine = nullptr;
       IXAudio2MasteringVoice* m_masteringVoice = nullptr;
       bool m_ownsCom = false;
+
+      // X3DAudio replaces DS3D. The instance is a plain byte array holding the
+      // speaker geometry, computed once from the endpoint's channel mask.
+      X3DAUDIO_HANDLE m_x3dInstance{};
+      bool m_x3dReady = false;
+      unsigned int m_outputChannels = 0;
+
+      X3DAUDIO_LISTENER m_listener{};
+      float m_matrix[MaxOutputChannels] = {};
 
       // Index 0..m_numChannels-1 are the game's channels; the music voice is
       // separate because its id is m_musicChannelId, which is -1.
@@ -242,6 +281,31 @@ namespace Neuron
     }
 
     //
+    // Set up X3DAudio against the endpoint we actually got. Both numbers come
+    // from the mastering voice rather than being assumed: a 5.1 endpoint needs
+    // six matrix coefficients per channel and a stereo one needs two.
+
+    XAUDIO2_VOICE_DETAILS masteringDetails = {};
+    m_data->m_masteringVoice->GetVoiceDetails(&masteringDetails);
+    m_data->m_outputChannels = std::min<unsigned int>(masteringDetails.InputChannels, MaxOutputChannels);
+
+    DWORD channelMask = 0;
+    if (SUCCEEDED(m_data->m_masteringVoice->GetChannelMask(&channelMask)) && channelMask != 0)
+    {
+      if (SUCCEEDED(X3DAudioInitialize(channelMask, X3DAUDIO_SPEED_OF_SOUND, m_data->m_x3dInstance)))
+        m_data->m_x3dReady = true;
+    }
+
+    if (!m_data->m_x3dReady)
+      DebugTrace("SOUND : X3DAudio unavailable; channels will play unpositioned\n");
+
+    // A listener that is valid before the camera has ever reported one. X3DAudio
+    // requires OrientFront and OrientTop to be orthonormal and will not produce
+    // a matrix if they are not, so it must never be left zeroed.
+    m_data->m_listener.OrientFront = {0.0f, 0.0f, 1.0f};
+    m_data->m_listener.OrientTop = {0.0f, 1.0f, 0.0f};
+
+    //
     // One mono source voice per channel. The format is the mix rate only as a
     // starting point — ResetChannel replaces it with the sample's own rate the
     // first time a sound lands on the channel.
@@ -371,6 +435,17 @@ namespace Neuron
     if (!m_data)
       return;
 
+    // Positioning first, so a block filled below is mixed with the panning that
+    // matches where the listener is this tick rather than the previous one.
+    // Unlike the DirectSound backend there is no drift threshold deciding
+    // whether a move is worth reporting: X3DAudioCalculate is arithmetic and
+    // SetOutputMatrix is a write into voice state, so per-tick is both simpler
+    // and smoother than moving a channel only once it has drifted far enough.
+    START_PROFILE(g_profiler, "Position");
+    for (int i = 0; i < static_cast<int>(m_data->m_channels.size()); ++i)
+      UpdatePositioning(i);
+    END_PROFILE(g_profiler, "Position");
+
     START_PROFILE(g_profiler, "FillBuf");
     for (int i = 0; i < static_cast<int>(m_data->m_channels.size()); ++i)
       TopUpChannel(i);
@@ -405,8 +480,12 @@ namespace Neuron
       // The new sound is asking to play at exactly its own rate, so the ratio
       // starts at one and every later SetChannelFrequency is a pitch multiplier
       // against it — which is what keeps the ratio inside MaxFrequencyRatio.
+      // Doppler starts neutral too: the previous sound's motion is not this
+      // one's.
+      voice->m_pitchRatio = 1.0f;
+      voice->m_doppler = 1.0f;
+      voice->m_appliedRatio = 1.0f;
       voice->m_voice->SetFrequencyRatio(1.0f);
-      voice->m_ratio = 1.0f;
 
       voice->m_voice->Start(0);
     }
@@ -431,13 +510,8 @@ namespace Neuron
     if (!voice->m_voice || voice->m_sourceRate == 0)
       return;
 
-    const float ratio =
-      std::clamp(static_cast<float>(_frequency) / static_cast<float>(voice->m_sourceRate), XAUDIO2_MIN_FREQ_RATIO, MaxFrequencyRatio);
-    if (!NearlyEquals(ratio, voice->m_ratio))
-    {
-      voice->m_voice->SetFrequencyRatio(ratio);
-      voice->m_ratio = ratio;
-    }
+    voice->m_pitchRatio = static_cast<float>(_frequency) / static_cast<float>(voice->m_sourceRate);
+    ApplyFrequencyRatio(*voice);
   }
 
 
@@ -496,10 +570,110 @@ namespace Neuron
   void SoundLibraryXAudio2::SetListenerPosition(DirectX::XMFLOAT3 const& _pos, DirectX::XMFLOAT3 const& _front, DirectX::XMFLOAT3 const& _up,
                                                 DirectX::XMFLOAT3 const& _vel)
   {
-    // Recorded only. The emitter and listener data collected here is what
-    // sound-xaudio2 T2 hands to X3DAudioCalculate; until then every voice plays
-    // through the default output matrix, which is centred.
     m_listenerPos = _pos;
+
+    m_data->m_listener.Position = ToX3DAudio(_pos);
+    m_data->m_listener.Velocity = ToX3DAudio(_vel);
+
+    // X3DAudio REQUIRES these two to be orthonormal — DS3D did not, and simply
+    // took what the camera gave it. The camera's front and up are close enough
+    // to be believed but not close enough to be trusted, so they are made
+    // orthonormal here, in the same left-handed convention the software mixer
+    // used for its own pan (right = up x front).
+    DirectX::XMVECTOR front = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&_front));
+    DirectX::XMVECTOR const up = DirectX::XMLoadFloat3(&_up);
+    DirectX::XMVECTOR const right = DirectX::XMVector3Cross(up, front);
+
+    // A camera looking straight along its own up vector makes that cross
+    // product exactly zero, and XMVector3Normalize answers zero rather than
+    // anything usable — the degenerate case that made the trees disappear in
+    // directxmath-migration T17. Keep the last good orientation instead of
+    // handing X3DAudio a basis it will reject.
+    if (DirectX::XMVector3Equal(right, DirectX::XMVectorZero()) || DirectX::XMVector3Equal(front, DirectX::XMVectorZero()))
+      return;
+
+    DirectX::XMVECTOR const orthoRight = DirectX::XMVector3Normalize(right);
+    DirectX::XMVECTOR const orthoUp = DirectX::XMVector3Cross(front, orthoRight);
+
+    DirectX::XMFLOAT3 frontStore;
+    DirectX::XMFLOAT3 upStore;
+    DirectX::XMStoreFloat3(&frontStore, front);
+    DirectX::XMStoreFloat3(&upStore, orthoUp);
+
+    m_data->m_listener.OrientFront = ToX3DAudio(frontStore);
+    m_data->m_listener.OrientTop = ToX3DAudio(upStore);
+  }
+
+
+  void SoundLibraryXAudio2::ApplyFrequencyRatio(XAudio2Voice& _voice)
+  {
+    if (!_voice.m_voice)
+      return;
+
+    const float ratio = std::clamp(_voice.m_pitchRatio * _voice.m_doppler, XAUDIO2_MIN_FREQ_RATIO, MaxFrequencyRatio);
+    if (NearlyEquals(ratio, _voice.m_appliedRatio))
+      return;
+
+    _voice.m_voice->SetFrequencyRatio(ratio);
+    _voice.m_appliedRatio = ratio;
+  }
+
+
+  void SoundLibraryXAudio2::UpdatePositioning(int _channel)
+  {
+    XAudio2Voice* voice = GetVoice(_channel);
+    if (!voice || !voice->m_voice)
+      return;
+
+    const bool positioned = m_data->m_x3dReady && voice->m_3DMode == Mode3dPositioned && m_data->m_outputChannels > 0;
+
+    if (!positioned)
+    {
+      // Put the panning back if this channel used to be positioned. All-ones is
+      // what XAudio2 gives a mono source by default, so this restores the state
+      // a freshly created voice is in rather than inventing one.
+      if (voice->m_positionalMatrix)
+      {
+        for (unsigned int i = 0; i < m_data->m_outputChannels; ++i)
+          m_data->m_matrix[i] = 1.0f;
+
+        voice->m_voice->SetOutputMatrix(nullptr, 1, m_data->m_outputChannels, m_data->m_matrix);
+        voice->m_positionalMatrix = false;
+      }
+
+      if (!NearlyEquals(voice->m_doppler, 1.0f))
+      {
+        voice->m_doppler = 1.0f;
+        ApplyFrequencyRatio(*voice);
+      }
+
+      return;
+    }
+
+    X3DAUDIO_EMITTER emitter = {};
+    emitter.ChannelCount = 1;
+    // The distance at which the sound is at full volume and past which it starts
+    // to fall away, which is exactly what DS3D's min distance meant. It must be
+    // positive; the blueprints can and do leave it unset.
+    emitter.CurveDistanceScaler = voice->m_minDist > 0.0f ? voice->m_minDist : 1.0f;
+    emitter.DopplerScaler = DopplerScaler;
+    emitter.Position = ToX3DAudio(voice->m_pos);
+    emitter.Velocity = ToX3DAudio(voice->m_vel);
+    emitter.OrientFront = {0.0f, 0.0f, 1.0f};
+    emitter.OrientTop = {0.0f, 1.0f, 0.0f};
+
+    X3DAUDIO_DSP_SETTINGS settings = {};
+    settings.SrcChannelCount = 1;
+    settings.DstChannelCount = m_data->m_outputChannels;
+    settings.pMatrixCoefficients = m_data->m_matrix;
+
+    X3DAudioCalculate(m_data->m_x3dInstance, &m_data->m_listener, &emitter, X3DAUDIO_CALCULATE_MATRIX | X3DAUDIO_CALCULATE_DOPPLER, &settings);
+
+    voice->m_voice->SetOutputMatrix(nullptr, 1, m_data->m_outputChannels, m_data->m_matrix);
+    voice->m_positionalMatrix = true;
+
+    voice->m_doppler = settings.DopplerFactor > 0.0f ? settings.DopplerFactor : 1.0f;
+    ApplyFrequencyRatio(*voice);
   }
 
 
