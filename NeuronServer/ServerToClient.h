@@ -16,6 +16,8 @@ namespace Neuron
       // fixed reply port, and that pair is what limited a host to one client and
       // could not work through NAT — two players behind one router share an
       // address and differ only by port.
+      //
+      // It also replaces a socket. Each client used to own one.
       Endpoint m_endpoint;
 
       // WHO this client is, as far as the protocol is concerned. Assigned by the

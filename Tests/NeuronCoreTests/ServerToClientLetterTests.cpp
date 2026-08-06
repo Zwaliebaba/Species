@@ -322,8 +322,9 @@ namespace NeuronCoreTests
       // produce. Until network-transport T1 each of them read past the end of
       // the receive buffer: the length parameter existed and was never
       // consulted, and numUpdates was taken from the wire and used as a loop
-      // bound over updates that were not there. On a 512-byte stack buffer in
-      // NetSocketListener that is a read of whatever followed it.
+      // bound over updates that were not there. On the receive buffer of the
+      // day — a 512-byte array on a listener thread's stack — that is a read of
+      // whatever followed it.
       //
       // The bar these set is "an empty or invalid letter, never a crash". They
       // are worth running under a sanitizer rather than only in the suite —

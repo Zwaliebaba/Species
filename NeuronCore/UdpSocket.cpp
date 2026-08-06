@@ -44,7 +44,7 @@ namespace Neuron
     if (failed != 0 || !results)
       return std::error_code(failed, std::system_category());
 
-    // The first IPv4 answer, which is what NetGetHostByName's caller took —
+    // The first IPv4 answer, which is what the legacy resolver's caller took —
     // h_addr_list[0] — so a multi-homed name resolves the same way it did.
     const sockaddr_in* address = reinterpret_cast<sockaddr_in const*>(results->ai_addr);
     _endpoint = Endpoint(address->sin_addr.s_addr, _port);
@@ -116,8 +116,9 @@ namespace Neuron
       return LastError();
 
     // A datagram is sent whole or not at all — there is no partial send to loop
-    // over. NetSocket carried a select-plus-partial-write loop inherited from
-    // TCP that could not execute for a datagram socket, and T6 deletes it.
+    // over. The legacy transport carried a select-plus-partial-write loop
+    // inherited from TCP that could not execute for a datagram socket, and T6
+    // deleted it.
     if (sent != _length)
       return std::make_error_code(std::errc::message_size);
 

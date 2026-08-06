@@ -34,8 +34,8 @@ namespace Neuron
 
     public:
       // Where datagrams go and come from, polled from the frame loop. It
-      // replaces a NetSocket for sending, a NetSocketListener on a blocking
-      // thread for receiving, and the two mutexes between them. The default
+      // replaces one socket for sending, a listener on a blocking thread for
+      // receiving, and the two mutexes between them. The default
       // constructor builds a UdpTransport on an OS-chosen port; the other one
       // takes whatever it is given, which is how a test drives a client with no
       // socket in it.

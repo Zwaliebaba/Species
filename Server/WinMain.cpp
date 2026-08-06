@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
   Server server;
   server.Initialise(profiler);
 
-  printf("Species server listening on port 4000, ticking at %.0f Hz.\n", SERVER_ADVANCE_FREQ);
+  printf("Species server listening on port %d, ticking at %.0f Hz.\n", static_cast<int>(ServerPort), SERVER_ADVANCE_FREQ);
   if (tickLimit >= 0)
     printf("Stopping after %d tick(s).\n", tickLimit);
 

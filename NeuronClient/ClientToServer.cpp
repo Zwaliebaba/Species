@@ -53,7 +53,7 @@ namespace Neuron
     if (unresolved)
       NetDebugOut("Client could not resolve server address {}: {}", serverAddress, unresolved.message());
 
-    // PORT 0: whatever the OS gives us. The client used to bind a fixed 4001 so
+    // PORT 0: whatever the OS gives us. The client used to bind a fixed port so
     // the server had somewhere to reply to, and that single fact is what
     // limited a host to one client and broke NAT — the server replies to the
     // address a datagram came FROM now, so nothing needs the port to be

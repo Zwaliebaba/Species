@@ -36,10 +36,10 @@ inline constexpr int MaxDatagramSize = 1024;
 
 // THE PORT. One, now: the server's.
 //
-// There was a second, 4001, which the client bound so the server had somewhere
-// fixed to reply to. That single fact limited a host to one client and could
-// not work through NAT. The server replies to the address a datagram came FROM,
-// so a client binds port 0 and lets the OS choose.
+// There was a second, which the client bound so the server had somewhere fixed
+// to reply to. That single fact limited a host to one client and could not work
+// through NAT. The server replies to the address a datagram came FROM, so a
+// client binds port 0 and lets the OS choose.
 inline constexpr unsigned short ServerPort = 4000;
 
 // LIVENESS. A client that stops sending is disconnected after this many server

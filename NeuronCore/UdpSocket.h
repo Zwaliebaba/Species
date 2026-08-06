@@ -42,8 +42,8 @@ namespace Neuron
   // Resolves a host — a dotted quad or a name — and a port to an endpoint.
   //
   // It exists because the client's server address is a preferences string, so
-  // "myserver.local" is a thing a user can write. NetSocket::Connect resolved
-  // it through NetGetHostByName and T6 deletes that; without this the address
+  // "myserver.local" is a thing a user can write. The legacy transport resolved
+  // it on the way to connecting, and T6 deleted that; without this the address
   // would silently have to be numeric, which is the kind of regression a build
   // cannot notice.
   [[nodiscard]] std::error_code ResolveEndpoint(char const* _host, unsigned short _port, Endpoint& _endpoint);
@@ -52,11 +52,11 @@ namespace Neuron
   // The whole transport, and deliberately small: open, send, try to receive.
   //
   // ONE SOCKET, POLLED, NOT A THREAD PER ENDPOINT. What this replaces was a
-  // NetSocket per client for sending plus a NetSocketListener on its own
-  // blocking thread for receiving, with a mutex between that thread and the
-  // tick — and the thread bought nothing, because the inbox it filled was only
-  // ever drained once per tick anyway. Polling from the tick deletes the
-  // thread, the mutex and every cross-thread hazard, and changes no timing.
+  // socket per client for sending, plus a listener on its own blocking thread
+  // for receiving, with a mutex between that thread and the tick — and the
+  // thread bought nothing, because the inbox it filled was only ever drained
+  // once per tick anyway. Polling from the tick deletes the thread, the mutex
+  // and every cross-thread hazard, and changes no timing.
   //
   // It stays one socket at any client count. IOCP and RIO earn their complexity
   // at thousands of sockets; a UDP game server is one socket talking to

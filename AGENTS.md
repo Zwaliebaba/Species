@@ -57,7 +57,7 @@ preference all deleted. Two remain open:
 | Plan | What it does | State |
 |---|---|---|
 | [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse; the gamepad mode and the control-icon plumbing deleted | **14 of 15 — all code done, T12 is the owner's Garden run** |
-| [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | **6 of 12 — T1-T6 done and CI-green; no Garden run on any of it** |
+| [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | **11 of 12 — all code done, T12 is the owner's Garden run** |
 
 **`input-native-events` has one node left and it is not code.** T12 is a
 seven-step Garden run on a build carrying every other node, and **nothing in that plan has
@@ -450,13 +450,19 @@ The game **does** run, so the smoke test is something you can actually perform
 rather than something to wait for. If you are working somewhere that cannot
 launch a Windows client, say so instead of implying you checked.
 
-**WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-06. THE UNCOMPILED BLOCK IS
-GONE.** CI is green at `f169ab1`, and that commit carries the whole of
-`input-native-events` — T1 through T15 — and `network-transport` T1 through T6:
-it compiles, links, passes **258 of 258** tests on x64 Debug, and the headless
-server reached sequence id 20 in 2.10s with no client attached. That last figure
-is the one worth reading twice: it is `Server::Initialise` opening a real socket
-and twenty real ticks of `Advance` draining it, with the listen thread deleted.
+**WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-06.** CI has been green on
+every `network-transport` task as it landed, most recently through T7 at
+`7ce7aa7` — the `Transport` seam and the protocol tests. The last full figure
+recorded here is `f169ab1`, which carried the whole of `input-native-events` and
+`network-transport` T1–T6: **258 of 258** tests on x64 Debug, and the headless
+server reaching sequence id 20 in 2.10s with no client attached. That last
+number is the one worth reading twice — it is `Server::Initialise` opening a
+real socket and twenty real ticks of `Advance` draining it, with the listen
+thread deleted.
+
+**T8 THROUGH T11 ARE PUSHED AND THEIR CI ANSWER IS NOT IN THIS FILE YET.** They
+are the frame and the version bump, the identity change, liveness and pruning,
+and the closing sweep. Read the run rather than this paragraph.
 
 **This entry warned about an uncompiled block twice and both are now
 discharged.** The nine input tasks written on Linux and the six network tasks
@@ -978,6 +984,21 @@ Real, currently true, and worth knowing before you trip over them:
     arguing they were the controller *user interface*; T11 recorded the
     disagreement with the deleted art and refused to resolve it on an agent's
     own authority. The owner resolved it.
+- **REMOTE PLAY WAS BROKEN OUTRIGHT AND IS FIXED, UNTESTED BY ANY HUMAN.**
+  `ProcessServerLetters` decided whether a `TeamAssign` was its own by comparing
+  the letter against `GetOurIP_Int()`, which returned a hard-coded `127.0.0.1`
+  under a "we're not doing networking for now" comment. On any real network
+  every client believed every team assignment was its own.
+  `network-transport` T9 replaced address-based identity with a server-assigned
+  connection id and reply-to-source addressing, which also makes two clients on
+  one host — and therefore two players behind one router — possible for the
+  first time. It has protocol tests and no session between two machines has ever
+  been run.
+- **THE PROTOCOL IS AT VERSION 2 AND DOES NOT INTEROPERATE WITH VERSION 1.**
+  Every datagram carries a four-byte frame — magic, version, kind — and anything
+  else is dropped silently. Deliberate, taken while there are no deployed builds
+  to protect. A pre-2026-08-06 client and a current one cannot talk to each
+  other at all, which is the intended outcome and not a bug to report.
 - **`input-native-events` LEFT TWO THINGS RECORDED AND UNOWNED.** Neither has a
   task; each is a decision rather than a defect.
   - **`ControlMenuClose` has no binding** in any file under `GameData/Input`, so
@@ -1032,13 +1053,16 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, **258** tests as of
-  `network-transport` T6 (2026-08-06) — 137 `NeuronCoreTests`, 74
-  `NeuronClientTests`, 39 `GameLogicTests`, 8 `NeuronServerTests`. **All 258 are
-  compiled and run**: the figure was read off the CI run at `f169ab1`, whose
-  *Total tests* line and `git grep -c TEST_METHOD` agree. The newest 23 come
-  from `network-transport` T1–T6 and cover hostile and truncated datagrams, the
-  datagram cap, and the letter spillover across two ticks: `input-native-events` T6–T11 were
+- **The test suite is thin, and less thin than it was.** Four projects, **279**
+  tests as of `network-transport` T11 (2026-08-06) — 141 `NeuronCoreTests`, 74
+  `NeuronClientTests`, 39 `GameLogicTests`, 25 `NeuronServerTests`. The count
+  should be read off a CI run's *Total tests* line; `git grep -c TEST_METHOD`
+  agrees with it today. **`NeuronServerTests` went from 5 to 25**, and that is
+  the substantive change rather than the number: `ServerProtocolTests` drives a
+  scripted client against a real `Server` over a fake in-memory wire, so join,
+  team assignment, sequencing, acknowledgement, retransmission, the datagram
+  cap, client timeout and history pruning are covered by CI for the first time.
+  The protocol had **never** been exercised by a test before — `input-native-events` T6–T11 were
   written on Linux, and `git grep -c TEST_METHOD` is what counted them.
   The newest are the three lifts that made input testable at all —
   `InputEventTests` over `DeriveFrameState`, `InputRouterTests` over the

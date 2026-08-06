@@ -255,11 +255,9 @@ namespace Neuron
         if (linearSize > 0)
         {
           // Every client is written to through the server's one socket, rather
-          // than through a NetSocket per client that had to be "connected"
-          // before it could be used. Identity does not change here — the reply
-          // still goes to the address the client registered with, on the fixed
-          // client port. T9 is what makes it the address the datagram actually
-          // arrived from.
+          // than through a socket per client that had to be "connected" before
+          // it could be used — and to the address its datagrams actually
+          // arrived from, which is what T9 made true.
           ServerToClient* client = m_clients[letter->GetClientId()].get();
           const std::error_code failure = m_transport->Send(client->GetEndpoint(), datagram, linearSize);
           if (failure)
