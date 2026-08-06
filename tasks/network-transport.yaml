@@ -134,8 +134,8 @@ tasks:
       before anything looks at the type. Parsing safely and then acting on the
       result anyway is not a fix.
 
-      NOT COMPILED BY MSVC AND NOT RUN AS A SUITE. Written on Linux. What was
-      run: all eight tools/ checks, and a g++ 13 harness under ASan and UBSan
+      WRITTEN WITHOUT MSVC AND SINCE BUILT GREEN BY CI at f169ab1, 258/258
+      tests. What was run BEFORE that, on Linux: all eight tools/ checks, and a g++ 13 harness under ASan and UBSan
       over verbatim copies of NetworkUpdate.cpp, ServerToClientLetter.cpp and
       TeamControls.cpp against shims for pch.h, Debug.h and the XMFLOAT3
       storage. It carries the PRE-T1 macro serialisers alongside the new ones
@@ -219,7 +219,7 @@ tasks:
       directly would leave a partial update behind the cursor with no way back.
       That is why ByteWriter::WriteBytes exists and is kept.
 
-      NOT COMPILED BY MSVC AND NOT RUN AS A SUITE, same as T1. The harness was
+      WRITTEN WITHOUT MSVC AND SINCE BUILT GREEN BY CI at f169ab1. The harness was
       refreshed onto this task's sources: the byte comparison against the
       pre-T1 macro serialisers still passes for all twelve update types and all
       four letter types, the truncation and hostile-datagram sweeps still pass
@@ -294,7 +294,8 @@ tasks:
       sized themselves from MAX_PACKET_SIZE, and Tests/NeuronServerTests is
       where the spillover test had to go.
 
-      NOT COMPILED BY MSVC AND NOT RUN AS A SUITE. The harness was extended:
+      WRITTEN WITHOUT MSVC AND SINCE BUILT GREEN BY CI at f169ab1, with both new
+      NeuronServerTests passing by name. The harness was extended:
       60 updates spill across two letters at 1020 and 264 bytes, in order, and
       the capped letter round trips through the parser. FillLetter's five lines
       are TRANSCRIBED into the harness rather than compiled from Server.cpp,
@@ -348,7 +349,7 @@ tasks:
       in one pass, sending on a closed socket, null and empty payloads,
       reopening and double-closing.
 
-      WHAT IS STILL UNCOMPILED IS THE WIRING, not the socket: Server.cpp,
+      THE WIRING WAS THE UNCOMPILED PART AND CI HAS NOW BUILT IT: Server.cpp,
       Server.h, ServerToClient.cpp and the test file need MSVC and the rest of
       NeuronServer. The shapes that changed there are the ones to look at if CI
       is red - Server owns a UdpSocket by value (so Server is no longer
@@ -368,11 +369,11 @@ tasks:
       to be swept later would have been theatre. ClientPort is deliberately
       short-lived: T9 deletes the whole idea of a fixed reply port.
 
-      ONE THING THE ACCEPTANCE ASKS FOR THAT CANNOT BE CHECKED HERE: "Server.exe
-      --ticks 20 still advances the sequence id". That is a CI step and it needs
-      Windows. It is also the single most valuable signal on this commit,
-      because it exercises Initialise, the socket, and twenty real ticks of
-      Advance with the listen thread gone.
+      THE ACCEPTANCE'S LAST LINE IS DISCHARGED: CI at f169ab1 reports "headless
+      server reached sequence id 20 in 2.0971917s with no client attached". That
+      is the most valuable signal on this task - Initialise opening a real
+      socket, and twenty real ticks of Advance draining it with the listen
+      thread gone, at the right rate rather than free-running.
 
       ServerToClient became CONSTRUCTIBLE IN A TEST as a side effect - it used
       to open and connect a socket to exist at all - so there is now a test that
@@ -428,8 +429,8 @@ tasks:
       goes out carrying the sequence id of a letter that arrived this frame
       rather than last frame's.
 
-      NOT COMPILED. Nothing in this task can be built here - ClientToServer
-      needs NeuronClient. The socket underneath it is the same UdpSocket that T4
+      NOT COMPILED WHEN WRITTEN, SINCE BUILT GREEN BY CI at f169ab1. Nothing in
+      this task can be built here - ClientToServer needs NeuronClient. The socket underneath it is the same UdpSocket that T4
       compiled and ran under the POSIX shim; the additions to it here,
       ResolveEndpoint, ran there too. What needs CI is the file that uses them.
 
@@ -488,8 +489,9 @@ tasks:
       than as survivors; the check that matters is that no declaration,
       definition, include or project entry names any of them, and that is true.
 
-      NOT COMPILED. A deletion is the change most likely to break a build in a
-      file nobody touched, and this repository has been red twice for exactly
+      NOT COMPILED WHEN WRITTEN, SINCE BUILT GREEN BY CI at f169ab1 - the
+      reasoning below held. A deletion is the change most likely to break a build
+      in a file nobody touched, and this repository has been red twice for exactly
       that - see AGENTS.md, "deleting a header withdraws everything it
       included, not just what it declared". The three things NetLib.h used to
       supply transitively are winsock2.h and windows.h (through NetLibWin32.h)

@@ -57,7 +57,7 @@ preference all deleted. Two remain open:
 | Plan | What it does | State |
 |---|---|---|
 | [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse; the gamepad mode and the control-icon plumbing deleted | **14 of 15 — all code done, T12 is the owner's Garden run** |
-| [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | **6 of 12 — T1-T6 done, none of it compiled by MSVC** |
+| [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | **6 of 12 — T1-T6 done and CI-green; no Garden run on any of it** |
 
 **`input-native-events` has one node left and it is not code.** T12 is a
 seven-step Garden run on a build carrying every other node, and **nothing in that plan has
@@ -450,34 +450,28 @@ The game **does** run, so the smoke test is something you can actually perform
 rather than something to wait for. If you are working somewhere that cannot
 launch a Windows client, say so instead of implying you checked.
 
-**WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-06.** CI is green at
-`ffc5105`, which carries all of `sound-xaudio2` and `input-native-events` T1-T2:
-it compiles, links, passes the suite on x64 Debug, and the headless server
-reaches sequence 20 at the right rate. Every task since `d858b6b` has gone green
-first round.
+**WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-06. THE UNCOMPILED BLOCK IS
+GONE.** CI is green at `f169ab1`, and that commit carries the whole of
+`input-native-events` — T1 through T15 — and `network-transport` T1 through T6:
+it compiles, links, passes **258 of 258** tests on x64 Debug, and the headless
+server reached sequence id 20 in 2.10s with no client attached. That last figure
+is the one worth reading twice: it is `Server::Initialise` opening a real socket
+and twenty real ticks of `Advance` draining it, with the listen thread deleted.
 
-**THERE IS AN UNCOMPILED BLOCK AGAIN, AND IT IS THE WHOLE OF
-`input-native-events` T3 AND T5–T11, PLUS `network-transport` T1–T6.** Nine
-input tasks are pushed behind `ffc5105` and awaiting their own CI answer: the
-event stream, `WM_CHAR` text input, Raw Input, the router and its consuming
-sinks, the subscription API, the collapse of the event-handler layers, and the
-closing sweep. **Treat the green above as covering `ffc5105` and not the branch
-head.** All nine were written on Linux against the eight Python checks, a
-`g++`/ASan/UBSan harness for the parts that are pure logic, and reading — no
-MSVC build and no client launch happened at any point.
+**This entry warned about an uncompiled block twice and both are now
+discharged.** The nine input tasks written on Linux and the six network tasks
+written on top of them have all been through MSVC in the run above. The
+`network-transport` block came closest to being the exception and is worth
+recording as a method rather than a result: `UdpSocket.cpp` was compiled
+unmodified against a POSIX shim for Winsock's names and exercised over real
+loopback UDP, and the wire codecs were compared byte-for-byte against the
+pre-T1 macro serialisers under ASan and UBSan — every update type, every letter
+type, every truncation of a 63-byte letter, and 20,000 random datagrams. Six
+tasks then went green first round.
 
-**The network block on top of that is six more tasks and it rewrites the
-transport.** T1–T6 replaced the `ByteStream` macros with a bounded reader and
-writer, gave `ServerToClientLetter` value semantics, made the datagram one size
-with per-letter spillover, replaced both listener threads with one polled
-`UdpSocket` at each end, and deleted twelve legacy transport files. **What has
-actually been run is more than usual and still not a build**: `UdpSocket.cpp` was
-compiled unmodified against a POSIX shim for Winsock's names and exercised over
-real loopback UDP, and the codecs were compared byte-for-byte against the old
-macro serialisers under ASan and UBSan. What no harness here can see is
-`Server.cpp`, `ClientToServer.cpp` and `ServerToClient.cpp`, which are where the
-call-site shapes changed — and a deletion of twelve files is exactly the change
-that breaks a file nobody touched.
+**None of it has been in front of a running game.** That is the gap the rest of
+this section is about: two plans' worth of change sit behind a green build and a
+green suite with no Garden run on any of them.
 
 **What that combination can and cannot catch is the standing lesson of this
 repository, and it applied twice in this block.** A Python check cannot see a
@@ -487,9 +481,10 @@ site. What it did catch, both times by asking what a deleted `#include` had been
 through the `<vector>` that T6 removed, and `InputDriverWin32.h` was getting
 `<windows.h>` through the `Win32EventProc.h` that T10 deleted while declaring a
 `WndProc` in terms of `HWND` and `LRESULT`. Both would have been a CI round
-each. **The earlier uncompiled block this entry used to warn about is gone**:
+each. **The earlier uncompiled blocks this entry used to warn about are gone**:
 `strings-modernised` T12, T11, T13, T17 and T9 were the largest ever recorded
-here, and CI has since built all of them.
+here, and CI has since built all of them — as it now has the input and network
+blocks above.
 
 **It took two red rounds to get there, and both were the same mistake.** An
 earlier version of this entry claimed CI had been green on every task landed
@@ -1039,9 +1034,10 @@ Real, currently true, and worth knowing before you trip over them:
     Release-only break to point at.
 - **The test suite is thin.** Four projects, **258** tests as of
   `network-transport` T6 (2026-08-06) — 137 `NeuronCoreTests`, 74
-  `NeuronClientTests`, 39 `GameLogicTests`, 8 `NeuronServerTests`. **47 of them
-  have never been compiled by anything** — the 24 below plus 23 more from
-  `network-transport` T1–T6, which cover hostile and truncated datagrams, the
+  `NeuronClientTests`, 39 `GameLogicTests`, 8 `NeuronServerTests`. **All 258 are
+  compiled and run**: the figure was read off the CI run at `f169ab1`, whose
+  *Total tests* line and `git grep -c TEST_METHOD` agree. The newest 23 come
+  from `network-transport` T1–T6 and cover hostile and truncated datagrams, the
   datagram cap, and the letter spillover across two ticks: `input-native-events` T6–T11 were
   written on Linux, and `git grep -c TEST_METHOD` is what counted them.
   The newest are the three lifts that made input testable at all —
