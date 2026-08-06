@@ -24,8 +24,10 @@ leans on its questions, not on answers it does not have.
 Dated, owned, and not reopened by this document. D1–D4 were taken when the
 prompt was written; D5–D8 were put to the owner during the design session
 (Step 5 of the prompt, asked before finalising); D9–D15 resolved the
-document's seven open questions in a follow-up the same day. **No question in
-this design remains open.**
+document's seven open questions in a follow-up the same day; D16–D18 came
+out of an expert review later on 2026-08-06, which also amended areas B, C,
+E and F in place — the amendments are integrated below, not appended. **No
+question in this design remains open.**
 
 | # | Decision | Owner, date |
 |---|---|---|
@@ -44,6 +46,9 @@ this design remains open.**
 | D13 | **`2dSurfaceMap.h` moves down to `NeuronCore`**, beside `2dArray.h`. Downward, legal, lands in M1; what lets a headless server hold terrain later. | Owner, 2026-08-06 |
 | D14 | **`SpiritReceiver`'s spawn scatter is scoped to the receiver's region**, accepting the version-skew-only `syncrand` sequence shift — the `determinism` T5 cost shape, to be recorded in `AGENTS.md` when it lands as T5's was. | Owner, 2026-08-06 |
 | D15 | **No external dependency enters.** Noise is hand-rolled integer hashing; the sparse grid is standard-library; there is no store because the world regenerates. The tree keeps its one header-only dependency. | Owner, 2026-08-06 |
+| D16 | **The dormant world is visibly empty this milestone.** Ledgered entities and buildings do not render; the camera over a region without the player's units sees terrain only. Accepted openly rather than discovered at the gate. What would reopen it: the owner seeing T16 and wanting the cosmetic render-proxy layer, which is lockstep-safe (camera-keyed but sync-inert) and was declined on cost, not on correctness. | Owner, 2026-08-06 |
+| D17 | **The ledger stores full survivor state.** Dematerialise writes each survivor's position (fixed-point, ~0.1-unit quantisation), health and unit membership to its *current* chunk's ledger; rematerialisation restores what was left. Nest damage persists for the session; nothing resets on re-entry. | Owner, 2026-08-06 |
+| D18 | **Traversal times are accepted**: ~6 minutes base pan corner to corner, ~37 seconds at the existing ×10 sprint. Fast travel is open-world era work and stays out of scope. | Owner, 2026-08-06 |
 
 Decisions recorded in the tree that this design builds on: deterministic
 lockstep is to be replaced *eventually* but governs everything here
@@ -347,13 +352,30 @@ labelled arithmetic either way, and the bar (Part 3) is what it answers to.
 
 **Lifecycle.** `generate → resident → active (region) → inactive → evict`.
 Generation is deterministic (§C) so eviction is free — no writeback, because
-nothing in a chunk mutates persistently this milestone: terrain is immutable
-for the large map (no tiles, no flatten areas; building placement is not in
-scope here — it is the open world's area G), and population state lives in
-the ledger (§F), not the chunk. **Residency is a policy object, not a
-constant** — the camera window on the client, the active-region set for
-simulation, both expressed against the same interface, because the open
+nothing in a chunk mutates outside the pure function this milestone: the
+large map has no tiles and no *authored* flatten areas, and flattening under
+**generated** buildings is itself a step of the pure function (§C), so a
+regenerated chunk comes back flattened identically. Player building
+placement is not in scope — it is the open world's area G. Population state
+lives in the ledger (§F), not the chunk. **Residency is a policy object,
+not a constant** — the camera window on the client, the active-region set
+for simulation, both expressed against the same interface, because the open
 world will hand this seam a third policy (interest management, its area F).
+An **everything-resident policy is selectable by a named preference** — the
+debugging kill switch that answers "streaming bug or logic bug?" with one
+flip.
+
+**The coarse height envelope.** Rule 3 of §1.5 (simulation queries force
+synchronous generation) is correct and, alone, unbounded: an `Airstrike`
+crossing the map or a long `IsVisible` ray can demand a diagonal of
+never-resident chunks inside one `Advance`, on every client. So the design
+adds one always-resident structure: **min/max height per chunk**, computed
+closed-form from the coarse octaves at load — 32×32 chunks × two floats ≈
+8 KB (a 257² coarse field is the fallback if per-chunk bounds prove too
+loose, ≈ 260 KB; both are arithmetic). Conservative ray and line-of-sight
+tests resolve against the envelope first and force full generation only
+where the envelope admits a possible hit. This caps the worst hitch class
+by construction.
 
 **Layering — decided, D13.** The chunk record needs heights on a headless
 server eventually; `SurfaceMap2D` lives in `NeuronClient` today
@@ -391,10 +413,20 @@ requires.
   ~10⁶–10⁷ ops per chunk — sub-millisecond-scale per chunk on modern
   hardware, but that is exactly the kind of figure the bar requires the
   owner to measure, not this document to assert.
-- **Guide grids and flatten areas:** authored-map machinery, untouched
-  (D7). The large map launches with no authored stamps; the tile-as-stamp
-  idea stays open for the open-world design (its Decision 3), and nothing
-  here blocks it — a stamp would be one more generation layer.
+- **Guide grids and authored flatten areas:** authored-map machinery,
+  untouched (D7). The large map launches with no authored stamps; the
+  tile-as-stamp idea stays open for the open-world design (its Decision 3),
+  and nothing here blocks it — a stamp would be one more generation layer.
+- **Flattening under generated buildings IS a generation step.** D5
+  populates buildings, and a building on raw noise floats or clips — today
+  every authored building sits on a `LandscapeFlattenArea` applied at load
+  (`Landscape.cpp` `FlattenArea`). The resolution keeps purity: the
+  population layer (§F) picks building sites first — slope-constrained, a
+  pure function of `(seed, chunkCoord)` — and the terrain function then
+  flattens under those sites as its final step. Same inputs, same
+  flattening, on every client and every regeneration; the immutability
+  claim in area B survives because the flatten derives from the pure
+  layers, not from runtime state.
 - **Normals** are generated per chunk from its own samples plus the
   one-sample border, same central-difference as `GenerateNormals`
   (`Landscape.cpp:447-460`), so a chunk's normals never depend on residency
@@ -450,11 +482,23 @@ small; `CalculateBuildingArea` already computes the touched cell rectangle,
 size (§1.2).
 
 **Recommendation.** Per-chunk meshes, built at chunk residency, frustum-culled
-per chunk against the 15,000 far plane; **no LOD** this milestone — D8's
-window bounds the worst case at ~256 chunk meshes, and modern GL eats 256
-draw calls without noticing (assertion the owner's frame-time measurement
-either confirms or kills — it is the first number to look at if the bar
-fails). The strip builder is reused per chunk verbatim (below-water skip
+per chunk against the 15,000 far plane; **no LOD** this milestone. Draw-call
+count is not the risk — **triangle fill is, and fog is its real bound, not
+the far plane.** The arithmetic that decides whether no-LOD survives: The
+Garden's whole map (~4M u²) is about one chunk and ~70k terrain triangles
+total; a ~60° frustum swept to the full 15,000 far plane covers ~118M u² ≈
+28 land chunks ≈ **~0.9M triangles** — ~13× Garden's whole load. What makes
+no-LOD true is that D8 keeps fog "as today": **the large map's fog end is
+pinned Garden-like (~3,000–4,000 units effective terrain visibility)**, at
+which the frustum holds ~2 chunks ≈ Garden's own triangle count. The
+implementing task records the fog constant it finds in
+`Species/Renderer.cpp` (unread from this environment — verify there) and
+carries this arithmetic in its acceptance; if the owner later wants fog
+pushed toward the far plane, LOD re-enters scope and that is a new
+decision, not a tuning knob. Chunk meshes are backed by a **pooled buffer
+set** — VBOs are recycled on evict/build rather than created and destroyed
+per chunk, because buffer churn during fast camera travel is a classic
+hitch source. The strip builder is reused per chunk verbatim (below-water skip
 included); `m_landscapeColour` sampling and UV generation take chunk-local
 offsets. Water — decided, D11: constant-count grid already (§1.1); its
 200×200 grid recentres on the camera instead of the world, wave phase keyed
@@ -487,16 +531,43 @@ D5 moved from the open world's plate onto this milestone's.
   **biome-clumped** at the D5 total — nests and settlements where the
   octaves say so, empty plains between, and the worst-case activation cost
   is the largest clump, which the generation layer clamps.
-- **Ledgered:** dormant population is *data* in a per-chunk ledger (counts,
-  species, coarse positions), not entities in slot maps. It costs no
-  Advance, no grid cells, no sync-sum entries.
+- **Buildings are generated by the same layer, and first.** D5's population
+  includes buildings (nests are building organs — AntHill, Triffid,
+  SporeGenerator — and settlements have structures). The layer picks
+  building sites slope-constrained, assigns each a deterministic id keyed
+  `(chunk, ordinal)` — building ids are load-bearing, since pylons, fences
+  and tracks link by int id — and the terrain function flattens under the
+  sites as its final step (§C). Activation materialises buildings through
+  the normal construction paths and registers them in the per-chunk
+  obstruction grid; dormant buildings are ledger data like everything else,
+  and per D16 they do not render while dormant.
+- **Ledgered:** dormant population is *data* in a per-chunk ledger, not
+  entities in slot maps. It costs no Advance, no grid cells, no sync-sum
+  entries. **Schema decided, D17 — full survivor state**: per record,
+  species/type, position in fixed point at ~0.1-unit quantisation, health,
+  and unit/group membership; an entity's chunk membership is its position
+  at dematerialise time. Nest damage persists for the session. The record
+  format carries a **version byte and a byte-stability test** in the
+  `ByteStream` style the suite already uses — persistence is out of scope,
+  but the open world's delta store (its area D) will serialise exactly this
+  record, and versioning it now costs nothing.
+- **Visibly dormant is visibly empty — D16, accepted openly.** No render
+  proxies this milestone: the camera over a dormant region shows terrain
+  only. The lockstep-safe proxy design (camera-keyed, sync-inert, drawn
+  from the ledger) is recorded in D16 as the thing to build if the owner
+  reverses after seeing T16.
 - **Active:** a region (3×3 chunks, §B) **activates on simulation-visible
   causes only** (§1.5 rule 4): a player-controlled unit inside it, an order
   targeting it, an active building in it. Activation materialises the
-  ledger into real entities via the normal spawn paths; deactivation (no
-  cause for N ticks) writes survivors back as ledger data. Every client
-  computes the same causes at the same tick, so the same regions activate
-  everywhere — lockstep holds.
+  ledger into real entities via the normal spawn paths; deactivation writes
+  survivors back as ledger data (full state, D17). Every client computes
+  the same causes at the same tick, so the same regions activate everywhere
+  — lockstep holds. **Hysteresis is part of the mechanism, not a tuning
+  afterthought**: the activation radius exceeds the deactivation radius, a
+  region must be quiet for a minimum-dwell tick count before it may sleep,
+  and budget eviction breaks ties in region-coordinate order — all three
+  deterministic, all three there to stop a unit patrolling a boundary from
+  thrashing materialise/dematerialise cycles.
 - **Bounded:** an explicit active-entity budget. **Proposed: ≤ 4,000 active
   entities** (~17× Garden's 229) — a *proposed number for the owner to
   measure against*, not a measurement; the mechanism (per-region budgets,
@@ -618,7 +689,11 @@ stopwatch load on a current build — does not exist yet, and the owner
 decided (D9) that work proceeds on arithmetic with the baseline captured
 before M2**, the first milestone that produces a new map to measure against.
 Until it exists, every number in this table is an estimate by declaration,
-and M2's gate includes capturing it.
+and M2's gate includes capturing it. **The gates produce numbers only if
+the build can show them**: an instrumentation pass — resident chunk count,
+generation milliseconds per frame, active entity count, triangles
+submitted, on the existing `Profiler` or a debug overlay — lands before the
+M2 gate, so every owner run reads data instead of estimating by feel.
 
 **"No regression" is not "no cost".** Streaming introduces artefacts a
 frame-time average hides, named so they are looked for: chunk pop at the
@@ -640,8 +715,18 @@ The 17-file sweep in §1.1 is its acceptance list on day one.
 milestones): generation purity and border continuity (C); sparse-vs-dense
 grid equivalence including result order (D); chunk coordinate conversion
 (A); envelope validation (G); ledger materialise/dematerialise round-trip
-(F). Not unit-testable, said plainly: frame time, streaming feel, hitches —
-owner-run territory, which is what H's per-milestone smoke tests are for.
+and byte stability (F). Two harder tests earn their cost: a **two-run
+determinism soak** — `LinkStubs.cpp` is empty, so `GameLogic` links into a
+test DLL; construct a `Location` on a tiny procedural def, run N ticks of
+`Advance` with a scripted cause list *twice in one process*, and compare
+sync values tick by tick, which catches activation nondeterminism without a
+second machine — and **shadow-mode dual verification** during the two
+storage conversions: in Debug, keep the old whole-world structure alive
+alongside the new one and assert equality on *every* query for a full
+Garden session, which checks every access pattern the game actually makes
+rather than the ones a test author thought of. Not unit-testable, said
+plainly: frame time, streaming feel, hitches — owner-run territory, which
+is what H's per-milestone smoke tests are for.
 
 # Comparison table (Step 4)
 
@@ -661,7 +746,8 @@ land fraction; "resident" = camera window (B) + active regions (F).
 # Open questions — all resolved
 
 The document went to the owner with seven open questions on 2026-08-06 and
-all seven were answered the same day. Each is now a decision record in the
+all seven were answered the same day; an expert review later that day
+raised three more, also answered. Each is now a decision record in the
 table at the top; this table is kept as the record of what was asked and
 what was chosen.
 
@@ -674,13 +760,16 @@ what was chosen.
 | Q5 | **Move `2dSurfaceMap.h` to `NeuronCore`?** | Yes, in M1 | D13 |
 | Q6 | **Scope `SpiritReceiver`'s spawn**, accepting the `syncrand` shift? | Yes; record like `determinism` T5 | D14 |
 | Q7 | **Dependency posture** — nothing external? | Confirmed, nothing | D15 |
+| Q8 | **Dormant world look** — render proxies, or visibly empty? | Empty this milestone; the sync-inert proxy design recorded for reversal | D16 |
+| Q9 | **Ledger fidelity** — what survives dormancy? | Full survivor state, ~0.1-unit fixed-point positions | D17 |
+| Q10 | **Traversal time** — accept ~37 s sprint crossing? | Accepted; fast travel is open-world work | D18 |
 
 ---
 
 *Analysis before design; argument before conclusion; the numbers are
 arithmetic until D9's baseline capture makes them falsifiable at M2. A
 reader with `AGENTS.md` and this document has the whole design and the
-fifteen decisions it stands on; no question remains open. The
+eighteen decisions it stands on; no question remains open. The
 implementation DAG written from Part 2's milestones is
 [`tasks/large-location.yaml`](../tasks/large-location.yaml) — nineteen
 tasks in eight waves, the four milestone gates as owner-run nodes, M0

@@ -60,7 +60,7 @@ the same day from scoping work rather than the owner's direction:
 | [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse; the gamepad mode and the control-icon plumbing deleted | **14 of 15 — all code done, T12 is the owner's Garden run** |
 | [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | **11 of 12 — all code done and CI-green at `5da1e86`; T12 is the owner's Garden run** |
 | [`tasks/landscape-index-safety.yaml`](tasks/landscape-index-safety.yaml) | Guard rails for the 16-bit index arithmetic in the landscape containers — the three reachable defects under *Known issues* below, found scoping `tasks/_large-location-prompt.md` | **0 of 4 — not started** |
-| [`tasks/large-location.yaml`](tasks/large-location.yaml) | Implements [`docs/LARGE_LOCATION.md`](docs/LARGE_LOCATION.md): the 65,536² Location — chunked terrain, procedural generation, sparse grids, ledgered population under lockstep — with four owner-run milestone gates | **0 of 19 — not started; two nodes held by `landscape-index-safety`** |
+| [`tasks/large-location.yaml`](tasks/large-location.yaml) | Implements [`docs/LARGE_LOCATION.md`](docs/LARGE_LOCATION.md): the 65,536² Location — chunked terrain, procedural generation, sparse grids, ledgered population under lockstep — with four owner-run milestone gates | **0 of 20 — not started; three nodes held by `landscape-index-safety`** |
 
 **`input-native-events` has one node left and it is not code.** T12 is a
 seven-step Garden run on a build carrying every other node, and **nothing in that plan has
@@ -93,7 +93,7 @@ today:
   fifteen owner decisions with **no question left open** and a five-milestone
   phasing (M0 is `tasks/landscape-index-safety.yaml`, which already exists).
   Its implementation DAG is **written**:
-  [`tasks/large-location.yaml`](tasks/large-location.yaml), nineteen tasks in
+  [`tasks/large-location.yaml`](tasks/large-location.yaml), twenty tasks in
   eight waves with the four milestone gates as owner-run nodes.
 - **In scope, and unowned:** the leftovers the closed plans recorded rather than
   fixed. They are listed where they were found — the three raw-ownership

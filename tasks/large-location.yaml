@@ -115,6 +115,11 @@ tasks:
       against known terrain.
     project: GameLogic
     depends_on: [T2]
+    blocked_by:
+      - landscape-index-safety/T4   # the clamp changes map-edge outermost-
+                                    # cell values; landing T3's pinned
+                                    # characterisation first would break it
+                                    # in an unrelated later commit
     files:
       - GameLogic/Landscape.h
       - GameLogic/Landscape.cpp
@@ -127,6 +132,16 @@ tasks:
         height and normal queries bit-identical between recorded pre-chunk
         values and the chunked storage, including within one cell of every
         chunk border
+      - Shadow-mode dual verification exists behind a Debug define - the
+        whole-world storage stays alive alongside the chunked storage and
+        every height and normal query asserts equality between the two -
+        and stays on through the T5 Garden gate, so every query the game
+        makes for a full session is checked, not only the ones the tests
+        thought of; the shadow path is stripped after T5 reports green
+      - The RenderLandscapeDetail preference no longer multiplies the
+        procedural map's cellSize (Landscape.cpp:545 today) - a detail
+        setting other than 1 must not break 128-cells-per-chunk exactness;
+        authored maps keep the pref's current meaning
       - No whole-world height or normal allocation remains in Landscape.cpp
       - Normals are computed per chunk from its own samples plus the
         one-sample border, so no chunk's normals depend on another chunk
@@ -164,6 +179,15 @@ tasks:
     acceptance:
       - LandscapeRenderer builds and owns one mesh per chunk; RenderLandscape
         submits only chunks intersecting the frustum
+      - The fog constant the large map runs with is read from
+        Species/Renderer.cpp, pinned Garden-like (~3,000-4,000 units of
+        effective terrain visibility per the design's area E arithmetic),
+        and recorded in this task's notes with the resulting worst-case
+        triangles-per-frame figure - fog is the triangle bound that makes
+        no-LOD true, and pushing it toward the far plane is a new decision,
+        not a tuning knob
+      - Chunk meshes draw from a pooled buffer set - VBOs are recycled on
+        evict and rebuild, never created and destroyed per chunk
       - No vertex allocation is sized from whole-world dimensions
       - Authored maps render visually identically (owner-confirmed at the T5
         gate; nothing in CI can see this and this task does not claim it)
@@ -263,7 +287,15 @@ tasks:
         chunk answers identically to one against a long-resident chunk
       - Residency policy is an interface with the camera-window policy as
         one implementation; authored maps run an everything-resident policy
-        and behave exactly as before
+        and behave exactly as before, and the everything-resident policy is
+        selectable on the large map by a named preference - the debugging
+        kill switch that separates streaming bugs from logic bugs
+      - The coarse height envelope exists - min/max height per chunk,
+        computed closed-form from the coarse octaves at load and always
+        resident - and conservative ray and line-of-sight queries resolve
+        against it first, forcing full chunk generation only where the
+        envelope admits a possible hit; a test pins that the envelope
+        bounds every sample of a generated chunk
       - Per-frame generation budget is a named tunable; exceeding demand
         queues chunks rather than stalling the frame unboundedly
     notes: >
@@ -342,9 +374,41 @@ tasks:
         worldSize/30
       - git diff of this task contains no syncrand/syncfrand call - these
         files are cosmetic consumers and must stay so
+    notes: >
+      The traversal consequence of the clamp is decided, D18 - roughly six
+      minutes base pan corner to corner, ~37 seconds at the existing x10
+      sprint - accepted by the owner; do not add fast travel here.
     verify:
       - python3 tools/check_format.py
       - python3 tools/check_math_types.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+
+  - id: T20
+    title: Instrumentation - the counters the gates read
+    intent: >
+      The gates ask the owner to record numbers; this is the pass that makes
+      the build able to show them. Resident chunk count, generation
+      milliseconds this frame, active entity count, and triangles
+      submitted, surfaced through the existing Profiler or a debug overlay
+      toggle. Lands before the M2 gate so every owner run from T10 onward
+      reads data instead of estimating by feel.
+    project: GameLogic
+    depends_on: [T7]
+    files:
+      - GameLogic/ChunkManager.h
+      - GameLogic/ChunkManager.cpp
+      - GameLogic/LandscapeRenderer.cpp
+      - Species/Renderer.cpp
+    acceptance:
+      - A toggle (preference or key, matching how the profiler is reached
+        today) shows resident chunks, generation ms/frame, active entities
+        and triangles submitted, on screen or in the log
+      - The counters cost nothing when the toggle is off - no per-frame
+        work in release paths beyond incrementing integers
+    verify:
+      - python3 tools/check_format.py
       - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
     parallel_safe: true
     status: todo
@@ -354,8 +418,9 @@ tasks:
     intent: >
       The first run on the new world, and the moment the performance bar
       becomes falsifiable. Two measurements in one session - the Garden
-      baseline that D9 deferred to here, and the large map against it.
-    depends_on: [T5, T8, T9]
+      baseline that D9 deferred to here, and the large map against it, read
+      off the T20 counters.
+    depends_on: [T5, T8, T9, T20]
     acceptance:
       - Garden baseline captured and recorded in docs/LARGE_LOCATION.md
         Part 3 - frame time at the standard camera, peak working set,
@@ -391,6 +456,16 @@ tasks:
         results AND result order for GetNeighbours, GetEnemies,
         GetBestEnemy, the counting and presence variants) still pass
         unmodified on the sparse grid
+      - Shadow-mode dual verification exists behind a Debug define - dense
+        and sparse grids run side by side with every query asserting equal
+        results and order - and stays on through the next Garden gate
+        before being stripped, same pattern as T3
+      - No simulation-reachable code iterates the hash container - every
+        query walks its cell rectangle by key lookup in the dense grid's
+        x-then-z order, and the only range-iteration permitted is in Render
+        or debug paths; stated in a comment on the container member
+      - The container is pre-sized (reserve or equivalent) so rehashing
+        cannot spike inside Advance
       - No allocation in EntityGrid is sized from GetWorldSizeX/Z
       - Memory is proportional to occupied cells - asserted by a test that
         inserts N entities and checks the cell count is bounded by N
@@ -415,7 +490,7 @@ tasks:
       buildings in and overlapping it. Authored maps build all chunks at
       Init, so CalculateAll's answers are preserved exactly.
     project: GameLogic
-    depends_on: [T7]
+    depends_on: [T7, T13]
     files:
       - GameLogic/ObstructionGrid.h
       - GameLogic/ObstructionGrid.cpp
@@ -429,6 +504,9 @@ tasks:
         identical before and after the conversion
       - A building near a border registers in every chunk its footprint
         touches
+      - Generated buildings (T13's sites) register on region activation
+        through the same path authored buildings use at Init - one
+        registration mechanism, not two
       - No allocation sized from GetWorldSizeX/Z remains
     verify:
       - python3 tools/check_project_files.py
@@ -438,14 +516,20 @@ tasks:
     status: todo
 
   - id: T13
-    title: Population generation layer and the per-chunk ledger
+    title: Population generation layer, generated buildings, and the ledger
     intent: >
-      D5/D10 made data. A population layer of the T6 function - per chunk,
-      biome-keyed off the terrain octaves, clumped, deterministic spawn
-      groups of species, counts and positions, with clump size clamped so
-      the worst-case activation is bounded. The ledger is the dormant form -
-      records, not entities - with a deterministic materialisation order and
-      a round-trippable dematerialised form. Data only; the machinery that
+      D5/D10/D17 made data. A population layer of the T6 function - per
+      chunk, biome-keyed off the terrain octaves, clumped, deterministic
+      spawn groups of species, counts and positions, with clump size clamped
+      so the worst-case activation is bounded. Buildings are part of this
+      layer and come FIRST - sites slope-constrained, each with a
+      deterministic id keyed (chunk, ordinal), because building ids are
+      load-bearing (pylons, fences and tracks link by int id) - and the
+      terrain function flattens under the chosen sites as its final step,
+      which is what keeps generated buildings from floating on noise while
+      terrain stays a pure function. The ledger is the dormant form -
+      records, not entities - with full survivor state per D17 and a
+      deterministic materialisation order. Data only; the machinery that
       wakes it is T14.
     project: GameLogic
     depends_on: [T6]
@@ -462,12 +546,23 @@ tasks:
     acceptance:
       - Population purity is pinned like terrain purity - same (seed,
         chunkCoord) yields identical groups, any order
+      - Building sites are slope-constrained, id'd (chunk, ordinal), and a
+        test pins that terrain generated for a chunk is flat under every
+        site the population layer places in it - the flatten is part of
+        generation, so a regenerated chunk comes back flattened identically
       - Clump-size clamp is a named constant and a test proves no chunk's
         ledger exceeds it
+      - The ledger record carries full survivor state per D17 - type,
+        fixed-point position at ~0.1-unit quantisation, health, group
+        membership - and chunk membership is position at dematerialise time
       - Ledger round-trip is pinned - materialise-order list ->
         dematerialise -> materialise yields identical records, keyed
         (chunk, ordinal) so stable ids can be laid over it later without a
         format change
+      - The record format carries a version byte, and a ByteStream-style
+        test pins its serialised bytes - the open world's delta store will
+        serialise exactly this record, and the format is versioned before
+        anything depends on it
       - The world total at the D5 density is computed by a test and
         recorded in the task notes as the number the design's ~245,000
         estimate becomes
@@ -507,6 +602,19 @@ tasks:
       - A test drives two independent activation sequences from the same
         cause list and pins identical materialisation order and identical
         ledger state after deactivation
+      - A two-run determinism soak exists - LinkStubs.cpp is empty, so
+        GameLogic links into a test DLL; the test constructs a Location on
+        a tiny procedural def, runs N ticks of Advance with a scripted
+        cause list TWICE in one process, and compares sync values tick by
+        tick. If Location proves not constructible after all, that is
+        recorded here as a finding with what blocked it, per
+        docs/TASK_DAG.md - not silently dropped
+      - Hysteresis is built in and deterministic - the activation radius
+        exceeds the deactivation radius, a region must be quiet for a
+        minimum-dwell tick count before it may sleep, and budget eviction
+        breaks ties in region-coordinate order; a test drives a unit
+        patrolling a region boundary and pins that no
+        materialise/dematerialise thrash occurs
       - No activation cause reads camera, renderer, or any client-local
         state - the cause enumeration is reachable from simulation state
         alone, and the test constructs it without any presentation object
@@ -565,7 +673,11 @@ tasks:
       - On the large map - entities appear at the same locations on a
         second entry with the same seed; 30 seconds of behaviour near an
         activated clump with no assert; moving away and returning shows the
-        clump repopulated from its ledger
+        clump restored with its damage intact (full survivor state, D17)
+      - The dormant world renders empty away from the player's units - that
+        is D16, expected and accepted, not a bug to report; what WOULD be a
+        bug is a dormant region failing to materialise when a unit enters
+        it
       - GenerateSyncValue trips no assert across activation and
         deactivation in single player
       - Garden seven steps still pass on the same build, and the frame-time
