@@ -786,6 +786,9 @@ tasks:
       - NeuronClient/SoundSystem.cpp
       - NeuronClient/SystemInfo.h
       - NeuronClient/SystemInfo.cpp
+      - Species/Species.vcxproj
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj
+      - Tests/GameLogicTests/GameLogicTests.vcxproj
       # Added by T4, which found it dead. RestartSoundLibrary constructs
       # SoundLibraryXAudio2 unconditionally after T8, so SOUND_LIBRARY has no
       # reader that changes anything -- but PrefsSoundWindow still offers a
@@ -800,13 +803,23 @@ tasks:
       - OnCriticalError parks the backend in a silent state without touching game logic; RestartSoundLibrary recovers when a device is available again
       - No HRESULT anywhere in the backend is a fatal assert
       - The commented-out legacy SoundSystem::Advance block and StartRecordToFile/EndRecordToFile are gone
-      - GetCPUOverhead is served by GetPerformanceData or the readout is deleted (decide in-task, record which)
       - The SoundLibrary preference, its dropdown and its language strings are gone; grep SOUND_LIBRARY returns nothing
+      # REVERSES T8's AUDIT, which kept winmm because PrefsSoundWindow displayed
+      # the preferred device's name. What it displays is wrong twice over:
+      # GetAudioDetails never updates bestScore inside its loop, so every device
+      # beats it and m_preferredDevice ends up the LAST one enumerated rather
+      # than the best; and XAudio2's mastering voice takes the Windows default
+      # endpoint regardless, so the name has no relationship to what comes out
+      # of the speakers. A wrong device name is worse than none.
+      - The waveOut device census, AudioInfo and the options-window device name are gone; winmm.lib leaves every link line
+      # GetCPUOverhead was already deleted by T7 -- it had zero callers -- so
+      # the criterion that asked what to do about it has nothing left to decide.
+      # The options window's CPU readout is the profiler's, not the backend's.
     verify:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: in_progress
 
   - id: T11
     title: Owner final gate - Garden on the default configuration
