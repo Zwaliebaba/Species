@@ -860,7 +860,6 @@ void Initialise()
   InitialiseInputManager();
 
   g_target = new TargetCursor();
-  // if( g_prefsManager->GetInt("ControlMethod")==0 ) getW32EventHandler()->BindAltTab();
   EntityBlueprint::Initialise();
   g_windowManager->HideMousePointer();
 

@@ -66,6 +66,8 @@ namespace Neuron
     memset(m_mousePosOld, 0, sizeof(int) * NUM_AXES);
     memset(m_mouseVel, 0, sizeof(int) * NUM_AXES);
 
+    m_wheelRemainder = 0;
+
     memset(g_keys, 0, KEY_MAX);
     memset(g_keyDeltas, 0, KEY_MAX);
     memset(m_keyNewDeltas, 0, KEY_MAX);
@@ -202,6 +204,35 @@ namespace Neuron
   InputMode W32InputDriver::getInputMode() { return InputMode::INPUT_MODE_KEYBOARD; }
 
 
+  void W32InputDriver::OnFocusLost()
+  {
+    // Windows sends no WM_KEYUP or WM_LBUTTONUP for anything held when focus
+    // goes, so without this the game keeps believing those are down — which is
+    // what the ALT special case in the event handler used to paper over, for
+    // ALT alone.
+    //
+    // The release edge is written into m_keyNewDeltas, NOT g_keyDeltas, and
+    // that is what makes it observable. Advance() copies m_keyNewDeltas over
+    // g_keyDeltas immediately after pumping messages, so anything written
+    // straight into g_keyDeltas from inside a message — as the ALT case did —
+    // is overwritten before a single caller can read it.
+    for (int i = 0; i < KEY_MAX; ++i)
+    {
+      if (g_keys[i])
+      {
+        g_keys[i] = 0;
+        m_keyNewDeltas[i] = -1;
+      }
+    }
+
+    // The buttons need no equivalent: Advance derives their deltas by
+    // comparing against last frame, so clearing the state produces the -1.
+    memset(m_mb, 0, sizeof(bool) * NUM_MB);
+
+    m_wheelRemainder = 0;
+  }
+
+
   void W32InputDriver::SetMousePosNoVelocity(int _x, int _y)
   {
     // Warp Mouse without velocity
@@ -305,10 +336,21 @@ namespace Neuron
       g_windowManager->UncaptureMouse();
       break;
 
-    case 0x020A: // case WM_MOUSEWHEEL:
+    case WM_MOUSEWHEEL:
     {
-      int move = (short)HIWORD(wParam) / 120;
-      m_mousePos[Z] += move;
+      // Accumulated rather than divided on the spot. A wheel reports in
+      // WHEEL_DELTA units, but a high-resolution one sends fractions of that,
+      // and `delta / 120` turned every fraction into zero — so those wheels
+      // scrolled nothing at all until a single message happened to carry a
+      // whole detent. The remainder carries across messages instead.
+      m_wheelRemainder += GET_WHEEL_DELTA_WPARAM(wParam);
+
+      const int detents = m_wheelRemainder / WHEEL_DELTA;
+      if (detents != 0)
+      {
+        m_wheelRemainder -= detents * WHEEL_DELTA;
+        m_mousePos[Z] += detents;
+      }
       break;
     }
 
@@ -321,24 +363,10 @@ namespace Neuron
       break;
     }
 
-    case WM_HOTKEY:
-      if (wParam == 0)
-      {
-        g_keys[KEY_TAB] = 1;
-        m_keyNewDeltas[KEY_TAB] = 1;
-      }
-      break;
-
     case WM_SYSKEYUP:
-      if (wParam == KEY_ALT)
-      {
-        // ALT pressed
-        g_keys[wParam] = 0;
-      }
-      else
-      {
-        g_keys[wParam] = 0;
-      }
+      // Both arms of the ALT/not-ALT branch this replaces did the same thing.
+      DEBUG_ASSERT(wParam >= 0 && wParam < KEY_MAX);
+      g_keys[wParam] = 0;
       break;
 
     case WM_SYSKEYDOWN:

@@ -216,19 +216,51 @@ tasks:
     project: NeuronClient
     depends_on: []
     files:
+      - NeuronClient/InputDriverWin32.h
       - NeuronClient/InputDriverWin32.cpp
       - NeuronClient/Win32EventHandler.h
       - NeuronClient/Win32EventHandler.cpp
+      # Gains the focus-lost hook, so the driver can release its own state
+      # instead of the handler reaching into it through externs.
+      - NeuronClient/Win32EventProc.h
+      # THE ALT-TAB MACHINERY REACHES INTO GameLogic, which this list did not
+      # say and the summary got wrong - see the corrected note below. These
+      # three hold the calls and dead comments that go with it.
+      - GameLogic/MainMenus.cpp
+      - GameLogic/PrefsKeybindingsWindow.cpp
+      - GameLogic/PrefsScreenWindow.cpp
+      - Species/Main.cpp
     acceptance:
       - Focus state comes from WM_ACTIVATE handling; GetForegroundWindow no longer appears in the message path
       - Losing focus releases ALL held keys and buttons, generalising the ALT special case
-      - BindAltTab, UnbindAltTab, the WM_HOTKEY handler and the duplicate WM_SYSKEYUP branch are gone
+      - BindAltTab, UnbindAltTab, ResetWindowHandle, the WM_HOTKEY handler and the duplicate WM_SYSKEYUP branch are gone, along with the one live ResetWindowHandle call and the three dead comment blocks that name the others
       - The wheel handler uses the named WM_MOUSEWHEEL constant and GET_WHEEL_DELTA_WPARAM, accumulating fractional detents instead of truncating
     verify:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: in_progress
+    notes: |
+      CORRECTION, 2026-08-06, before the work. This plan's summary said the
+      Alt-Tab machinery was "dead since its only caller was commented out
+      (Main.cpp:865)". That was written from a grep of Species/ alone and it
+      is wrong twice over. BindAltTab and UnbindAltTab are named in GameLogic
+      too - PrefsKeybindingsWindow.cpp and PrefsScreenWindow.cpp - though both
+      of those are inside comment blocks, so the conclusion that nothing calls
+      them survives. What does NOT survive is the file list: ResetWindowHandle
+      has a LIVE caller at MainMenus.cpp:267, on the resolution-change path,
+      and it exists only to re-register the hotkey against the new window.
+
+      It is a no-op in practice, which is why nobody noticed: g_altTabBound is
+      set true only by BindAltTab, BindAltTab is never called, so
+      ResetWindowHandle reduces to UnbindAltTab, which unregisters a hotkey
+      that was never registered. Deleting it and its one call is the honest
+      outcome; keeping an empty stub would preserve a function whose whole
+      subject is gone.
+
+      This is the failure mode tasks/_next-batch.md names: a file list written
+      from where a thing is DECLARED when the work is wherever it is NAMED.
+      Three GameLogic and Species files joined the list above because of it.
 
   - id: T5
     title: Make OS messages an InputEvent stream and derive driver state from it

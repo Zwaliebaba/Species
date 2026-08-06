@@ -27,12 +27,6 @@ namespace Neuron
       // Unregister driver (if it is still the registered one)
       void RemoveEventProcessor(W32EventProcessor* _driver);
 
-      void ResetWindowHandle();
-
-      void BindAltTab();
-
-      void UnbindAltTab();
-
       bool WindowHasFocus();
   };
 

@@ -74,6 +74,11 @@ namespace Neuron
       // Warp the mouse to a particular position and pretend it has always been there
       void SetMousePosNoVelocity(int _x, int _y);
 
+      // Release every key and button this driver believes is held, reporting an
+      // up edge for each. Called when the window loses focus, because Windows
+      // sends no release for anything held at that moment.
+      void OnFocusLost() override;
+
     private:
       bool m_mb[NUM_MB];      // Mouse button states from this frame
       bool m_mbOld[NUM_MB];   // Mouse button states from last frame
@@ -82,6 +87,11 @@ namespace Neuron
       int m_mousePos[NUM_AXES];    // X Y Z
       int m_mousePosOld[NUM_AXES]; // X Y Z
       int m_mouseVel[NUM_AXES];    // X Y Z
+
+      // Wheel movement too small to be a whole detent, carried to the next
+      // message. A high-resolution wheel sends deltas well under WHEEL_DELTA,
+      // and dividing each one on its own threw all of them away.
+      int m_wheelRemainder;
 
       signed char m_keyNewDeltas[KEY_MAX];
   };

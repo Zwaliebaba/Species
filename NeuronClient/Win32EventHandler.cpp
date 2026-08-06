@@ -18,25 +18,12 @@ namespace Neuron
   typedef std::vector<W32EventProcessor*> ProcList;
   typedef ProcList::iterator ProcIt;
 
-  // DECLARED HERE, AT NAMESPACE SCOPE, RATHER THAN INSIDE THE FUNCTION THAT
-  // USES THEM. The Win32 driver's key state lives in InputDriverWin32.cpp and
-  // no header declares it, so these used to be block-scope `extern`s inside
-  // W32EventHandler::WndProc.
-  //
-  // A BLOCK-SCOPE extern DOES NOT JOIN THE ENCLOSING NAMESPACE. With no
-  // visible namespace-scope declaration to match, MSVC gives it external
-  // linkage in the GLOBAL namespace — so once this file moved into namespace
-  // Neuron the declarations named ::g_keys and ::g_keyDeltas while the
-  // definitions were Neuron's, and the linker said so. Declaring them out here
-  // is what makes the match visible, and it is correct however a compiler
-  // reads the block-scope rule. namespace-migration T2 learned it from CI.
-  extern signed char g_keyDeltas[KEY_MAX];
-  extern signed char g_keys[KEY_MAX];
-
-
+  // The externs for the driver's g_keys and g_keyDeltas are GONE. This file
+  // reached into them to clear a stuck ALT on focus loss; that job now belongs
+  // to the driver, through OnFocusLost, which is where the state lives and the
+  // only place that can report the release properly. What is left here is the
+  // focus flag itself.
   bool g_windowHasFocus = true;
-  bool g_altTabBound = false;
-  HWND g_hwnd = nullptr;
 
 
   W32EventHandler::W32EventHandler()
@@ -47,25 +34,26 @@ namespace Neuron
 
   LRESULT CALLBACK W32EventHandler::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
   {
-    static bool s_previousFocus = false;
-    g_windowHasFocus = GetForegroundWindow() == g_windowManager->m_win32Specific->m_hWnd;
-
-    if (!g_windowHasFocus || !s_previousFocus)
-    {
-      // When switching away, ALT is often left down.
-      // Let's clear it.
-
-      if (g_keys[KEY_ALT])
-      {
-        g_keyDeltas[KEY_ALT] = -1;
-        g_keys[KEY_ALT] = 0;
-      }
-    }
-
-    s_previousFocus = g_windowHasFocus;
-
     switch (message)
     {
+    // Focus is now told to us rather than asked for. This used to call
+    // GetForegroundWindow on EVERY message — thousands a second, to answer a
+    // question that changes a handful of times a session — and it inferred the
+    // transition by comparing against a static from the previous message.
+    case WM_ACTIVATE:
+      g_windowHasFocus = LOWORD(wParam) != WA_INACTIVE;
+
+      if (!g_windowHasFocus)
+      {
+        // Everything held goes, not just ALT. Windows sends no release for
+        // any of it, so whatever was down at this moment would otherwise stay
+        // down forever as far as the game is concerned.
+        for (W32EventProcessor* processor : w32eventprocs)
+          processor->OnFocusLost();
+      }
+
+      return -1;
+
     case WM_SIZING:
     case WM_WINDOWPOSCHANGING:
     case WM_WINDOWPOSCHANGED:
@@ -120,7 +108,6 @@ namespace Neuron
       w32eventprocs.push_back(_driver);
     else
       cerr << "AddEventProcessor: _driver is NULL\n";
-    g_hwnd = g_windowManager->m_win32Specific->m_hWnd;
   }
 
 
@@ -129,30 +116,6 @@ namespace Neuron
     for (ProcIt i = w32eventprocs.begin(); i != w32eventprocs.end(); ++i)
       if (_driver == *i)
         w32eventprocs.erase(i);
-  }
-
-
-  void W32EventHandler::ResetWindowHandle()
-  {
-    UnbindAltTab();
-    if (g_altTabBound)
-      BindAltTab();
-  }
-
-
-  void W32EventHandler::BindAltTab()
-  {
-    DEBUG_ASSERT(g_windowManager->m_win32Specific->m_hWnd);
-    RegisterHotKey(g_windowManager->m_win32Specific->m_hWnd, 0, MOD_ALT, VK_TAB);
-    g_altTabBound = true;
-  }
-
-
-  void W32EventHandler::UnbindAltTab()
-  {
-    DEBUG_ASSERT(g_windowManager->m_win32Specific->m_hWnd);
-    UnregisterHotKey(g_hwnd, 0);
-    UnregisterHotKey(g_windowManager->m_win32Specific->m_hWnd, 0);
   }
 
 
