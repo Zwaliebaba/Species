@@ -69,8 +69,7 @@ namespace Neuron
 
   InputManager::InputManager()
     : drivers(),
-      m_idle(true),
-      m_inputMode(InputMode::INPUT_MODE_KEYBOARD)
+      m_idle(true)
   {
     // FIRST IN, FIRST OFFERED. The UI is the only sink today and it is added
     // here, before any driver exists, so the ordering cannot depend on
@@ -213,28 +212,15 @@ void InputManager::Advance()
   g_windowManager->PumpMessages();
 
   bool idleNext = true;
-  InputMode nextInputMode = InputMode::INPUT_MODE_NONE;
 
   for (unsigned i = 0; i < drivers.size(); ++i)
   {
     InputDriver* driver = drivers[i];
     driver->Advance();
-    bool driverIdle = driver->isIdle();
-    idleNext = idleNext && driverIdle;
-
-    if (!driverIdle)
-    {
-      InputMode driverInputMode = driver->getInputMode();
-      if (driverInputMode > nextInputMode)
-        nextInputMode = driverInputMode; // This prefers the Gamepad
-    }
+    idleNext = idleNext && driver->isIdle();
   }
 
   m_idle = idleNext;
-
-  // Record the mode, if we know it, otherwise stick with last recorded
-  if (nextInputMode > InputMode::INPUT_MODE_NONE)
-    m_inputMode = nextInputMode;
 
   // THE CURSOR MOVES BEFORE THE EVENTS ARE DISPATCHED, and the order is
   // load-bearing rather than tidy. The UI sink asks TargetCursor where the
@@ -386,9 +372,6 @@ void InputManager::Clear() { bindings.Clear(); }
 
 
 bool InputManager::isIdle() { return m_idle; }
-
-
-InputMode InputManager::getInputMode() { return m_inputMode; }
 
 
 void InputManager::printNumBindings()

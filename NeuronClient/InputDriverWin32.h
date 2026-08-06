@@ -65,9 +65,6 @@ namespace Neuron
       // type modes.
       bool isIdle();
 
-      // Returns the input mode associated with the InputDriver (keyboard or gamepad or none)
-      InputMode getInputMode();
-
       // Returns true if there was an "active" input event this frame. Fills spec with
       // the details of the input. Active inputs are primarily things like button presses
       // but not buttons held down or released or 2D analog events.

@@ -604,10 +604,6 @@ namespace Species
             ScreenZone* zone = m_screenZones[i].get();
             if (Neuron::StrEqualsIgnoreCase(zone->m_name, "SelectTask") && zone->m_data == taskIndex)
             {
-              if (g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD)
-              {
-                // m_currentScreenZone = i;
-              }
               found = true;
               highlightOnly = true;
             }
@@ -685,8 +681,6 @@ namespace Species
       {
         g_app->m_clientToServer->RequestRunProgram(g_globalWorld->m_myTeamId, _data);
         g_soundSystem->TriggerOtherEvent("GestureBegin", SoundSourceBlueprint::TypeGesture);
-        if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
-          HideTaskManager();
       }
       else
         SetCurrentMessage(MessageFailure, -1, 2.5f);
@@ -703,8 +697,6 @@ namespace Species
         g_taskManager->m_currentTaskId = nextTask->m_id;
         g_taskManager->SelectTask(g_taskManager->m_currentTaskId);
         g_soundSystem->TriggerOtherEvent("SelectTask", SoundSourceBlueprint::TypeInterface);
-        if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
-          HideTaskManager();
       }
     }
 
@@ -730,8 +722,6 @@ namespace Species
         g_app->m_clientToServer->RequestRunProgram(g_globalWorld->m_myTeamId, _data);
         g_soundSystem->TriggerOtherEvent("GestureBegin", SoundSourceBlueprint::TypeGesture);
         g_soundSystem->TriggerOtherEvent("GestureSuccess", SoundSourceBlueprint::TypeGesture);
-        if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
-          HideTaskManager();
       }
       else
         SetCurrentMessage(MessageFailure, -1, 2.5f);
@@ -943,39 +933,37 @@ namespace Species
       g_gameFont.DrawText2D(20, m_screenH - 12, 12, clippedTooltip.c_str());
       g_gameFont.DrawText2D(20, m_screenH - 12, 12, clippedTooltip.c_str());
 
-      if (g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD)
+      //
+      // Render keyboard shortcut. The `not in gamepad mode` test that used to
+      // wrap this went with INPUT_MODE_GAMEPAD, which nothing could produce.
+
+      KeyboardShortcut* selectedShortcut = nullptr;
+
+      for (int i = 0; i < static_cast<int>(m_keyboardShortcuts.size()); ++i)
       {
-        //
-        // Render keyboard shortcut
-
-        KeyboardShortcut* selectedShortcut = nullptr;
-
-        for (int i = 0; i < static_cast<int>(m_keyboardShortcuts.size()); ++i)
+        KeyboardShortcut* shortcut = m_keyboardShortcuts[i];
+        if (Neuron::StrEqualsIgnoreCase(shortcut->name(), zone->m_name) && shortcut->data() == zone->m_data)
         {
-          KeyboardShortcut* shortcut = m_keyboardShortcuts[i];
-          if (Neuron::StrEqualsIgnoreCase(shortcut->name(), zone->m_name) && shortcut->data() == zone->m_data)
-          {
-            selectedShortcut = shortcut;
-            break;
-          }
-
-          if (Neuron::StrEqualsIgnoreCase(shortcut->name(), zone->m_name) && Neuron::StrEqualsIgnoreCase(shortcut->name(), "DeleteTask"))
-          {
-            // Special case : DeleteTask shortcut key
-            selectedShortcut = shortcut;
-            break;
-          }
+          selectedShortcut = shortcut;
+          break;
         }
 
-        if (selectedShortcut)
+        if (Neuron::StrEqualsIgnoreCase(shortcut->name(), zone->m_name) && Neuron::StrEqualsIgnoreCase(shortcut->name(), "DeleteTask"))
         {
-          std::string caption;
-
-          caption = std::format("Keyboard shortcut : {}", selectedShortcut->noun().c_str());
-
-          g_gameFont.DrawText2D(m_screenW - 250, m_screenH - 12, 12, caption.c_str());
-          g_gameFont.DrawText2D(m_screenW - 250, m_screenH - 12, 12, caption.c_str());
+          // Special case : DeleteTask shortcut key
+          selectedShortcut = shortcut;
+          break;
         }
+      }
+
+      if (selectedShortcut)
+      {
+        std::string caption;
+
+        caption = std::format("Keyboard shortcut : {}", selectedShortcut->noun().c_str());
+
+        g_gameFont.DrawText2D(m_screenW - 250, m_screenH - 12, 12, caption.c_str());
+        g_gameFont.DrawText2D(m_screenW - 250, m_screenH - 12, 12, caption.c_str());
       }
     }
 
@@ -1112,45 +1100,6 @@ namespace Species
     }
   }
 
-  static void RenderIcon(const char* _foreground, const char* _background, int _x, int _y, float _iconSize, unsigned _alpha)
-  {
-    // Render the shadow
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(_background));
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
-    glDepthMask(false);
-    glColor4ub(_alpha, _alpha, _alpha, 0.0f);
-
-    glBegin(GL_QUADS);
-    glTexCoord2i(0, 1);
-    glVertex2f(_x, _y);
-    glTexCoord2i(1, 1);
-    glVertex2f(_x + _iconSize, _y);
-    glTexCoord2i(1, 0);
-    glVertex2f(_x + _iconSize, _y + _iconSize);
-    glTexCoord2i(0, 0);
-    glVertex2f(_x, _y + _iconSize);
-    glEnd();
-
-    // Render the icon
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, g_resource->GetTexture(_foreground));
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
-    glColor4ub(255, 255, 255, _alpha);
-
-    glBegin(GL_QUADS);
-    glTexCoord2i(0, 1);
-    glVertex2f(_x, _y);
-    glTexCoord2i(1, 1);
-    glVertex2f(_x + _iconSize, _y);
-    glTexCoord2i(1, 0);
-    glVertex2f(_x + _iconSize, _y + _iconSize);
-    glTexCoord2i(0, 0);
-    glVertex2f(_x, _y + _iconSize);
-    glEnd();
-  }
-
   void TaskManagerInterfaceIcons::RenderTaskManager()
   {
     SetupRenderMatrices(ScreenTaskManager);
@@ -1177,29 +1126,21 @@ namespace Species
 
     if (fabs(m_screenY) < 0.1f)
     {
-      bool render360Controls = g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1);
-
       unsigned alpha = (fmodf(g_gameTime, 2.0f) < 1.0f ? 155 : 255);
 
-      if (render360Controls)
-      {
-        RenderIcon("Icons/ButtonLb.bmp", "Icons/ButtonLbShadow.bmp", m_screenW - 60, 10, 40, alpha);
-        RenderIcon("Icons/ButtonRb.bmp", "Icons/ButtonRbShadow.bmp", m_screenW - 60, m_screenH - 70, 40, alpha);
-      }
-      else
-      {
-        glColor4ub(199, 214, 220, alpha);
+      // The LB/RB button art this used to draw instead went with
+      // INPUT_MODE_GAMEPAD; the triangles are what was always drawn.
+      glColor4ub(199, 214, 220, alpha);
 
-        glBegin(GL_TRIANGLES);
-        glVertex2f(m_screenW - 40, 10);
-        glVertex2f(m_screenW - 20, 30);
-        glVertex2f(m_screenW - 60, 30);
+      glBegin(GL_TRIANGLES);
+      glVertex2f(m_screenW - 40, 10);
+      glVertex2f(m_screenW - 20, 30);
+      glVertex2f(m_screenW - 60, 30);
 
-        glVertex2f(m_screenW - 40, m_screenH - 30);
-        glVertex2f(m_screenW - 20, m_screenH - 50);
-        glVertex2f(m_screenW - 60, m_screenH - 50);
-        glEnd();
-      }
+      glVertex2f(m_screenW - 40, m_screenH - 30);
+      glVertex2f(m_screenW - 20, m_screenH - 50);
+      glVertex2f(m_screenW - 60, m_screenH - 50);
+      glEnd();
 
       auto zoneLeft = std::make_unique<ScreenZone>("ScreenUp", LANGUAGEPHRASE("newcontrols_showresearch"), m_screenW - 60, 10, 40, 20, -1);
       auto zoneRight =
@@ -2062,22 +2003,15 @@ namespace Species
 
     if (m_screenY > 0.9f)
     {
-      bool render360Controls = g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1);
-
       unsigned alpha = (fmodf(g_gameTime, 2.0f) < 1.0f ? 155 : 255);
 
-      if (render360Controls)
-        RenderIcon("Icons/ButtonLb.bmp", "Icons/ButtonLbShadow.bmp", m_screenW - 60, 10, 40, alpha);
-      else
-      {
-        glColor4ub(199, 214, 220, alpha);
+      glColor4ub(199, 214, 220, alpha);
 
-        glBegin(GL_TRIANGLES);
-        glVertex2f(m_screenW - 40, 10);
-        glVertex2f(m_screenW - 20, 30);
-        glVertex2f(m_screenW - 60, 30);
-        glEnd();
-      }
+      glBegin(GL_TRIANGLES);
+      glVertex2f(m_screenW - 40, 10);
+      glVertex2f(m_screenW - 20, 30);
+      glVertex2f(m_screenW - 60, 30);
+      glEnd();
 
       auto zoneLeft =
         std::make_unique<ScreenZone>("ScreenUp", LANGUAGEPHRASE("newcontrols_showtaskmanager"), m_screenW - 60, m_screenH + 10, 40, 20, -1);
@@ -2412,22 +2346,15 @@ namespace Species
 
     if (m_screenY < 0.1f)
     {
-      bool render360Controls = g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD && g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1);
-
       unsigned alpha = (fmodf(g_gameTime, 2.0f) < 1.0f ? 155 : 255);
 
-      if (render360Controls)
-        RenderIcon("Icons/ButtonRb.bmp", "Icons/ButtonRbShadow.bmp", m_screenW - 60, m_screenH - 70, 40, alpha);
-      else
-      {
-        glColor4ub(199, 214, 220, alpha);
+      glColor4ub(199, 214, 220, alpha);
 
-        glBegin(GL_TRIANGLES);
-        glVertex2f(m_screenW - 40, m_screenH - 30);
-        glVertex2f(m_screenW - 20, m_screenH - 50);
-        glVertex2f(m_screenW - 60, m_screenH - 50);
-        glEnd();
-      }
+      glBegin(GL_TRIANGLES);
+      glVertex2f(m_screenW - 40, m_screenH - 30);
+      glVertex2f(m_screenW - 20, m_screenH - 50);
+      glVertex2f(m_screenW - 60, m_screenH - 50);
+      glEnd();
 
       auto zoneRight = std::make_unique<ScreenZone>("ScreenDown", LANGUAGEPHRASE("newcontrols_showtaskmanager"), m_screenW - 60, -50, 40, 20, -1);
       zoneRight->m_scrollZone = -1;
@@ -2627,36 +2554,11 @@ namespace Species
     return -1;
   }
 
-  bool TaskManagerInterfaceIcons::AdviseCreateControlHelpBlue()
-  {
-    return m_currentScreenZone != -1 && ButtonHeld() && g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerDisplayPressed) &&
-           g_taskManager->CapacityUsed() < g_taskManager->Capacity();
-  }
-
-  bool TaskManagerInterfaceIcons::AdviseCreateControlHelpGreen()
-  {
-    ScreenZone* screenZone = nullptr;
-
-    return m_currentScreenZone != -1 && g_taskManager->CapacityUsed() < g_taskManager->Capacity() &&
-           (screenZone = m_screenZones[m_currentScreenZone].get()) && screenZone->m_name == "NewTask";
-  }
-
   bool TaskManagerInterfaceIcons::AdviseOverSelectableZone()
   {
     ScreenZone* screenZone = nullptr;
 
     return m_currentScreenZone != -1 && (screenZone = m_screenZones[m_currentScreenZone].get()) && screenZone->m_name != "NewTask";
-  }
-
-  bool TaskManagerInterfaceIcons::AdviseCloseControlHelp()
-  {
-    if (!m_visible)
-      return false;
-
-    if (m_currentScreenZone != -1 && ButtonHeld() && g_inputManager->controlEvent(ControlType::ControlIconsTaskManagerDisplayPressed))
-      return false;
-
-    return true;
   }
 
   void TaskManagerInterfaceIcons::CreateQuickUnitInterface()

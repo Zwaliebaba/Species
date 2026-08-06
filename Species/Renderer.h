@@ -24,7 +24,6 @@ namespace Species
       bool DisplayFps() const override { return m_displayFPS; }
       void SetDisplayFps(bool _display) override { m_displayFPS = _display; }
       bool m_renderDebug;
-      bool m_displayInputMode;
 
       float m_renderDarwinLogo;
 

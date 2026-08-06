@@ -256,9 +256,6 @@ namespace Neuron
   }
 
 
-  InputMode W32InputDriver::getInputMode() { return InputMode::INPUT_MODE_KEYBOARD; }
-
-
   void W32InputDriver::OnFocusLost()
   {
     // Windows sends no WM_KEYUP or WM_LBUTTONUP for anything held when focus

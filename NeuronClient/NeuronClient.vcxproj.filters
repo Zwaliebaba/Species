@@ -260,7 +260,6 @@
     <ClInclude Include="WindowManagerWin32.h" />
     <ClInclude Include="AppCommands.h" />
     <ClInclude Include="CameraAccess.h" />
-    <ClInclude Include="ControlHelpAccess.h" />
     <ClInclude Include="TaskManagerInterfaceAccess.h" />
     <ClInclude Include="UserInputAccess.h" />
     <ClInclude Include="SoundSource.h" />

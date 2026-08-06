@@ -101,10 +101,6 @@ namespace Species
 
       virtual bool ControlEvent(TMControl _type) = 0;
 
-      // ControlHelp: If pressing the blue button would create a unit
-      virtual bool AdviseCreateControlHelpBlue() = 0;
-      virtual bool AdviseCreateControlHelpGreen() = 0;
-      virtual bool AdviseCloseControlHelp() = 0;
       virtual bool AdviseOverSelectableZone() = 0;
   };
 

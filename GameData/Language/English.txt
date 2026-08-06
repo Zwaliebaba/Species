@@ -163,21 +163,17 @@ control_help_armourmode                Pick Up/Drop Mode
 # ================================================
 
 help_camera_movement_kbd               Move the camera around using the [KEYCAMERAFORWARDS], [KEYCAMERALEFT], [KEYCAMERABACKWARDS] and [KEYCAMERARIGHT] keys.  You can control the camera's height by scrolling the mouse wheel, or by using the [KEYCAMERAUP] and [KEYCAMERADOWN] keys.
-help_camera_movement_xin               Move the camera around.
 help_camera_height_kbd                 If you have a middle mouse button, you can scroll it to change the height of the camera.  Or you can use the [KEYCAMERAUP] and [KEYCAMERADOWN] keys to go up and down.
 help_camera_zoom_kbd                   If you have a middle mouse button, click it to zoom the camera.  Or you can press the [KEYCAMERAZOOM] key.
 help_camera_movefast_kbd               You can make the camera move faster by holding down [KEYCAMERASPEEDUP] while you are moving.
 help_taskmanager_1_kbd                 To create things in Darwinia you draw gestures in the Task Manager.  Hold [KEYGESTURESTASKMANAGERDISPLAY] to access the Task Manager.
 help_taskmanager_2_kbd                 To see a list of available gestures, hold [KEYGESTURESTASKMANAGERDISPLAY] to access the Task Manager and scroll left by moving the mouse to the left of the screen, or by pressing [KEYMENULEFT].
 help_taskmanager_3_kbd                 You can only run up to THREE tasks at once.  You can shut down existing tasks by holding down [KEYGESTURESTASKMANAGERDISPLAY], tabbing along to the task, and pressing CTRL-C.
-help_taskmanager_3_xin                 You can only run up to THREE tasks at once.  You can shut down existing tasks.
 help_taskmanager_4_kbd                 To reselect an existing task, hold [KEYGESTURESTASKMANAGERDISPLAY] to access the Task Manager and tab along to the icon representing the task.
 help_showchatlog_kbd                   To read a log of everything I've said, hold the [KEYGESTURESCHATLOG] key.
 help_taskmanager_1_icons_kbd           To create things in Darwinia you need to bring up the Task Manager.  Hold [KEYICONSTASKMANAGERDISPLAY] to access the Task Manager.
-help_taskmanager_1_icons_xin           To create things in Darwinia you need to bring up the Task Manager.
 help_taskmanager_2_icons_kbd           You can see a list of available programs while holding [KEYICONSTASKMANAGERDISPLAY].  Click any of them to create a new program.
 help_taskmanager_3_icons_kbd           You can only run up to THREE tasks at once.  You can shut down the current task by pressing [KEYICONSTASKMANAGERENDTASK], or you can click on its delete icon in the Task Manager.
-help_taskmanager_3_icons_xin           You can only run up to THREE tasks at once.
 help_taskmanager_4_icons_kbd           To reselect an existing task, hold [KEYICONSTASKMANAGERDISPLAY] and click on its icon.  Or you can press the number keys to select tasks.
 help_showchatlog_icons_kbd             To read a log of everything I've said, hold the [KEYICONSCHATLOG] key.
 
@@ -185,7 +181,6 @@ help_deselect_kbd                      To deselect the current object press [KEY
 help_squad_summon_1_kbd                To create a Squad, hold [KEYGESTURESTASKMANAGERDISPLAY] to access the Task Manager, then draw this gesture.
 help_squad_summon_1_icons_kbd          To create a Squad, hold [KEYICONSTASKMANAGERDISPLAY] to access the Task Manager, then click the Squad icon.
 help_squad_summon_2_kbd                Click inside one of the starting areas, now highlighted, to create your squad within the world.
-help_squad_summon_2_xin                Select one of the starting areas, now highlighted, to create your squad within the world.
 help_squad_use_kbd                     Left Click to move your squad.  Right Click to fire their lasers.  Press [KEYUNITDESELECT] to deselect them. Squads cannot move into the water.
 help_squad_use_1mb_kbd                 Click to move your squad.  Click and hold to fire their lasers.  Press [KEYUNITDESELECT] to deselect them.
 help_squad_grenade_kbd                 You can throw a grenade by tapping the Left Mouse Button whilst you are firing lasers with the Right mouse button.
@@ -194,51 +189,34 @@ help_squad_setgrenade                  To change to the Grenade weapon, draw the
 help_squad_setrocket                   To change to the Rocket weapon, draw the Rocket gesture.
 help_squad_setairstrike                To change to the Airstrike weapon, draw the Airstrike gesture.
 help_squad_setgrenade_icons_kbd        To change to the Grenade weapon, hold [KEYICONSTASKMANAGERDISPLAY] and click on the Grenade icon next to your Squad.
-help_squad_setgrenade_icons_xin        To change to the Grenade weapon, open the Task Manager and select the Grenade icon next to your Squad.
 help_squad_setrocket_icons_kbd         To change to the Rocket weapon, hold [KEYICONSTASKMANAGERDISPLAY] and click on the Rocket icon next to your Squad.
-help_squad_setrocket_icons_xin         To change to the Rocket weapon, open the Task Manager and select the Rocket icon next to your Squad.
 help_squad_setairstrike_icons_kbd      To change to the Airstrike weapon, hold [KEYICONSTASKMANAGERDISPLAY] and click on the Airstrike icon next to your Squad.
-help_squad_setairstrike_icons_xin      To change to the Airstrike weapon, open the Task Manager and select the Airstrike icon next to your Squad.
 
 
 help_building_reprogram                This building must be reprogrammed before it can be used.  To do this you must create an Engineer and move him within range of the nearby Control Tower.
 help_engineer_summon_kbd               Engineers are used to collect dead spirits, and to reprogram buildings.  Hold [KEYGESTURESTASKMANAGERDISPLAY] and draw this gesture to summon an Engineer.
-help_engineer_summon_xin               Engineers are used to collect dead spirits, and to reprogram buildings.  Open the Task Manager and draw this gesture to summon an Engineer.
 help_engineer_summon_icons_kbd         Engineers are used to collect dead spirits, and to reprogram buildings.  Hold [KEYICONSTASKMANAGERDISPLAY] and click on the Engineer icon to summon an Engineer.
-help_engineer_summon_icons_xin         Engineers are used to collect dead spirits, and to reprogram buildings.  Open the Task Manager and select the Engineer icon to summon an Engineer.
 help_engineer_summon_2_kbd             Click inside one of the starting areas, now highlighted, to create your Engineer.  Or you may press CTRL-C to terminate the Engineer program.
-help_engineer_summon_2_xin             Select one of the starting areas, now highlighted, to create your Engineer.  Or you may terminate the Engineer program.
 help_engineer_summon_2_icons_kbd       Click inside one of the starting areas, now highlighted, to create your Engineer.  Or you may press CTRL-C to terminate the Engineer program.
-help_engineer_summon_2_icons_xin       Select one of the starting areas, now highlighted, to create your Engineer.  Or you may terminate the Engineer program.
 help_engineer_use_kbd                  Engineers will automatically do anything nearby that needs doing, such as collecting dead spirits or reprogramming buildings.  Just Left Click to move them near a task.
-help_engineer_use_xin                  Engineers will automatically do anything nearby that needs doing, such as collecting dead spirits or reprogramming buildings.  Just move them near a task.
 
 help_officer_create_kbd                You can use ordinary Citizens to order other Citizens around, by promoting them to officers.  Draw this gesture for Officer and click on a Citizen.
-help_officer_create_xin                You can use ordinary Citizens to order other Citizens around, by promoting them to officers.  Draw this gesture for Officer and select a Citizen.
 help_officer_create_icons_kbd          You can use ordinary Citizens to order other Citizens around, by promoting them to officers.  Bring up the Task Manager and click on the Officer icon, then click on a Citizen.
-help_officer_create_icons_xin          You can use ordinary Citizens to order other Citizens around, by promoting them to officers.  Bring up the Task Manager and select the Officer icon, then select a Citizen.
 help_officer_create_2_kbd              Click on a Citizen to promote him to an Officer.  Or press CTRL-C to terminate the Officer program.
-help_officer_create_2_xin              Select a Citizen to promote him to an Officer.  Or terminate the Officer program.
 help_officer_create_2_icons_kbd        Click on a Citizen to promote him to an Officer.  Or press [KEYICONSTASKMANAGERENDTASK] to terminate the Officer program.
-help_officer_create_2_icons_xin        Select a Citizen to promote him to an Officer.  Or terminate the Officer program.
 help_officer_use_kbd                   You can move an officer by Left Clicking.  Right click on the landscape to set GOTO Orders for other Citizens to follow.  Right click near the Officer to cancel his orders.
 help_officer_use_1mb_kbd               You can move an officer by clicking.  Click and hold on the landscape to set GOTO Orders for other Citizens to follow.  Click and hold near the Officer to cancel his orders.
 help_officer_toggle_kbd                To toggle through all available orders, Right Click near the officer.
 help_officer_toggle_1mb_kbd            To toggle through all available orders, Click and hold near the officer.
 
 help_showobjectives_kbd                To see a list of objectives, hold [KEYGESTURESTASKMANAGERDISPLAY] to access the Task Manager, then scroll right by moving the mouse to the right of the screen, or by pressing [KEYCAMERARIGHT].
-help_showobjectives_xin                To see a list of objectives, open the Task Manager, then scroll right.
 help_showobjectives_icons_kbd          To see a list of objectives, hold [KEYICONSTASKMANAGERDISPLAY], then scroll down by moving the mouse to the bottom of the screen, or by pressing [KEYMENUDOWN].
-help_showobjectives_icons_xin          To see a list of objectives, open the Task Manager, then scroll down.
 help_armour_summon_kbd                 Click inside one of the starting areas, now Highlighted, to create your Armour.  Armour can only be created near Trunk Ports that you control.
-help_armour_summon_xin                 Select one of the starting areas, now Highlighted, to create your Armour.  Armour can only be created near Trunk Ports that you control.
 help_armour_use_kbd                    Left Click to move your Armour.  Right Click near the armour to toggle loading and unloading of Citizens.  Right Click on the landscape to deploy your Armour as a Battle Cannon.
 help_armour_use_1mb_kbd                Left Click to move your Armour.  Click and hold the mouse button near the armour to toggle loading and unloading of Citizens.  Click and hold the mouse button on the landscape to deploy your Armour as a Battle Cannon.
 
 help_radardish_1_kbd                   This Radar Dish can be used to beam people to other Radar Dishes.  Click on it to control it.
-help_radardish_1_xin                   This Radar Dish can be used to beam people to other Radar Dishes.  Select it to control it.
 help_radardish_2_kbd                   To aim the Radar Dish simply point and click on the Radar Dish you wish to travel to.  The receiving Radar Dish must be facing you.  Press [KEYUNITDESELECT] to deselect the Radar Dish.
-help_radardish_2_xin                   To aim the Radar Dish simply point and select the Radar Dish you wish to travel to.  The receiving Radar Dish must be facing you.
 help_incubator                         This building is an Incubator.  You can use Engineers to carry spirits here, which will then be reborn into more Citizens.
 help_trunkport                         This is a Trunk Port.  It acts as a stargate, connecting different locations within Darwinia together.
 help_refinery                          This is the main Refinery.  It powers the entire mining rig on these islands.  To bring it online you will need to safely escort some Citizens up here.
@@ -247,7 +225,6 @@ help_anthill                           Euurgh, disgusting!  This area is infeste
 help_controltower                      This is a Control Tower.  Send one of your engineers to reprogram it, and you'll be able to make use of the building it's connected to.
 help_researchitem                      You've found some of my research!  Excellent.  Create some Engineers nearby and they will download the research into my system.  Hopefully it will be something useful.
 help_gunturret_1_kbd                   This Battle Cannon needs Citizens operating it before it can be used.  They will automatically shoot at any nearby enemies.  Alternatively you can click on it to control it yourself.
-help_gunturret_1_xin                   This Battle Cannon needs Citizens operating it before it can be used.  They will automatically shoot at any nearby enemies.  Alternatively you can select it to control it yourself.
 help_gunturret_2_kbd                   This Battle Cannon will track your cursor.  Right Click to fire.  Press [KEYUNITDESELECT] to deselect.
 help_gunturret_2_1mb_kbd               This Battle Cannon will track your cursor.  Click and hold to fire.  Press [KEYUNITDESELECT] to deselect.
 
@@ -326,11 +303,8 @@ taskmanager_incomplete                 INCOMPLETE
 # ================================================
 
 task_manager_full_kbd                  You cannot run any more programs.  Try shutting some down by holding [KEYGESTURESTASKMANAGERDISPLAY] to access the Task Manager, tabbing along to old tasks and pressing CTRL-C.
-task_manager_full_xin                  You cannot run any more programs.  Try shutting some down.
 task_manager_full_icons_kbd            You cannot run any more programs.  Hold [KEYICONSTASKMANAGERDISPLAY] and close some programs down to free up some space.  Just click on their close icons.
-task_manager_full_icons_xin            You cannot run any more programs.
 task_manager_targetfirst_kbd           You can't create any more programs until you've placed your existing one.  Click inside one of the starting areas to place it.
-task_manager_targetfirst_xin           You can't create any more programs until you've placed your existing one.  Select one of the starting areas to place it.
 task_manager_needsquadfirst            You need to create a squad first before you can set their weapon type.
 officer_notwalkable                    I'm afraid the Citizens aren't clever enough to find their way along that route.  They need to see where they are going.
 armour_cantconvert                     The ground there is too steep...you can only set up a Battle Cannon on flat ground.
@@ -345,10 +319,8 @@ objective_research_2                   Create an Engineer nearby and he will dow
 
 building_captured                      The Engineers have finished reprogramming a building
 primaryObjectivesComplete_kbd          Good work, it looks like you've completed all the Primary Objectives.  Press [KEYMENUESCAPE] to leave this location when you're done.
-primaryObjectivesComplete_xin          Good work, it looks like you've completed all the Primary Objectives.
 primaryObjectiveComplete               Primary Objective Complete.
 primaryObjectiveFail_kbd               It looks like you've failed at your mission.  Feel free to try again.  Press [KEYMENUESCAPE] now.
-primaryObjectiveFail_xin               It looks like you've failed at your mission.  Feel free to try again.
 
 privatedemo1                           > INTERNAL PRE-ALPHA BUILD FOR SOMEBODY
 privatedemo2                           > STRICTLY CONFIDENTIAL
@@ -401,7 +373,6 @@ research_laser_v4                      These lasers are amazing now.  They're ne
 
 research_grenade                       I'll work on the Grenade program.  I should be able to increase the weapon range.
 research_grenade_v1_kbd                You've found my research into the Grenade weapon!  This is fantastic.  While you are firing lasers with your squad, tap the Left Mouse Button to throw a Grenade.
-research_grenade_v1_xin                You've found my research into the Grenade weapon!  This is fantastic.  Your squad can now throw Grenades.
 research_grenade_v1_1mb_kbd            You've found my research into the Grenade weapon!  This is fantastic.  Shift click to throw a Grenade.
 research_grenade_v2                    I've increased the throw range of the Grenade program.
 research_grenade_v3                    I've made another increase to the Grenade throw range.
@@ -409,10 +380,8 @@ research_grenade_v4                    That's it, I'm done with the grenades now
 
 research_rocket                        I'll get to work on the Rockets.  Hopefully I can increase their maximum range a bit.
 research_rocket_v1_kbd                 Excellent, you've recovered the Rocket program.  You can select this Weapon with the Rocket gesture.  While you are firing lasers with your squad, tap the Left Mouse Button to launch a Rocket.
-research_rocket_v1_xin                 Excellent, you've recovered the Rocket program.  You can select this Weapon with the Rocket gesture.  Your squad can now fire Rockets.
 
 research_rocket_v1_icons_kbd           Excellent, you've recovered the Rocket program.  Click on the Rocket icon next to your Squad in the Task Manager to select this Weapon.  While you are firing lasers with your squad, tap the Left Mouse Button to launch a Rocket.
-research_rocket_v1_icons_xin           Excellent, you've recovered the Rocket program.  Select the Rocket icon next to your Squad in the Task Manager to select this Weapon.  Your squad can now fire Rockets.
 research_rocket_v1_1mb_kbd             Excellent, you've recovered the Rocket program.  You can select this Weapon with the Rocket gesture.  Shift click to launch a Rocket.
 research_rocket_v2                     The Rocket range has been increased.
 research_rocket_v3                     I've managed to increase the Rocket range again.
@@ -421,7 +390,6 @@ research_rocket_v4                     The rocket range is at its maximum now.
 research_airstrike                     I'll try to improve the AirStrike for you.
 research_airstrike_v1                  Oh my goodness, this is excellent.  You've found my AirStrike program!  Select Airstrike as your Squad weapon by drawing the gesture, then throw the marker grenade to show the program where to bomb.
 research_airstrike_v1_icons_kbd        Oh my goodness, this is excellent.  You've found my AirStrike program!  Click on the Airstrike icon in the Task Manager to select this Weapon, then throw the marker grenade to show the program where to bomb.
-research_airstrike_v1_icons_xin        Oh my goodness, this is excellent.  You've found my AirStrike program!  Select the Airstrike icon in the Task Manager to select this Weapon, then throw the marker grenade to show the program where to bomb.
 research_airstrike_v2                  I've improved the AirStrike program.  Each marker grenade will now summon two Invaders to drop their bombs.
 research_airstrike_v3                  I've added another Invader to each AirStrike unit.
 research_airstrike_v4                  There will now be four Invaders for every AirStrike marker.  I've done all I can here.
@@ -454,18 +422,14 @@ research_officer                       I will get to work improving the Officer 
 # research_officer_v1                Unused
 # research_officer_v2                Unused
 research_officer_v3_kbd                I've upgraded the Officer program so they can now issue a FOLLOW order as well as the existing GOTO order.  Right click near an officer to toggle his orders.
-research_officer_v3_xin                I've upgraded the Officer program so they can now issue a FOLLOW order as well as the existing GOTO order.
 research_officer_v3_1mb_kbd            I've upgraded the Officer program so they can now issue a FOLLOW order as well as the existing GOTO order.  Click and hold near an officer to toggle his orders.
 research_officer_v4_kbd                I've given the Officers a new order called ABSORB.  This will absorb all nearby friendly Citizens into a protective shield, which will keep the Officer safe in dangerous areas.  Right click near an officer to toggle his orders.
-research_officer_v4_xin                I've given the Officers a new order called ABSORB.  This will absorb all nearby friendly Citizens into a protective shield, which will keep the Officer safe in dangerous areas.
 research_officer_v4_1mb_kbd            I've given the Officers a new order called ABSORB.  This will absorb all nearby friendly Citizens into a protective shield, which will keep the Officer safe in dangerous areas.  Click and hold near an officer to toggle his orders.
 
 research_explanation_1                 I'm going to keep working on the programs you are using for a while...the Squads, Engineers etc.
 research_explanation_2                 Most of them are still in very early stages of beta testing and I think I can improve all of them quite a bit with some work.
 research_explanation_3_kbd             To see how I'm getting along, hold [KEYGESTURESTASKMANAGERDISPLAY] to access the Task Manager, then scroll left by pushing the mouse to the left of the screen, or by pressing [KEYCAMERALEFT].
-research_explanation_3_xin             To see how I'm getting along, open the Task Manager, then scroll left.
 research_explanation_3_icons_kbd       To see how I'm getting along, hold [KEYICONSTASKMANAGERDISPLAY], then scroll up by pushing the mouse to the top of the screen, or by pressing [KEYCAMERAFORWARDS].
-research_explanation_3_icons_xin       To see how I'm getting along, open the Task Manager, then scroll up.
 research_explanation_4                 From there you can set priorities for me...and I'll try to work on improving what you think is most important.
 
 
@@ -485,18 +449,15 @@ tutorial_intro_9                       We're going to need to wipe out the Viral
 tutorial_intro_10                      But let's start with the basics.
 
 tutorial_1_kbd                         Firstly let's get to grips with the camera.Use the [KEYCAMERAFORWARDS],[KEYCAMERALEFT],[KEYCAMERABACKWARDS],[KEYCAMERARIGHT] keys to move the camera around.
-tutorial_1_xin                         Firstly let's get to grips with the camera. Use the left stick to move the camera around.
 tutorial_2_kbd                         To change the camera's height, scroll your middle mouse button up and down.  Or you can press [KEYCAMERAUP] and [KEYCAMERADOWN].
 tutorial_3                             Good stuff.  Now the first thing I want you to do is to destroy these evil Red Virii.
 tutorial_3b                            We will then harvest the Souls from their dead bodies and convert them into some perky new Citizens.
 tutorial_4                             In order to destroy those Virii, we will need to create an armed offensive unit called a SQUAD.
 tutorial_4b_kbd                        To create things in Darwinia you draw gestures in the Task Manager.  Hold the [KEYGESTURESTASKMANAGERDISPLAY] key to bring up the Task Manager.
-tutorial_4b_xin                        To create things in Darwinia you draw gestures in the Task Manager.
 tutorial_5                             With the Task Manager open, draw this gesture to create a SQUAD.  You don't need to be very accurate, just draw it fast.
 tutorial_5_kbd                         While holding [KEYGESTURESTASKMANAGERDISPLAY], draw this gesture to create a SQUAD.  You don't need to be very accurate, just draw it fast.
 tutorial_5_error                       Whoops, that's the wrong gesture.  Try again.
 tutorial_7_kbd                         Excellent.  Now in order to place the SQUAD into the world, click inside the highlighted starting area.
-tutorial_7_xin                         Excellent.  Now in order to place the SQUAD into the world, select the highlighted starting area.
 tutorial_8_kbd                         Squads need to be directly controlled.  Click the Left Mouse Button to move them around the landscape.
 tutorial_9_kbd                         Hold the Right Mouse Button to fire their lasers.
 tutorial_10_kbd                        They can also throw grenades.  Hold the Right Mouse Button to fire lasers, then tap the Left Mouse Button to throw a grenade.
@@ -508,7 +469,6 @@ tutorial_20                            This building is an Incubator.  Its purpo
 tutorial_20b                           Unfortunately it's currently offline, due to the red viral Infection.  We need to use it to start creating Citizens.
 tutorial_20c                           To bring the building online we will need to use an ENGINEER.
 tutorial_21_kbd                        To summon an ENGINEER, hold [KEYGESTURESTASKMANAGERDISPLAY] to access the Task Manager and draw this gesture.
-tutorial_21_xin                        To summon an ENGINEER, open the Task Manager and draw this gesture.
 tutorial_22                            Engineers can be placed in starting points, or near Squads.  Place your Engineer and move him near the Incubator.
 tutorial_23                            The first thing the Engineer will do is to reprogram the Incubator and remove the Viral infection, using the nearby Control Tower.
 tutorial_24                            The Engineer will now collect up the Souls left behind by the dead Virii and carry them to the Incubator.
@@ -518,7 +478,6 @@ tutorial_25                            The first Citizens have been reborn!  Thi
 tutorial_26                            These guys used to own the planet, before the Virus invaded.  And it's these guys that we're going to help to recapture the world.
 
 tutorial_28_kbd                        Hold [KEYGESTURESTASKMANAGERDISPLAY] and draw this gesture to create another SQUAD.
-tutorial_28_xin                        Open the Task Manager and draw this gesture to create another SQUAD.
 tutorial_29                            You can now start your SQUAD closer to the action, by placing them near the Control Tower you captured.
 
 tutorial_30                            Ok, next task.
@@ -528,13 +487,11 @@ tutorial_32                            Now take your Squad and attack the Viral 
 tutorial_33                            Excellent work.  I'm very impressed.
 tutorial_33b                           We now want to use an Engineer to reprogram this Incubator, and to collect up the nearby Souls.
 tutorial_34_kbd                        Now move the Engineer near to the new Incubator so he can begin Reprogramming it.  Just Left Click to move an Engineer.
-tutorial_34_xin                        Now move the Engineer near to the new Incubator so he can begin Reprogramming it.
 tutorial_35                            That Engineer will now pick up the nearby Souls and place them in the Incubator, creating more Citizens.
 tutorial_35b                           Let me show you how to move the existing Citizens around.
 tutorial_35c                           Citizens can't be directly controlled, but we can issue orders to them using an Officer.
 tutorial_351                           To create an Officer, draw this gesture.
 tutorial_36_kbd                        Click on an existing Citizen to promote him to an Officer.
-tutorial_36_xin                        Select an existing Citizen to promote him to an Officer.
 tutorial_37                            The most useful function if Officers is that they can order Citizens around.
 tutorial_37_kbd                        Officers can be moved around by Left Clicking.  But they're most useful function is that they can order Citizens around.
 tutorial_37b_kbd                       You can right click somewhere on the ground to order all the nearby Citizens to walk there.
@@ -549,7 +506,6 @@ tutorial_40                            You have a Squad running already, but you
 tutorial_40b_kbd                       To select your Squad, hold [KEYICONSTASKMANAGERDISPLAY] and press the TAB key until the Squad is selected.  Or you can just click on the Squad directly.
 
 tutorial_41_kbd                        To summon another ENGINEER, hold [KEYGESTURESTASKMANAGERDISPLAY] to access the Task Manager and draw this gesture.
-tutorial_41_xin                        To summon another ENGINEER, open the Task Manager and draw this gesture.
 tutorial_42                            Now place the Engineer near a Squad or a Control Tower.
 
 tutorial_43                            You already have an Engineer running, but it isn't currently selected.
@@ -559,7 +515,6 @@ tutorial_squaddeath                    Looks like your SQUAD has been destroyed.
 tutorial_engineerdeath                 Unfortunately your ENGINEER has been destroyed.  We'll need to create another.
 
 tutorial_skipped_kbd                   Ok I'll just let you get on with it.  Remember you can press [KEYSEPULVEDAHELP] at any time for help.  Good luck!
-tutorial_skipped_xin                   Ok I'll just let you get on with it. Good luck!
 
 
 # ================================================
@@ -702,7 +657,6 @@ dialog_unplugged1                      Controller disconnected
 dialog_unplugged2                      Your controller has been disconnected. Please connect the controller to continue.
 
 dialog_skiptutorial_kbd                Press [KEYSKIPTUTORIAL] to skip the tutorial
-dialog_skiptutorial_xin                Press BACK to skip the tutorial
 
 dialog_skipprologue                    Skip Prologue
 dialog_playprologue                    Play Prologue
@@ -847,25 +801,19 @@ launchpad_middemo_14                   And if it wasn't for this Virus, they'd a
 
 launchpad_tutorial_1                   Right, we're going to have to help the Citizens.
 launchpad_tutorial_2_kbd               Firstly let's get to grips with the camera.  Use the [KEYCAMERAFORWARDS], [KEYCAMERALEFT], [KEYCAMERABACKWARDS] and [KEYCAMERARIGHT] keys to move the camera around.
-launchpad_tutorial_2_xin               Firstly let's get to grips with the camera.  Use the left stick to move the camera.
 launchpad_tutorial_3                   To change the camera's height, press up or down on the D-Pad.
 launchpad_tutorial_3_kbd               To change the camera's height, scroll your middle mouse button up and down.  Or you can press [KEYCAMERAUP] and [KEYCAMERADOWN].
 launchpad_tutorial_4_kbd               In order to combat the Red menace, we're going to have to create some offensive units.  Hold the [KEYICONSTASKMANAGERDISPLAY] key to bring up the Task Manager.
-launchpad_tutorial_4_xin               In order to combat the Red menace, we're going to have to create some offensive units. Press X to open the TaskManager.
 launchpad_tutorial_5_kbd               The SQUAD is your primary weapon against the evil Red army.  Create a SQUAD by clicking on the squad icon in the middle of the screen while the Task Manager is open.
-launchpad_tutorial_5_xin               The SQUAD is your primary weapon against the evil Red army.  Create a SQUAD by selecting the squad icon in the middle of the screen and pressing A.
 launchpad_tutorial_5_error             That's the wrong Icon.  Try again.
 launchpad_tutorial_6_kbd               In order to place the new SQUAD into the world, click inside the highlighted starting area.
-launchpad_tutorial_6_xin               In order to place the new SQUAD into the world, move your cursor into the highlighted starting area and press A.
 launchpad_tutorial_7_kbd               Squads need to be directly controlled. Click the Left Mouse Button to move them around the landscape.
-launchpad_tutorial_7_xin               Squads need to be directly controlled. Use the left stick to move them around.
 launchpad_tutorial_8                   Use the right stick to fire their lasers. Move the stick in the direction you want to fire.
 launchpad_tutorial_8_kbd               Hold the Right Mouse Button to fire their lasers.
 launchpad_tutorial_9                   Now take your Squad and wipe out those evil Virii nearby. Don't let them get too close!
 launchpad_tutorial_9_error             Looks like your Squad has been destroyed.  Not to worry, we can just create another.
 launchpad_tutorial_10                  That blue glowing item up ahead is a piece of my Research.  It contains a weapon we can use against the Red Virii.
 launchpad_tutorial_11_kbd              In order to capture this Research we need to create an Engineer. Hold [KEYICONSTASKMANAGERDISPLAY], then click on the Engineer button.
-launchpad_tutorial_11_xin              In order to capture this Research we need to create an Engineer. Open the Task Manager, select the Engineer button, and press A.
 launchpad_tutorial_12                  Place your new Engineer near your Squad and move him near the Research item.
 launchpad_tutorial_12b                 Engineers are just dumb debugging tools, but they serve a number of purposes.
 launchpad_tutorial_12c                 Here you can see the Engineer collecting up that piece of research.
@@ -873,7 +821,6 @@ launchpad_tutorial_12d                 Once he's done he will upload it to my sy
 launchpad_tutorial_12e                 You might find other Research floating around like this.  It would be very helpful if you could collect it for me.
 launchpad_tutorial_13                  Fantastic, you've managed to recapture the Grenade weapon.
 launchpad_tutorial_13b_kbd             Click on the existing Squad to switch control back to them.  Alternatively you can click on them in the Task Manager, or you can press 1.
-launchpad_tutorial_13b_xin             Highlight existing Squad and press A to switch control back to them.  Alternatively you can select them in the Task Manager, or switch between your active tasks using the Left and Right bumper buttons.
 launchpad_tutorial_14                  To throw a grenade, pull the right trigger while firing your lasers. The further you move the right stick, the further you will throw the grenade.
 launchpad_tutorial_14_kbd              While you are holding the Right Mouse Button to fire lasers, tap the Left Mouse Button to throw a Grenade.
 launchpad_tutorial_15                  Now I'd recommend you take your squad, and wipe out those Virii over the hill using your new weapons.
@@ -883,16 +830,11 @@ launchpad_tutorial_18                  We're now going to use it to open up a li
 launchpad_tutorial_19                  Unfortunately this Radar Dish has been infected with the same Red virus you've been fighting.
 launchpad_tutorial_20                  In order to use it we must first make our Engineer reprogram it to clear out the viral infection.
 launchpad_tutorial_21_kbd              Reselect your Engineer and move him near the Radar Dish to begin reprogramming.  Click on his icon in the Task Manager to reselect him, or just click on him directly.
-launchpad_tutorial_21_xin              Reselect your Engineer and move him near the Radar Dish to begin reprogramming.  Select his icon in the Task Manager to reselect him, or just select him directly.
 launchpad_tutorial_22                  The Engineer can access the Radar Dish via the nearby Control Tower.  He's reprogramming it now so we can use it.
 launchpad_tutorial_23_kbd              Ok the Radar Dish is now under our control.  Deselect your Engineer by pressing [KEYUNITDESELECT], then click on the Radar Dish.
-launchpad_tutorial_23_xin              Ok the Radar Dish is now under our control.  Deselect your Engineer by pressing B, and then select the Radar Dish by highlighting it and pressing A.
 launchpad_tutorial_24_kbd              Now align the Dish by clicking on the receiver on the distant island.  I've highlighted the receiver for you.  You can zoom with the middle mouse button or the [KEYCAMERAZOOM] key.
-launchpad_tutorial_24_xin              Now align the Dish by aiming at the receiver on the distant island and pressing A.  I've highlighted the receiver for you. You can zoom in by pulling and holding the left trigger.
 launchpad_tutorial_25_kbd              You should now see the dishes are aligned, and we can send our Squad through.  Deselect the dish by pressing [KEYUNITDESELECT], then reselect your SQUAD.
-launchpad_tutorial_25_xin              You should now see the dishes are aligned, and we can send our Squad through.  Deselect the dish by pressing B, then reselect your SQUAD.
 launchpad_tutorial_26_kbd              You can now send your SQUAD through the dish by clicking on it while they are selected.
-launchpad_tutorial_26_xin              You can now send your SQUAD through the dish simply by moving your Squad towards it.
 
 launchpad_tutorial_defend_1            Be careful, there are more Virii nearby.
 launchpad_tutorial_defend_2            Defend yourself!
@@ -901,7 +843,6 @@ launchpad_tutorial_40                  This building is an Incubator.  It's a ve
 launchpad_tutorial_41                  We can use it to convert the souls of those creatures you've just killed into Citizens.
 launchpad_tutorial_42                  But just like the Radar Dish, the first thing we need to do is reprogram it to remove the viral infection.
 launchpad_tutorial_43_kbd              Create an Engineer near the Incubator to reprogram it.  Just hold [KEYICONSTASKMANAGERDISPLAY] and click on the Engineer button.  Or you can press [KEYICONSTASKMANAGERNEWENGINEER].
-launchpad_tutorial_43_xin              Create an Engineer near the Incubator to reprogram it.  Just open the Task Manager and select the Engineer button.
 launchpad_tutorial_44                  Now that the Incubator is online, you will see the Engineer harvesting souls.
 launchpad_tutorial_45                  All creatures in this world have a soul - regardless if they are a friendly Citizen or an evil Virus.
 launchpad_tutorial_46                  Engineers can pick up the souls of dead creatures and deposit them into Incubator buildings for rebirth.
@@ -922,14 +863,10 @@ launchpad_tutorial_59                  That power is generated by these Solar Pa
 launchpad_tutorial_60                  In order to make these Solar Panels work we need to escort some Citizens to each of them.
 launchpad_tutorial_61                  And the piece of Research you've just picked up will do just that - it will allow us to guide the Citizens around using Officers.
 launchpad_tutorial_62_kbd              Hold [KEYICONSTASKMANAGERDISPLAY] and click on the button to create an Officer.  Or you can press [KEYICONSTASKMANAGERNEWOFFICER].
-launchpad_tutorial_62_xin              Open the Task Manager and select the button to create an Officer.
 launchpad_tutorial_63_kbd              Now we need to select a Citizen to promote to be our Officer.  Click on any of these Citizens to promote them.
-launchpad_tutorial_63_xin              Now we need to select a Citizen to promote to be our Officer.  Highlight one of the Citizens and press A to promote them.
 launchpad_tutorial_64_kbd              We can now influence the other Citizens around us. Right click on the Officer to put him into FOLLOW mode.
-launchpad_tutorial_64_xin              We can now influence the other Citizens around us. Highlight the Officer and pull the right trigger to put him into FOLLOW mode.
 launchpad_tutorial_65                  Those Citizens would now follow the Officer wherever he went.  In this case, we've gathered together all the Citizens nearby.
 launchpad_tutorial_66_kbd              Right click near the Solar Panels to put the Officer into GOTO mode.
-launchpad_tutorial_66_xin              Move your cursor near the Solar Panels and pull the right trigger to put the Officer into GOTO mode.
 launchpad_tutorial_67                  The Officer is ordering all the nearby Citizens to march to that spot.
 launchpad_tutorial_68                  You can have as many Officers as you need.  Now use Officers to occupy the control panels around the base of each of the three Solar Panels.
 launchpad_tutorial_69                  Excellent work.  The first batch of Solar Panels are up and running.
@@ -943,11 +880,8 @@ launchpad_tutorial_76                  There are still two more Fuel Pumps that 
 launchpad_tutorial_77                  You should probably head this way next.
 
 launchpad_reprogram_1_kbd              To align this Radar Dish, first wait until it has been reprogrammed, then deselect your current task by pressing [KEYUNITDESELECT].
-launchpad_reprogram_1_xin              To align this Radar Dish, first wait until it has been reprogrammed, then deselect your current task by pressing B.
 launchpad_reprogram_2_kbd              You can then click on the Radar Dish, and align it by clicking on the receiving Radar Dish.
-launchpad_reprogram_2_xin              You can then select the Radar Dish by pressing A, and align it by targetting the receiving Radar Dish and pressing A again.
 launchpad_reprogram_3_kbd              When you are done, deselect the dish by pressing [KEYUNITDESELECT].
-launchpad_reprogram_3_xin              When you are done, deselect the dish by pressing B.
 
 launchpad_dgupgrade_1                  You've found some of my Research into Citizen weaponry!
 launchpad_dgupgrade_2                  This research item will equip our green Citizens with the same grenades your Squaddies are using.
@@ -1058,9 +992,7 @@ containment_incubator_4                But there are ways we can influence them 
 
 containment_officer_1                  Oh fantastic, you've found my code for the Officer program.  This handy little program will enable you to promote individual Citizens to Officers, and use those Officers to order the other Citizens around.
 containment_officer_2_kbd              To create an Officer, draw this gesture then click on a Citizen you wish to Promote.
-containment_officer_2_xin              To create an Officer, draw this gesture then select a Citizen you wish to Promote.
 containment_officer_2_icons_kbd        To create an Officer, bring up the Task Manager and click on the Officer icon.  Then click on a Citizen you wish to Promote.
-containment_officer_2_icons_xin        To create an Officer, bring up the Task Manager and select the Officer icon.  Then select a Citizen you wish to Promote.
 containment_officer_3                  The Citizens that you've birthed so far aren't safe...I want you to move them under the tree inside the shielded area (highlighted), using the Officer program.
 
 containment_rescuedws_1                Good work, looks like some of the Citizens have reached the safe area.  But it's not enough.  If we're going to get Darwinia back online, we'll need quite a few more.
@@ -1107,7 +1039,6 @@ containmentend_7_kbd                   If you need help with these tasks, just h
 containmentend_7_icons                 If you need help with these tasks, open the Objectives Screen...
 containmentend_7_icons_kbd             If you need help with these tasks, just hold [KEYICONSTASKMANAGERDISPLAY] and push your mouse down for the Objectives Screen...
 containmentend_7b_kbd                  ...There you can click on an objective and I'll do my best to clarify it for you.
-containmentend_7b_xin                  ...There you can select an objective and I'll do my best to clarify it for you.
 containmentend_8                       Good luck!
 
 
@@ -1177,7 +1108,6 @@ yard_progressarmour_3                  I'd recommend you make use of the new Arm
 
 yard_finished_1                        I've added the Armour program to your gesture list.  You can now summon Armour to any location by drawing this gesture.
 yard_finished_1_icons_kbd              I've added the Armour program to your list.  You can now summon Armour to any location from the Task Manager by clicking on the Armour icon.
-yard_finished_1_icons_xin              I've added the Armour program to your list.  You can now summon Armour to any location from the Task Manager by selecting the Armour icon.
 yard_finished_2                        The Armour will have to travel through the Trunk Port system, so you'll only be able to summon Armour near a local Trunk Port that you control.
 
 

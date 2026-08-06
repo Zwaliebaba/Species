@@ -91,9 +91,6 @@ namespace Neuron
   bool InputDriver::isIdle() { return true; }
 
 
-  InputMode InputDriver::getInputMode() { return InputMode::INPUT_MODE_NONE; }
-
-
   bool InputDriver::getInputDescription(InputSpec const& spec, InputDescription& desc) { return false; }
 
 

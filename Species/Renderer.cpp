@@ -35,7 +35,6 @@
 #include "UserInput.h"
 #include "GameCursor.h"
 #include "StartSequence.h"
-#include "ControlHelp.h"
 #include "Eclipse.h"
 #include "MessageDialog.h"
 #include "InsertionSquad.h"
@@ -51,7 +50,6 @@ namespace Species
     : m_fps(60),
       m_displayFPS(false),
       m_renderDebug(false),
-      m_displayInputMode(false),
       m_renderDarwinLogo(-1.0f),
       m_nearPlane(5.0f),
       m_farPlane(150000.0f),
@@ -408,7 +406,6 @@ void Renderer::RenderFrame(bool withFlip)
       g_globalWorld->Render();
   }
 
-  TheControlHelp()->Render();
   g_explosionManager.Render();
   g_particleSystem->Render();
 
@@ -446,33 +443,6 @@ void Renderer::RenderFrame(bool withFlip)
     //		g_editorFont.DrawText2D( 150, 10, DEF_FONT_SIZE, "TFPS: {:2.0f}", g_targetFrameRate);
     //		Vector3 const camPos = TheCamera()->GetPos();
     //		g_editorFont.DrawText2D( 150, 10, DEF_FONT_SIZE, "cam: {:.1f}, {:.1f}, {:.1f}", camPos.x, camPos.y, camPos.z);
-  }
-
-  if (m_displayInputMode)
-  {
-    glColor4f(0, 0, 0, 0.6);
-    glBegin(GL_QUADS);
-    glVertex2f(80.0, 1.0f);
-    glVertex2f(230.0, 1.0f);
-    glVertex2f(230.0, 18.0f);
-    glVertex2f(80.0, 18.0f);
-    glEnd();
-
-    std::string inmode;
-    switch (g_inputManager->getInputMode())
-    {
-    case InputMode::INPUT_MODE_KEYBOARD:
-      inmode = "keyboard";
-      break;
-    case InputMode::INPUT_MODE_GAMEPAD:
-      inmode = "gamepad";
-      break;
-    default:
-      inmode = "unknown";
-    }
-
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-    g_editorFont.DrawText2D(84, 10, DEF_FONT_SIZE, "InputMode: {}", inmode.c_str());
   }
 
   if (g_editing)

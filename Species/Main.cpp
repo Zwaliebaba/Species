@@ -4,7 +4,6 @@
 #include "App.h"
 #include "Camera.h"
 #include "ClientToServer.h"
-#include "ControlHelp.h"
 #include "Debug.h"
 #include "DebugMenu.h"
 #include "Eclipse.h"
@@ -370,7 +369,6 @@ void LocationGameLoop()
     {
       if (TheRenderer()->IsFadeComplete())
       {
-        TheControlHelp()->Shutdown();
         break;
       }
     }
@@ -439,11 +437,10 @@ void LocationGameLoop()
           if (teamControls.m_unitMove)
             checkMouse = true;
 
-          bool orderGiven = false;
-          if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_KEYBOARD && teamControls.m_primaryFireTarget)
-            orderGiven = true;
-          if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD && teamControls.m_secondaryFireDirected)
-            orderGiven = true;
+          // The second test was the gamepad's, on m_secondaryFireDirected, and
+          // it went with INPUT_MODE_GAMEPAD; the first was the keyboard's, and
+          // the keyboard is now the only way in.
+          bool orderGiven = teamControls.m_primaryFireTarget;
 
           if (team->GetMyEntity() && team->GetMyEntity()->m_type == Entity::TypeOfficer && orderGiven)
             checkMouse = true;
@@ -579,7 +576,6 @@ void LocationGameLoop()
       TheScript()->Advance();
       g_explosionManager.Advance();
       g_soundSystem->Advance();
-      TheControlHelp()->Advance();
 
 #ifdef ATTRACTMODE_ENABLED
       if (g_app->m_attractMode->m_running)

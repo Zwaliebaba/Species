@@ -95,13 +95,10 @@ namespace Species
 
     g_soundSystem->TriggerOtherEvent("GestureSuccess", SoundSourceBlueprint::TypeGesture);
 
+    // The `automatic` setting used to mean `on if the player is using a control
+    // pad`, which nothing could report; it now means off, which is what it has
+    // always evaluated to.
     int trackEntity = g_prefsManager->GetInt(OTHER_AUTOMATICCAM, 0);
-    if (trackEntity == 0)
-    {
-      // work out if player is using control pad
-      if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
-        trackEntity = 2;
-    }
 
     if (trackEntity == 2)
     {

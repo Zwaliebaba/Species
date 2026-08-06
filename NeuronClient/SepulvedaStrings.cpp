@@ -8,10 +8,11 @@
 //
 //   [key controlname]  - the name of the input currently bound to a control
 //   [phrase_key]       - the (recursively expanded) contents of another phrase
-//   [ifmode keyboard]  - only emit the enclosed text in keyboard input mode
-//   [else] / [endif]
 //
-// Ported from the original Darwinia sepulveda_strings.cpp.
+// Ported from the original Darwinia sepulveda_strings.cpp. It also had
+// [ifmode keyboard], [else] and [endif]; input-native-events T14 removed them
+// with the input mode they asked about, having first measured that no file
+// under GameData used any of the three.
 
 #include "Input.h"
 #include "LanguageTable.h"
@@ -28,21 +29,15 @@ namespace Neuron
 {
   struct CaptionParserMode
   {
-      bool writing;
-      int ifdepth;
-      int writingStopDepth;
+      // THE CONDITIONAL STATE IS GONE WITH [IFMODE]. `writing`, `ifdepth` and
+      // `writingStopDepth` existed for one directive whose only question was
+      // the input mode; see consumeIfMarker's removal below. Nothing can
+      // suppress output now, so the parser always writes.
       int inOffset, outOffset;
-      InputMode mood;
       CaptionParserMode()
-        : writing(true),
-          ifdepth(0),
-          writingStopDepth(0),
-          inOffset(0),
-          outOffset(0),
-          mood(InputMode::INPUT_MODE_KEYBOARD)
+        : inOffset(0),
+          outOffset(0)
       {
-        if (g_inputManager)
-          mood = g_inputManager->getInputMode();
       }
   };
 
@@ -51,7 +46,6 @@ namespace Neuron
   bool consumeMarker(char const* _baseString, char* _dest, CaptionParserMode& _mode);
   bool consumeKeyMarker(char const* _baseString, char* _dest, CaptionParserMode& _mode);
   bool consumeOtherMarker(char const* _baseString, char* _dest, CaptionParserMode& _mode);
-  bool consumeIfMarker(char const* _baseString, char* _dest, CaptionParserMode& _mode);
 
 
   bool buildCaption(char const* _baseString, char* _dest, CaptionParserMode& _mode)
@@ -66,7 +60,7 @@ namespace Neuron
           return false;
         }
       }
-      else if (_mode.writing)
+      else
       {
         if (_mode.outOffset < SEPULVEDA_MAX_PHRASE_LENGTH - 1)
           _dest[_mode.outOffset++] = ch;
@@ -86,23 +80,24 @@ namespace Neuron
   bool buildPhrase(char const* _key, char* _dest, CaptionParserMode& _mode)
   {
     bool done = false;
-    if (_mode.writing)
+
+    std::string key(_key);
+    if (key.size() > MAX_FINAL_KEY_LENGTH - 1)
+      key.resize(MAX_FINAL_KEY_LENGTH - 1);
+    StrToLower(key.data());
+
+    // The MOODY* macros took an input mode and are gone with it; these are the
+    // same two lookups without the mode argument.
+    if (RAWISLANGUAGEPHRASE(key.c_str()))
     {
-      std::string key(_key);
-      if (key.size() > MAX_FINAL_KEY_LENGTH - 1)
-        key.resize(MAX_FINAL_KEY_LENGTH - 1);
-      StrToLower(key.data());
-      if (MOODYISLANGUAGEPHRASE(key.c_str(), _mode.mood))
+      const char* definition = RAWLANGUAGEPHRASE(key.c_str());
+      if (definition)
       {
-        const char* definition = MOODYLANGUAGEPHRASE(key.c_str(), _mode.mood);
-        if (definition)
-        {
-          CaptionParserMode mode;
-          mode.outOffset = _mode.outOffset;
-          done = buildCaption(definition, _dest, mode);
-          if (done)
-            _mode.outOffset = mode.outOffset;
-        }
+        CaptionParserMode mode;
+        mode.outOffset = _mode.outOffset;
+        done = buildCaption(definition, _dest, mode);
+        if (done)
+          _mode.outOffset = mode.outOffset;
       }
     }
 
@@ -133,8 +128,7 @@ namespace Neuron
 
   bool consumeMarker(char const* _baseString, char* _dest, CaptionParserMode& _mode)
   {
-    if (consumeIfMarker(_baseString, _dest, _mode) || consumeKeyMarker(_baseString, _dest, _mode) ||
-        consumeOtherMarker(_baseString, _dest, _mode)) // Other must be last. It always succeeds.
+    if (consumeKeyMarker(_baseString, _dest, _mode) || consumeOtherMarker(_baseString, _dest, _mode)) // Other must be last. It always succeeds.
     {
       return true;
     }
@@ -153,55 +147,18 @@ namespace Neuron
   }
 
 
-  bool consumeIfMarker(char const* _baseString, char* _dest, CaptionParserMode& _mode)
-  {
-    bool done = false;
-    char const* in = _baseString + _mode.inOffset;
-    if (strnicmp(in, "[IFMODE ", 8) == 0)
-    {
-      ++_mode.ifdepth;
-      if (_mode.writing)
-      {
-        if (strnicmp(in + 8, "KEYBOARD]", 9) == 0)
-        {
-          if (_mode.mood != InputMode::INPUT_MODE_KEYBOARD)
-          {
-            _mode.writing = false;
-            _mode.writingStopDepth = _mode.ifdepth;
-          }
-          _mode.inOffset += 16;
-          done = true;
-        }
-      }
-      else
-      {
-        _mode.inOffset += markerLength(_baseString);
-        done = true;
-      }
-    }
-    else if (strnicmp(in, "[ELSE]", 6) == 0)
-    {
-      if (_mode.writing)
-      {
-        _mode.writing = false;
-        _mode.writingStopDepth = _mode.ifdepth;
-      }
-      else if (_mode.ifdepth == _mode.writingStopDepth)
-        _mode.writing = true;
-      _mode.inOffset += 5;
-      done = true;
-    }
-    else if (strnicmp(in, "[ENDIF]", 7) == 0)
-    {
-      if (!_mode.writing && _mode.ifdepth == _mode.writingStopDepth)
-        _mode.writing = true;
-      --_mode.ifdepth;
-      _mode.inOffset += 6;
-      done = true;
-    }
-
-    return done;
-  }
+  // consumeIfMarker IS GONE, and with it [IFMODE ...], [ELSE] and [ENDIF].
+  //
+  // [IFMODE was the conditional's only opener and the input mode was its only
+  // question — the code could ask about exactly one value, KEYBOARD — so with
+  // INPUT_MODE_GAMEPAD deleted the directive became a tautology and [ELSE] a
+  // branch that could never be taken. Keeping ELSE and ENDIF without an opener
+  // would be worse than either.
+  //
+  // MEASURED BEFORE REMOVING: `[IFMODE`, `[ELSE]` and `[ENDIF]` appear ZERO
+  // times across everything under GameData, so no shipped caption used any of
+  // it. The other three markers — [KEY...], the phrase lookup and the plain
+  // text run — are untouched.
 
 
   bool consumeKeyMarker(char const* _baseString, char* _dest, CaptionParserMode& _mode)
@@ -211,9 +168,7 @@ namespace Neuron
     if (strnicmp(in, "[KEY", 4) == 0)
     {
       int len = markerLength(in) - 5;
-      if (!_mode.writing && 0 < len && len < MAX_READ_KEY_LENGTH)
-        done = true;
-      else if (_mode.writing && 0 < len && len < MAX_READ_KEY_LENGTH)
+      if (0 < len && len < MAX_READ_KEY_LENGTH)
       {
         const std::string buf(in + 4, len);
 
@@ -253,9 +208,7 @@ namespace Neuron
     bool done = false;
 
     int len = markerLength(in) - 2;
-    if (!_mode.writing && 0 < len && len < MAX_READ_KEY_LENGTH)
-      done = true;
-    else if (0 < len && len < MAX_READ_KEY_LENGTH)
+    if (0 < len && len < MAX_READ_KEY_LENGTH)
     {
       std::string key;
       CaptionParserMode mode(_mode);
@@ -289,10 +242,4 @@ namespace Neuron
   }
 
 
-  bool buildCaption(char const* _baseString, char* _dest, InputMode _mood)
-  {
-    CaptionParserMode mode;
-    mode.mood = _mood;
-    return buildCaption(_baseString, _dest, mode);
-  }
 } // namespace Neuron

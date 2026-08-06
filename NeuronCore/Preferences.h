@@ -107,7 +107,6 @@ extern PrefsManager *g_prefsManager;
 // header. Every file that used them already includes this one.
 
 #define OTHER_HELPENABLED "HelpEnabled"
-#define OTHER_CONTROLHELPENABLED "ControlHelpEnabled"
 #define OTHER_BOOTLOADER "BootLoader"
 #define OTHER_CHRISTMASENABLED "ChristmasEnabled"
 #define OTHER_LANGUAGE "TextLanguage"

@@ -49,8 +49,7 @@ LangTable::LangTable(char const* _filename)
   m_notFound.m_key = nullptr;
   m_notFound.m_string = (char*)malloc(NOT_FOUND_CAPACITY);
 
-  m_phrasesKbd = nullptr;
-  // The three owning members start empty on their own.
+  // The owning members start empty on their own.
 
   // Open the required language file
   ParseLanguageFile(_filename);
@@ -136,22 +135,11 @@ bool is_suffix(const char* str, const char* suf)
 }
 
 
-bool wrong_suffix(const char* key, InputMode _mood)
-{
-  if (key)
-  {
-    switch (_mood)
-    {
-    case InputMode::INPUT_MODE_KEYBOARD:
-      return is_suffix(key, "_xin");
-      break;
-    case InputMode::INPUT_MODE_GAMEPAD:
-      return is_suffix(key, "_kbd");
-      break;
-    }
-  }
-  return true; // It's not the suffix, but something's wrong.
-}
+// wrong_suffix IS GONE. It asked "does this key belong to a mode that is not
+// the current one", which had exactly one possible yes -- a `_xin` key, the
+// gamepad's -- and there is no gamepad mode and no `_xin` key left in any
+// language file. The RebuildTable branch it selected, the one that emplaced an
+// empty string so a foreign-mode key rendered as nothing, went with it.
 
 
 // The not-found phrase is a malloc'd buffer the lookups write into and then
@@ -170,9 +158,10 @@ void LangTable::SetNotFoundText(std::string_view _text)
 }
 
 
+// `_kbd` only, now that `_xin` is not a suffix this file knows about.
 bool chomp_mode_suffix(char* key)
 {
-  if (is_suffix(key, "_kbd") || is_suffix(key, "_xin"))
+  if (is_suffix(key, "_kbd"))
   {
     key[strlen(key) - 4] = '\0';
     return true;
@@ -181,11 +170,9 @@ bool chomp_mode_suffix(char* key)
 }
 
 
-bool LangTable::specific_key_exists(const char* _key, InputMode _mood)
+bool LangTable::specific_key_exists(const char* _key)
 {
-  // `_mood` was tested for truthiness, which meant "not INPUT_MODE_NONE"
-  // because that enumerator is 0. Scoping the enum makes the intent say itself.
-  if (_key && _mood != InputMode::INPUT_MODE_NONE)
+  if (_key)
   {
     // This was a char[128] filled by a 123-byte bounded copy, after which the
     // suffix was written at key + strlen(_key) — the UNtruncated length. A key
@@ -193,26 +180,15 @@ bool LangTable::specific_key_exists(const char* _key, InputMode _mood)
     // and the truncation that was supposed to prevent it made the overflow
     // worse rather than better by leaving len pointing outside.
     std::string key(_key);
-    switch (_mood)
-    {
-    case InputMode::INPUT_MODE_KEYBOARD:
-      key += "_kbd";
-      break;
-    case InputMode::INPUT_MODE_GAMEPAD:
-      key += "_xin";
-      break;
-    default:
-      return false;
-    }
-
-    return RawDoesPhraseExist(key.c_str(), _mood);
+    key += "_kbd";
+    return RawDoesPhraseExist(key.c_str());
   }
   else
     return false;
 }
 
 
-bool buildCaption(char const* _baseString, char* _dest, InputMode _mood); // see sepulveda_strings.cpp
+bool buildCaption(char const* _baseString, char* _dest); // see sepulveda_strings.cpp
 
 
 // Only used for debugging
@@ -236,31 +212,24 @@ void LangTable::RebuildTables()
 
 
   // Assigning frees the previous table at the same point the deletes did.
-  m_phrasesKbd = std::make_unique<PhraseOffsets>();
-  m_phrasesXin = std::make_unique<PhraseOffsets>();
+  m_phrases = std::make_unique<PhraseOffsets>();
 
-  RebuildTable(m_phrasesKbd.get(), stream, InputMode::INPUT_MODE_KEYBOARD);
-  RebuildTable(m_phrasesXin.get(), stream, InputMode::INPUT_MODE_GAMEPAD);
+  RebuildTable(m_phrases.get(), stream);
   m_chunk.reset(stream.str());
 
   if (DEBUG_PRINT_LANGTABLE)
   {
     std::ofstream dbg_out("langtable_debug.txt", std::ios::app);
-    dbg_out << "********** KEYBOARD MODE STRINGS **********" << std::endl;
-    if (!printTable(m_phrasesKbd.get(), m_chunk.get(), dbg_out))
+    dbg_out << "********** ALL STRINGS **********" << std::endl;
+    if (!printTable(m_phrases.get(), m_chunk.get(), dbg_out))
     {
-      dbg_out << "KEYBOARD STRINGS NOT AVAILABLE." << std::endl;
-    }
-    dbg_out << std::endl << "********** GAMEPAD MODE STRINGS **********" << std::endl;
-    if (!printTable(m_phrasesXin.get(), m_chunk.get(), dbg_out))
-    {
-      dbg_out << "KEYBOARD STRINGS NOT AVAILABLE." << std::endl;
+      dbg_out << "STRINGS NOT AVAILABLE." << std::endl;
     }
     dbg_out << std::endl << "********** FINISHED ALL STRINGS **********" << std::endl << std::endl << std::endl;
   }
 }
 
-void LangTable::RebuildTable(PhraseOffsets* _phrases, std::ostrstream& stream, InputMode _mood)
+void LangTable::RebuildTable(PhraseOffsets* _phrases, std::ostrstream& stream)
 {
   char theString[1024];
 
@@ -279,53 +248,29 @@ void LangTable::RebuildTable(PhraseOffsets* _phrases, std::ostrstream& stream, I
       // an overflow on any key longer than that.
       std::string key(phrase->m_key);
 
-      if (!wrong_suffix(phrase->m_key, _mood))
+      // Make sure this is the most specific string, or ignore it
+      if (chomp_mode_suffix(key.data()) || !specific_key_exists(key.c_str()))
       {
-        // Make sure this is the most specific string, or ignore it
-        if (chomp_mode_suffix(key.data()) || !specific_key_exists(key.c_str(), _mood))
-        {
-          int currPos = stream.tellp();
-          buildCaption(phrase->m_string, theString, _mood);
-          stream << theString << '\x0';
+        int currPos = stream.tellp();
+        buildCaption(phrase->m_string, theString);
+        stream << theString << '\x0';
 
-          _phrases->try_emplace(key, currPos);
-        }
-      }
-      else
-      {
-        // Make sure this is the most specific string, or ignore it
-        if (chomp_mode_suffix(key.data()) && !RawDoesPhraseExist(key.c_str(), _mood) && !specific_key_exists(key.c_str(), _mood))
-        {
-          _phrases->try_emplace(key, 0); // Give me an empty string
-        }
+        _phrases->try_emplace(key, currPos);
       }
     }
   }
 }
 
 
+// It used to pick a table by the current input mode, and to answer nullptr
+// before the input manager existed -- which meant every phrase lookup made
+// during startup silently returned the empty string.
 PhraseOffsets* LangTable::GetCurrentTable()
 {
-  if (g_inputManager)
-    return GetCurrentTable(g_inputManager->getInputMode());
-  return nullptr;
-}
-
-
-PhraseOffsets* LangTable::GetCurrentTable(InputMode _mood)
-{
-  if (!m_phrasesKbd || !m_phrasesXin)
+  if (!m_phrases)
     RebuildTables();
 
-  switch (_mood)
-  {
-  case InputMode::INPUT_MODE_KEYBOARD:
-    return m_phrasesKbd.get();
-
-  case InputMode::INPUT_MODE_GAMEPAD:
-    return m_phrasesXin.get();
-  }
-  return nullptr;
+  return m_phrases.get();
 }
 
 
@@ -343,44 +288,17 @@ bool LangTable::DoesPhraseExist(char const* _key)
 }
 
 
-bool LangTable::RawDoesPhraseExist(char const* _key, InputMode _mood)
-{
-  bool ans = false;
-  if (_key)
-  {
-    if (RawDoesPhraseExist(_key))
-    {
-      ans = true;
-    }
-    else
-    {
-      std::string key(_key);
-      switch (_mood)
-      {
-      case InputMode::INPUT_MODE_KEYBOARD:
-        key += "_kbd";
-        break;
-      case InputMode::INPUT_MODE_GAMEPAD:
-        key += "_xin";
-        break;
-      }
-      ans = RawDoesPhraseExist(key.c_str());
-    }
-  }
-  return ans;
-}
-
-
+// The mode-taking overload is gone; what it added was a second lookup under
+// the current mode's suffix, and one of the two suffixes is all that is left.
 bool LangTable::RawDoesPhraseExist(char const* _key)
 {
   if (!_key)
-  {
     return false;
-  }
-  else
-  {
-    return m_phrasesRaw.contains(_key);
-  }
+
+  if (m_phrasesRaw.contains(_key))
+    return true;
+
+  return m_phrasesRaw.contains(std::string(_key) + "_kbd");
 }
 
 
@@ -411,20 +329,6 @@ char* LangTable::LookupPhrase(char const* _key)
 
 char* LangTable::RawLookupPhrase(char const* _key)
 {
-  if (!g_inputManager)
-  {
-    SetNotFoundText("ERROR (null)");
-    return m_notFound.m_string;
-  }
-  else
-  {
-    return RawLookupPhrase(_key, g_inputManager->getInputMode());
-  }
-}
-
-
-char* LangTable::RawLookupPhrase(char const* _key, InputMode _mood)
-{
   LangPhrase* phrase = nullptr;
 
   if (!_key)
@@ -434,19 +338,10 @@ char* LangTable::RawLookupPhrase(char const* _key, InputMode _mood)
   }
   else
   {
-    if (!phrase)
+    // The suffixed key first, the plain one second: that ordering is what makes
+    // `_kbd` mean `the more specific spelling of this phrase`.
     {
-      std::string key(_key);
-      switch (_mood)
-      {
-      case InputMode::INPUT_MODE_KEYBOARD:
-        key += "_kbd";
-        break;
-      case InputMode::INPUT_MODE_GAMEPAD:
-        key += "_xin";
-        break;
-      }
-      const auto suffixed = m_phrasesRaw.find(key.c_str());
+      const auto suffixed = m_phrasesRaw.find(std::string(_key) + "_kbd");
       if (suffixed != m_phrasesRaw.end())
         phrase = suffixed->second.get();
     }

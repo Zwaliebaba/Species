@@ -110,8 +110,6 @@ namespace Neuron
 
       bool m_idle;
 
-      InputMode m_inputMode;
-
       // Does the work for controlEvent, below
       bool controlEventA(ControlType type, InputDetails& details);
 
@@ -222,9 +220,6 @@ namespace Neuron
 
       // Returns true if all of the InputDrivers report being idle
       bool isIdle();
-
-      // Returns the input mode (keyboad or gamepad) currently in use
-      InputMode getInputMode();
 
       void printNumBindings();
   };

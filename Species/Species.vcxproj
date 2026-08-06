@@ -116,7 +116,6 @@
     <ClCompile Include="3dSierpinskiGasket.cpp" />
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="ControlHelp.cpp" />
     <ClCompile Include="GameCursor.cpp" />
     <ClCompile Include="GameMenu.cpp" />
     <ClCompile Include="LocationEditor.cpp" />
@@ -137,7 +136,6 @@
     <ClInclude Include="3dSierpinskiGasket.h" />
     <ClInclude Include="App.h" />
     <ClInclude Include="Camera.h" />
-    <ClInclude Include="ControlHelp.h" />
     <ClInclude Include="GameCursor.h" />
     <ClInclude Include="GameMenu.h" />
     <ClInclude Include="LocationEditor.h" />

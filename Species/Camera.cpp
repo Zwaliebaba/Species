@@ -34,7 +34,6 @@
 #include "UserInput.h"
 #include "Script.h"
 #include "GameCursor.h"
-#include "ControlHelp.h"
 
 #include "Teleport.h"
 #include "InsertionSquad.h"
@@ -646,8 +645,6 @@ void Camera::AdvanceFreeMovementMode()
       {
         targetPos = DirectX::XMVectorSubtract(targetPos, DirectX::XMVectorScale(accelRight, g_advanceTime * details.x * 10.0f));
         targetPos = DirectX::XMVectorSubtract(targetPos, DirectX::XMVectorScale(accelForward, g_advanceTime * details.y * 10.0f));
-
-        TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondMoveCameraOrUnit);
       }
     }
 
@@ -1038,16 +1035,12 @@ bool Camera::AdvanceManualCameraHeight(DirectX::XMFLOAT3& cameraTarget)
     if (g_inputManager->controlEvent(ControlType::ControlCameraUp))
     {
       m_heightMultiplier += heightScale;
-      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraUp);
-      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraDown);
     }
 
     if (g_inputManager->controlEvent(ControlType::ControlCameraDown))
     {
       m_heightMultiplier -= heightScale;
       camDown = true;
-      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraUp);
-      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraDown);
     }
 
     m_heightMultiplier = std::min(2.0f, m_heightMultiplier);
@@ -1983,11 +1976,6 @@ void Camera::AdvanceComponentMouseWheelHeight()
       delta += g_advanceTime * 7.0f;
     if (keyDown)
       delta -= g_advanceTime * 7.0f;
-    if (keyUp || keyDown)
-    {
-      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraUp);
-      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraDown);
-    }
   }
 
   if (g_location)
@@ -2507,13 +2495,9 @@ void Camera::UpdateEntityTrackingMode()
 {
   if (g_prefsManager && g_inputManager)
   {
+    // Same as TaskManager's: the automatic option detected a control pad, and
+    // no driver could report one, so `automatic` has always resolved to off.
     int camTracking = g_prefsManager->GetInt(OTHER_AUTOMATICCAM, 0);
-    if (camTracking != 1 && camTracking != 2)
-    {
-      // do automatic option detection
-      if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
-        camTracking = 2;
-    }
     SwitchEntityTracking(camTracking == 2);
   }
 }

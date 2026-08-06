@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ControlHelpAccess.h"
 #include "RgbColour.h"
 
 // The application state the layers below Species read.
@@ -43,7 +42,6 @@ extern int g_gameMode;
 extern bool g_atMainMenu;
 extern bool g_requestToggleEditing;
 extern Server* g_server;
-extern ControlHelpAccess* g_controlHelpSystem;
 extern std::string g_userProfileName;
 
 // The level the next load will bring up, written by the global world, the

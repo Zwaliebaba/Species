@@ -1436,7 +1436,86 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: |
+      Landed 2026-08-06 on the owner's direction. Written on Linux: no MSVC
+      build, no vstest run, no running game. 912 lines gone against 174 added,
+      across 38 files and three deleted ones.
+
+      WHAT THE OWNER SETTLED. T2 kept twenty INPUT_MODE_GAMEPAD consumers,
+      arguing they are the controller user interface and that deleting them
+      turns a future controller into a UI rewrite rather than a new driver. T11
+      recorded the disagreement between that decision and the owner's deletion
+      of the 22 button BMPs, and refused to resolve it on its own authority
+      because it means deleting a coherent feature. The owner resolved it: the
+      code follows the art.
+
+      THE ENUM WENT WITH THE VALUE. With GAMEPAD gone, InputMode held NONE and
+      KEYBOARD; nothing could report NONE except the base driver saying "I am
+      not an input source", which the arbitration then discarded. So every
+      remaining test compared a value against the only value it could hold, and
+      "this prefers the Gamepad" arbitrated between one candidate.
+
+      FOUR THINGS THAT CAME WITH IT, none of which the file list foresaw and
+      each of which is the same finding - something whose ONLY question was the
+      input mode:
+
+      * THE WHOLE ControlHelpSystem OVERLAY, ~975 lines across three files.
+        Both its Advance and its Render early-return unless the mode is
+        gamepad, so it is gamepad-only BY CONSTRUCTION - it has never drawn a
+        pixel in a build that could not report one. Its interface,
+        ControlHelpAccess, went with it, and fifteen RecordCondUsed calls
+        across Camera, Team and TargetCursor.
+      * THE `[IFMODE]` / `[ELSE]` / `[ENDIF]` CAPTION DIRECTIVE. [IFMODE was
+        the conditional's only opener and the input mode its only question -
+        the parser could ask about exactly one value, KEYBOARD - so it became a
+        tautology and [ELSE] a branch nothing could take. MEASURED FIRST: all
+        three markers appear ZERO times under GameData. The parser's `writing`,
+        `ifdepth` and `writingStopDepth` state went with them.
+      * THE SECOND LANGUAGE TABLE. m_phrasesXin was built from the `_xin` half
+        of the language files; 70 such phrases per file went from English,
+        French, German, Italian and Spanish. RUSSIAN WAS UNTOUCHED AND HAS NONE
+        - it has no `_kbd` phrases either, so that file has never used the
+        suffix mechanism at all. The `_kbd` half STAYS: 120 phrases per file,
+        and it is what makes a phrase that names keys distinct from one that
+        does not.
+      * THE ControlHelpEnabled PREFERENCE and its dropdown in the Other prefs
+        window. It enabled the overlay; with the overlay gone it is a settings
+        row that controls nothing.
+
+      AND A FIFTH, smaller: the Advise*ControlHelp* trio on TaskManagerInterface
+      - a pure virtual apiece plus an override - which ControlHelpSystem was the
+      only caller of, and RenderIcon, which drew the 360 button art and nothing
+      else.
+
+      TWO SEMANTIC TRAPS, and they are opposites, which is why each was applied
+      by hand rather than by pattern: `== INPUT_MODE_GAMEPAD` is always FALSE,
+      so the branch goes; `!= INPUT_MODE_GAMEPAD` is always TRUE, so the branch
+      STAYS and loses its condition. Getting either backwards deletes working
+      behaviour silently. One regex attempt at the three render360Controls
+      blocks was written, produced a wrong edit count on its first run, and was
+      abandoned unapplied in favour of doing them by hand.
+
+      THREE PREFERENCES QUIETLY CHANGE MEANING, and this is the only behaviour
+      change in the task rather than a deletion of the unreachable. `AutomaticCam`
+      set to 0 meant "detect it: on if the player is using a control pad", in
+      both TaskManager and Camera. Nothing could report a control pad, so it has
+      always resolved to off; it now says off. GetCurrentTable also stopped
+      answering nullptr before the input manager exists, which used to make
+      every phrase lookup during startup return the empty string.
+
+      GAPS IN THE CHECKS, found by reading rather than by building: dropping the
+      RecordCondUsed lines left one `if` with NO statement - a syntax error -
+      and three empty blocks. Deleting a line is not the same as deleting the
+      statement it was, and a brace-balance check over every touched file was
+      what made the first of those visible.
+
+      LEFT DELIBERATELY: the `dialog_controlhelpsystem` phrase key in the
+      language files, and `Input.h` in LanguageTable.cpp. The first is data
+      nothing reads, which is not worth a translation-file diff in five
+      languages; the second is the include-removal risk AGENTS.md records two CI
+      rounds against, and nothing in NeuronClient can lose InputTypes anyway
+      because pch.h includes Input.h.
 
   - id: T15
     title: Delete the controlIcon plumbing, which has neither consumer nor data

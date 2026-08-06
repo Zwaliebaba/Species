@@ -81,9 +81,6 @@ namespace Neuron
       m_velocity[AXIS_Y] = details.y;
       m_screenCoords[AXIS_X] += m_velocity[AXIS_X];
       m_screenCoords[AXIS_Y] += m_velocity[AXIS_Y];
-
-      if (g_camera->IsInMode(CameraAccess::Mode::ModeFreeMovement))
-        g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondCameraAim);
     }
     else
       m_velocity[AXIS_X] = m_velocity[AXIS_Y] = 0;

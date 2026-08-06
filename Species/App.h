@@ -39,7 +39,6 @@ namespace Species
   class GameCursor;
   class GameMenu;
   class StartSequence;
-  class ControlHelpSystem;
   class GameMenu;
 
   class App : public AppCommands
@@ -98,7 +97,6 @@ namespace Species
     std::unique_ptr<ParticleSystem> m_particleSystem;
     std::unique_ptr<TaskManager> m_taskManager;
     std::unique_ptr<Script> m_script;
-    std::unique_ptr<ControlHelpSystem> m_controlHelpSystem;
     std::unique_ptr<GlobalWorld> m_globalWorld;
 
 

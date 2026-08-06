@@ -144,7 +144,8 @@ namespace Species
 
   void TaskManagerInterface::AdvanceTab()
   {
-    if (!m_visible || g_inputManager->getInputMode() == InputMode::INPUT_MODE_KEYBOARD)
+    // The mode half of this test is gone with InputMode: the keyboard was the
+    // only mode anything could report, so the condition read `always`.
     {
       int taskId = -1;
       int index = -1;

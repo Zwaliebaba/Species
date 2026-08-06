@@ -155,21 +155,17 @@ control_help_armourmode                Mode ramasser/laisser
 # ================================================
 
 help_camera_movement_kbd               Déplacez la caméra avec les touches [KEYCAMERAFORWARDS], [KEYCAMERALEFT], [KEYCAMERABACKWARDS] et [KEYCAMERARIGHT]. Vous pouvez changer la hauteur de la caméra avec la molette de la souris, ou avec les touches [KEYCAMERAUP] et [KEYCAMERADOWN].
-help_camera_movement_xin               Déplacez la caméra aux alentours.
 help_camera_height_kbd                 Si vous disposez d'une molette, vous pouvez vous en servir pour changer la hauteur de la caméra. Ou vous pouvez également utiliser les touches [KEYCAMERAUP] et [KEYCAMERADOWN] pour monter ou descendre.
 help_camera_zoom_kbd                   Si vous disposez d'une molette, cliquez dessus pour effectuer un zoom avant avec la caméra. Ou vous pouvez appuyer sur la touche [KEYCAMERAZOOM].
 help_camera_movefast_kbd               Vous pouvez déplacer la caméra plus rapidement en maintenant enfoncée la touche [KEYCAMERASPEEDUP] lors du déplacement.
 help_taskmanager_1_kbd                 Sur Darwinia, vous créez des choses en dessinant des figures dans le gestionnaire de programmes. Maintenez enfoncée la touche [KEYGESTURESTASKMANAGERDISPLAY] pour y accéder.
 help_taskmanager_2_kbd                 Pour voir la liste des figures disponibles, maintenez enfoncée la touche [KEYGESTURESTASKMANAGERDISPLAY] pour accéder au gestionnaire de programmes et faites défiler l'écran en plaçant la souris sur la gauche, ou en appuyant sur la touche [KEYMENULEFT].
 help_taskmanager_3_kbd                 Vous ne pouvez faire fonctionner que TROIS programmes en même temps. Vous pouvez fermer des programmes actifs en maintenant enfoncée la touche [KEYGESTURESTASKMANAGERDISPLAY], en appuyant sur la touche TAB pour accéder au programme voulu et en appuyant sur CTRL-C.
-help_taskmanager_3_xin                 Vous ne pouvez faire fonctionner que TROIS programmes en même temps. Vous pouvez fermer les programmes actifs
 help_taskmanager_4_kbd                 Pour sélectionner à nouveau un programme actif, maintenez enfoncée la touche [KEYGESTURESTASKMANAGERDISPLAY] pour accéder au gestionnaire de programmes et appuyez sur la touche TAB jusqu'à parvenir à l'icône représentant le programme voulu.
 help_showchatlog_kbd                   Pour accéder au journal de dialogues, qui contient tout ce que j'ai dit, maintenez enfoncée la touche [KEYGESTURESCHATLOG].
 help_taskmanager_1_icons_kbd           Pour créer des choses sur Darwinia, vous devez activer le gestionnaire de programmes. Maintenez enfoncé [KEYICONSTASKMANAGERDISPLAY] pour y accéder.
-help_taskmanager_1_icons_xin           Pour créer des choses sur Darwinia, vous devez activer le gestionnaire de programmes.
 help_taskmanager_2_icons_kbd           Tandis que vous maintenez enfoncé [KEYICONSTASKMANAGERDISPLAY], vous pouvez voir une liste des programmes disponibles. Cliquez sur n'importe lequel pour créer un nouveau programme.
 help_taskmanager_3_icons_kbd           Vous ne pouvez faire fonctionner que TROIS programmes en même temps. Vous pouvez fermer le programme sélectionné en appuyant sur [KEYICONSTASKMANAGERENDTASK], ou vous pouvez cliquer sur son icône d'effacement dans le gestionnaire de programmes.
-help_taskmanager_3_icons_xin           Vous ne pouvez faire fonctionner que TROIS programmes en même temps.
 help_taskmanager_4_icons_kbd           Pour sélectionner à nouveau un programme actif, maintenez enfoncé [KEYICONSTASKMANAGERDISPLAY] et cliquez sur son icône. Ou vous pouvez également vous servir des touches de chiffres pour sélectionner des programmes.
 help_showchatlog_icons_kbd             Pour accéder au journal de dialogues, qui contient tout ce que j'ai dit, maintenez enfoncée la touche [KEYICONSCHATLOG].
 
@@ -177,7 +173,6 @@ help_deselect_kbd                      Pour désélectionner l'objet actuellement 
 help_squad_summon_1_kbd                Pour créer une escouade, maintenez enfoncé [KEYGESTURESTASKMANAGERDISPLAY] pour accéder au gestionnaire de programmes, puis dessinez cette figure.
 help_squad_summon_1_icons_kbd          Pour créer une escouade, maintenez enfoncé [KEYICONSTASKMANAGERDISPLAY] pour accéder au gestionnaire de programmes, puis cliquez sur l'icône d'escouade.
 help_squad_summon_2_kbd                Cliquez avec le bouton gauche dans l'une des zones de départ, mises en évidence, pour placer votre escouade.
-help_squad_summon_2_xin                Sélectionnez l'une des zones de départ, mises en évidence, pour placer votre escouade.
 help_squad_use_kbd                     Cliquez sur le bouton gauche pour déplacer votre escouade. Cliquez sur le bouton droit pour tirer avec leurs lasers. Appuyez sur [KEYUNITDESELECT] pour les désélectionner. Les escouades ne peuvent pas progresser dans l'eau.
 help_squad_use_1mb_kbd                 Cliquez pour déplacer votre escouade. Cliquez et maintenez enfoncé pour activer leurs lasers. Appuyez sur [KEYUNITDESELECT] pour les désélectionner.
 help_squad_grenade_kbd                 Vous pouvez lancer une grenade en cliquant sur le bouton gauche de la souris tandis que vous activez leurs lasers avec le bouton droit.
@@ -186,51 +181,34 @@ help_squad_setgrenade                  Pour activer les grenades, dessinez la fi
 help_squad_setrocket                   Pour activer les roquettes, dessinez la figure Roquette.
 help_squad_setairstrike                Pour activer les frappes aériennes, dessinez la figure Frappe aérienne.
 help_squad_setgrenade_icons_kbd        Pour activer les grenades, maintenez enfoncé [KEYICONSTASKMANAGERDISPLAY] et cliquez sur l'icône de grenade près de votre escouade.
-help_squad_setgrenade_icons_xin        Pour activer les grenades, ouvrez le gestionnaire de programmes et sélectionnez l'icône de grenade près de votre escouade.
 help_squad_setrocket_icons_kbd         Pour activer les roquettes, maintenez enfoncé [KEYICONSTASKMANAGERDISPLAY] et cliquez sur l'icône de roquette près de votre escouade.
-help_squad_setrocket_icons_xin         Pour activer les roquettes, ouvrez le gestionnaire de programmes et sélectionnez l'icône de roquette près de votre escouade.
 help_squad_setairstrike_icons_kbd      Pour activer les frappes aériennes, maintenez enfoncé [KEYICONSTASKMANAGERDISPLAY] et cliquez sur l'icône de frappe aérienne près de votre escouade.
-help_squad_setairstrike_icons_xin      Pour activer les frappes aériennes, ouvrez le gestionnaire de programmes et sélectionnez l'icône de frappe aérienne près de votre escouade.
 
 
 help_building_reprogram                Cette construction doit être reprogrammée avant de pouvoir être utilisée. Vous devez pour ce faire créer un ingénieur et le déplacer près de la tour de commande avoisinante.
 help_engineer_summon_kbd               Les ingénieurs servent à récupérer les esprits et à reprogrammer les constructions. Maintenez enfoncée la touche [KEYGESTURESTASKMANAGERDISPLAY] et dessinez cette figure pour requérir un ingénieur.
-help_engineer_summon_xin               Les ingénieurs servent à récupérer les esprits et à reprogrammer les constructions. Ouvrez le gestionnaire de programmes et dessinez cette figure pour requérir un ingénieur.
 help_engineer_summon_icons_kbd         Les ingénieurs servent à récupérer les esprits et à reprogrammer les constructions. Maintenez enfoncé [KEYICONSTASKMANAGERDISPLAY] et cliquez sur l'icône d'ingénieur pour requérir un ingénieur.
-help_engineer_summon_icons_xin         Les ingénieurs servent à récupérer les esprits et à reprogrammer les constructions. Ouvrez le gestionnaire de programmes et sélectionnez l'icône d'ingénieur pour requérir un ingénieur.
 help_engineer_summon_2_kbd             Cliquez sur le bouton gauche dans l'une des zones de départ, mises en évidence, pour créer votre ingénieur. Ou appuyez sur CTRL-C si vous souhaitez fermer son programme.
-help_engineer_summon_2_xin             Sélectionnez l'une des zones de départ, mises en évidence, pour créer votre ingénieur. Ou vous pouvez fermer son programme.
 help_engineer_summon_2_icons_kbd       Cliquez dans l'une des zones de départ, mises en évidence, pour créer votre ingénieur. Ou vous pouvez appuyer sur CTRL-C pour fermer son programme.
-help_engineer_summon_2_icons_xin       Sélectionnez l'une des zones de départ, mises en évidence, pour créer votre ingénieur. Ou vous pouvez fermer son programme.
 help_engineer_use_kbd                  Les ingénieurs effectueront automatiquement les tâches qui doivent être accomplies dans leurs environs, comme récupérer des esprits ou reprogrammer des constructions. Cliquez simplement sur le bouton gauche pour les déplacer près d'une tâche.
-help_engineer_use_xin                  Les ingénieurs effectueront automatiquement les tâches qui doivent être accomplies dans leurs environs, comme récupérer des esprits ou reprogrammer des constructions. Déplacez-les simplement près d'une tâche.
 
 help_officer_create_kbd                Vous pouvez vous servir de Darwiniens ordinaires pour donner des ordres aux autres Darwiniens, en les nommant officiers. Dessinez la figure Officier et cliquez avec le bouton gauche sur un Darwinien.
-help_officer_create_xin                Vous pouvez vous servir de Darwiniens ordinaires pour donner des ordres aux autres Darwiniens, en les nommant officiers. Dessinez la figure Officier et sélectionnez un Darwinien.
 help_officer_create_icons_kbd          Vous pouvez vous servir de Darwiniens ordinaires pour donner des ordres aux autres Darwiniens, en les nommant officiers. Activez le gestionnaire de programmes et cliquez sur l'icône d'officier, puis sur un Darwinien.
-help_officer_create_icons_xin          Vous pouvez vous servir de Darwiniens ordinaires pour donner des ordres aux autres Darwiniens, en les nommant officiers. Activez le gestionnaire de programmes et sélectionnez l'icône d'officier, puis un Darwinien.
 help_officer_create_2_kbd              Cliquez sur un Darwinien pour le nommer Officier. Ou appuyez sur CTRL-C pour fermer le programme Officier.
-help_officer_create_2_xin              Sélectionnez un Darwinien pour le nommer Officier. Ou fermez le programme Officier.
 help_officer_create_2_icons_kbd        Cliquez sur un Darwinien pour le nommer Officier. Ou appuyez sur [KEYICONSTASKMANAGERENDTASK] pour fermer le programme Officier.
-help_officer_create_2_icons_xin        Sélectionnez un Darwinien pour le nommer Officier. Ou fermez le programme Officier.
 help_officer_use_kbd                   Vous pouvez déplacer un officier en cliquant avec le bouton gauche. Cliquez avec le bouton droit sur les terres pour donner l'ordre GOTO aux autres Darwiniens. Cliquez avec le bouton droit près de l'officier pour annuler ses ordres.
 help_officer_use_1mb_kbd               Vous pouvez déplacer un officier en cliquant. Cliquez et maintenez enfoncé sur les terres pour donner l'ordre GOTO aux autres Darwiniens. Cliquez et maintenez enfoncé près de l'officier pour annuler ses ordres.
 help_officer_toggle_kbd                Pour faire défiler tous les ordres disponibles, cliquez avec le bouton droit près de l'officier.
 help_officer_toggle_1mb_kbd            Pour faire défiler tous les ordres disponibles, cliquez et maintenez enfoncé près de l'officier.
 
 help_showobjectives_kbd                Pour voir la liste des objectifs, maintenez enfoncée la touche [KEYGESTURESTASKMANAGERDISPLAY] pour accéder au gestionnaire de programmes, puis faites défiler l'écran en déplaçant la souris sur la droite, ou en appuyant sur [KEYCAMERARIGHT].
-help_showobjectives_xin                Pour voir la liste des objectifs, ouvrez le gestionnaire de programmes, puis faites défiler l'écran vers la droite.
 help_showobjectives_icons_kbd          Pour voir la liste des objectifs, maintenez enfoncée la touche [KEYICONSTASKMANAGERDISPLAY], puis faites défiler l'écran vers le bas avec la souris, ou en appuyant sur [KEYMENUDOWN].
-help_showobjectives_icons_xin          Pour voir la liste des objectifs, ouvrez le gestionnaire de programmes, puis faites défiler l'écran vers le bas.
 help_armour_summon_kbd                 Cliquez avec le bouton gauche dans l'une des zones de départ, mises en évidence, pour créer votre blindé. Les blindés ne peuvent être créés que près des points de passage que vous contrôlez.
-help_armour_summon_xin                 Sélectionnez l'une des zones de départ, mises en évidence, pour créer votre blindé. Les blindés ne peuvent être créés que près des points de passage que vous contrôlez.
 help_armour_use_kbd                    Cliquez avec le bouton gauche pour déplacer votre blindé. Cliquez avec le bouton droit près du blindé pour passer du chargement au déchargement de Darwiniens. Cliquez avec le bouton droit sur les terres pour déployer votre blindé et le transformer en canon de bataille.
 help_armour_use_1mb_kbd                Cliquez avec le bouton gauche pour déplacer votre blindé. Cliquez et maintenez enfoncé près du blindé pour passer du chargement au déchargement de Darwiniens. Cliquez et maintenez enfoncé sur les terres pour déployer votre blindé et le transformer en canon de bataille.
 
 help_radardish_1_kbd                   Vous pouvez utiliser ce radar pour effectuer des transferts vers d'autres radars. Cliquez dessus pour le contrôler.
-help_radardish_1_xin                   Vous pouvez utiliser ce radar pour effectuer des transferts vers d'autres radars. Sélectionnez-le pour le contrôler.
 help_radardish_2_kbd                   Pour diriger le radar, orientez-le simplement vers le radar auquel vous voulez vous rendre et cliquez dessus avec le bouton gauche. Le radar récepteur doit être orienté vers le radar émetteur. Appuyez sur [KEYUNITDESELECT] pour désélectionner le radar.
-help_radardish_2_xin                   Pour diriger le radar, sélectionnez simplement le radar auquel vous voulez vous rendre. Le radar récepteur doit être orienté vers le radar émetteur.
 help_incubator                         Cette construction est un incubateur. Vous pouvez vous servir d'ingénieurs pour transporter les esprits jusqu'ici. Ces esprits renaîtront alors en Darwiniens.
 help_trunkport                         C'est un point de passage. Les points de passage relient entre eux les différents secteurs de Darwinia.
 help_refinery                          Il s'agit de la raffinerie principale. Elle fait fonctionner tout le système minier de ces îles. Vous allez devoir escorter des Darwiniens jusqu'ici pour la rendre à nouveau opérationnelle.
@@ -239,7 +217,6 @@ help_anthill                           Dé-goû-tant ! Cette zone est infestée de 
 help_controltower                      C'est une tour de commande. Envoyez l'un de vos ingénieurs la reprogrammer, et vous pourrez vous servir de la construction à laquelle elle est reliée.
 help_researchitem                      Vous avez découvert une partie des données de mes recherches ! Parfait. Créez quelques ingénieurs aux environs et ils téléchargeront ces données dans mon système. Espérons que ce soit quelque chose d'utile.
 help_gunturret_1_kbd                   Ce canon de bataille a besoin de Darwiniens pour être utilisé. Ils tireront automatiquement sur tout ennemi s'approchant. Ou vous pouvez cliquer dessus pour le contrôler.
-help_gunturret_1_xin                   Ce canon de bataille a besoin de Darwiniens pour être utilisé. Ils tireront automatiquement sur tout ennemi s'approchant. Ou vous pouvez le sélectionner pour le contrôler en personne.
 help_gunturret_2_kbd                   Ce canon de bataille suivra votre curseur. Cliquez avec le bouton droit pour tirer. Appuyez sur [KEYUNITDESELECT] pour le désélectionner.
 help_gunturret_2_1mb_kbd               Ce canon de bataille suivra votre curseur. Cliquez et maintenez enfoncé pour tirer. Appuyez sur [KEYUNITDESELECT] pour le désélectionner.
 
@@ -318,11 +295,8 @@ taskmanager_incomplete                 NON ATTEINT
 # ================================================
 
 task_manager_full_kbd                  Vous ne pouvez pas lancer davantage de programmes. Essayez d'en fermer en maintenant [KEYGESTURESTASKMANAGERDISPLAY] enfoncé pour accéder au gestionnaire de programmes, en appuyant sur TAB pour accéder à d'anciens programmes, et en appuyant sur CTRL-C.
-task_manager_full_xin                  Vous ne pouvez pas lancer davantage de programmes. Essayez d'en fermer.
 task_manager_full_icons_kbd            Vous ne pouvez pas lancer davantage de programmes. Maintenez enfoncé [KEYICONSTASKMANAGERDISPLAY] et fermez des programmes pour libérer de la mémoire. Cliquez simplement sur l'icône de fermeture.
-task_manager_full_icons_xin            Vous ne pouvez pas lancer davantage de programmes.
 task_manager_targetfirst_kbd           Vous ne pouvez pas lancer de nouveau programme avant d'avoir placé celui existant. Cliquez avec le bouton gauche sur une zone valide pour le placer.
-task_manager_targetfirst_xin           Vous ne pouvez pas créer de programme tant que vous n'avez pas placé celui existant. Sélectionnez l'une des zones de départ pour le déployer.
 task_manager_needsquadfirst            Vous devez créer une escouade avant de déterminer leur type d'arme.
 officer_notwalkable                    Je crains que les Darwiniens ne soient pas assez intelligents pour trouver seuls leur chemin vers cette destination. Ils doivent voir où ils vont.
 armour_cantconvert                     Le sol est trop escarpé ici… Vous ne pouvez déployer un canon de bataille que sur un terrain plat.
@@ -337,10 +311,8 @@ objective_research_2                   Créez un ingénieur dans les environs et i
 
 building_captured                      Les ingénieurs ont terminé de reprogrammer une construction.
 primaryObjectivesComplete_kbd          Bon travail, on dirait que vous avez atteint tous les objectifs principaux. Appuyez sur [KEYMENUESCAPE] pour quitter ce secteur lorsque vous le souhaitez.
-primaryObjectivesComplete_xin          Bon travail, on dirait que vous avez atteint tous les objectifs principaux.
 primaryObjectiveComplete               Objectif principal atteint
 primaryObjectiveFail_kbd               On dirait que vous n'êtes pas parvenu à accomplir votre mission. Vous pouvez réessayer si vous le souhaitez. Appuyez sur [KEYMENUESCAPE] à présent.
-primaryObjectiveFail_xin               On dirait que vous n'êtes pas parvenu à accomplir votre mission.
 
 privatedemo1                           > BUILD PRÉALPHA INTERNE POUR QUELQU'UN
 privatedemo2                           > STRICTEMENT CONFIDENTIEL
@@ -393,7 +365,6 @@ research_laser_v4                      Ces lasers sont maintenant incroyables. L
 
 research_grenade                       Je vais travailler sur le programme de grenade. Je devrais pouvoir améliorer la portée de cette arme.
 research_grenade_v1_kbd                Vous avez découvert les données de mes recherches sur la grenade ! Fantastique ! Lorsque vous tirez au laser avec une escouade, appuyez sur le bouton gauche pour lancer une grenade.
-research_grenade_v1_xin                Vous avez découvert les données de mes recherches sur la grenade ! Fantastique ! Votre escouade peut maintenant en lancer.
 research_grenade_v1_1mb_kbd            Vous avez découvert les données de mes recherches sur la grenade ! Fantastique ! Cliquez en appuyant sur MAJ pour lancer une grenade.
 research_grenade_v2                    J'ai amélioré le programme de grenade et elle dispose maintenant d'une meilleure portée.
 research_grenade_v3                    J'ai à nouveau amélioré la portée des grenades.
@@ -401,10 +372,8 @@ research_grenade_v4                    Ça y est, j'en ai à présent terminé avec 
 
 research_rocket                        Je vais travailler aux roquettes. J'espère pouvoir améliorer un peu leur portée.
 research_rocket_v1_kbd                 Excellent, vous avez retrouvé le programme Roquette. Vous pouvez sélectionner cette arme avec la figure Roquette. Lorsque vous tirez au laser avec une escouade, cliquez sur le bouton gauche pour lancer une roquette.
-research_rocket_v1_xin                 Excellent, vous avez retrouvé le programme Roquette. Vous pouvez sélectionner cette arme avec la figure Roquette. Votre escouade peut maintenant en lancer.
 
 research_rocket_v1_icons_kbd           Excellent, vous avez retrouvé le programme Roquette. Vous pouvez sélectionner cette arme en cliquant sur l'icône Roquette près de votre escouade dans le gestionnaire de programmes. Lorsque vous tirez au laser avec une escouade, cliquez sur le bouton gauche pour lancer une roquette.
-research_rocket_v1_icons_xin           Excellent, vous avez retrouvé le programme Roquette. Sélectionnez l'icône Roquette près de votre escouade dans le gestionnaire de programmes pour l'activer. Votre escouade peut maintenant en lancer.
 research_rocket_v1_1mb_kbd             Excellent, vous avez retrouvé le programme Roquette. Vous pouvez sélectionner cette arme avec la figure Roquette. Cliquez en appuyant sur MAJ pour lancer une roquette.
 research_rocket_v2                     Les roquettes disposent à présent d'une portée supérieure.
 research_rocket_v3                     Je suis parvenu à améliorer à nouveau la portée des roquettes.
@@ -413,7 +382,6 @@ research_rocket_v4                     La portée des roquettes est à présent à s
 research_airstrike                     Je vais essayer d'améliorer pour vous la frappe aérienne.
 research_airstrike_v1                  Très bonne nouvelle. Vous avez découvert mon programme Frappe aérienne. Choisissez Frappe aérienne en tant qu'arme d'escouade en dessinant cette figure, puis indiquez au programme où bombarder.
 research_airstrike_v1_icons_kbd        Très bonne nouvelle. Vous avez découvert mon programme Frappe aérienne. Cliquez sur l'icône Frappe aérienne dans le gestionnaire de programmes pour sélectionner cette arme, puis placez le marqueur pour montrer au programme où frapper.
-research_airstrike_v1_icons_xin        Très bonne nouvelle. Vous avez découvert mon programme Frappe aérienne. Sélectionnez l'icône Frappe aérienne dans le gestionnaire de programmes pour l'activer, puis placez le marqueur pour montrer au programme où frapper.
 research_airstrike_v2                  J'ai amélioré le programme Frappe aérienne. Chaque marqueur fera à présent venir deux invaders.
 research_airstrike_v3                  J'ai ajouté un autre invader à chaque unité de frappe aérienne.
 research_airstrike_v4                  Il y aura à présent quatre invaders par marqueur de frappe aérienne. Et je ne vais pas pouvoir faire mieux.
@@ -446,18 +414,14 @@ research_officer                       Je vais travailler à l'amélioration du pr
 # research_officer_v1                Unused
 # research_officer_v2                Unused
 research_officer_v3_kbd                J'ai amélioré le programme Officier et il peut à présent, en plus de l'ordre GOTO déjà existant, donner l'ordre FOLLOW. Cliquez avec le bouton droit de la souris près d'un officier pour faire défiler ses ordres.
-research_officer_v3_xin                J'ai amélioré le programme Officier et il peut à présent, en plus de l'ordre GOTO déjà existant, donner l'ordre FOLLOW.
 research_officer_v3_1mb_kbd            J'ai amélioré le programme Officier et il peut à présent, en plus de l'ordre GOTO déjà existant, donner l'ordre FOLLOW. Cliquez et maintenez le bouton enfoncé près d'un officier pour faire défiler ses ordres.
 research_officer_v4_kbd                J'ai fourni à l'officier un nouvel ordre, appelé ABSORB. Ceci absorbera tous les Darwiniens alliés environnants pour former un champ protecteur, et permettra à l'officier de rester en sécurité dans des zones dangereuses. Cliquez avec le bouton droit de la souris près d'un officier pour faire défiler ses ordres.
-research_officer_v4_xin                J'ai fourni à l'officier un nouvel ordre, appelé ABSORB. Ceci absorbera tous les Darwiniens alliés environnants pour former un champ protecteur, et permettra à l'officier de rester en sécurité dans des zones dangereuses.
 research_officer_v4_1mb_kbd            J'ai fourni à l'officier un nouvel ordre, appelé ABSORB. Ceci absorbera tous les Darwiniens alliés environnants pour former un champ protecteur, et permettra à l'officier de rester en sécurité dans des zones dangereuses. Cliquez et maintenez le bouton enfoncé près d'un officier pour faire défiler ses ordres.
 
 research_explanation_1                 Je vais continuer à travailler pendant un moment sur les programmes que vous utilisez… les escouades, les ingénieurs, etc.
 research_explanation_2                 La plupart de ces programmes n'en sont qu'au stade de bêta-test et je pense pouvoir tous les améliorer beaucoup. Mais cela va demander du travail.
 research_explanation_3_kbd             Pour voir l'avancée de mes recherches, maintenez enfoncé [KEYGESTURESTASKMANAGERDISPLAY] pour accéder au gestionnaire de programmes, puis faites défiler l'écran en plaçant la souris à gauche ou en appuyant sur [KEYCAMERALEFT].
-research_explanation_3_xin             Pour voir l'avancée de mes recherches, ouvrez le gestionnaire de programmes, puis faites défiler l'écran vers la gauche.
 research_explanation_3_icons_kbd       Pour voir l'avancée de mes recherches, maintenez enfoncé [KEYICONSTASKMANAGERDISPLAY] puis faites défiler l'écran vers le haut avec la souris ou la touche [KEYCAMERAFORWARDS].
-research_explanation_3_icons_xin       Pour voir l'avancée de mes recherches, ouvrez le gestionnaire de programmes, puis faites défiler l'écran vers le haut.
 research_explanation_4                 Vous pouvez à partir d'ici définir les priorités que vous souhaitez me voir suivre… et j'essaierai d'améliorer ce que vous considérez être le plus important.
 
 
@@ -477,18 +441,15 @@ tutorial_intro_9                       Nous allons devoir vaincre le virus, et r
 tutorial_intro_10                      Mais commençons par le commencement.
 
 tutorial_1_kbd                         Habituez-vous tout d'abord à la caméra. Servez-vous des touches [KEYCAMERAFORWARDS],[KEYCAMERALEFT],[KEYCAMERABACKWARDS],[KEYCAMERARIGHT] pour la déplacer.
-tutorial_1_xin                         Habituez-vous tout d'abord à la caméra. Servez-vous du stick analogique gauche pour la déplacer.
 tutorial_2_kbd                         Pour faire varier sa hauteur, servez-vous de la molette de la souris, ou appuyez sur les touches [KEYCAMERAUP] et [KEYCAMERADOWN].
 tutorial_3                             Très bien. La première chose que je veux à présent est que vous détruisiez ces Virii rouges.
 tutorial_3b                            Nous collecterons ensuite les esprits que leurs corps vont laisser et les convertirons en Darwiniens tout nouveaux.
 tutorial_4                             Afin de détruire ces Virii, nous allons devoir créer une unité d'attaque appelée ESCOUADE.
 tutorial_4b_kbd                        Vous dessinez des figures dans le gestionnaire de programmes pour créer des choses sur Darwinia. Maintenez enfoncée la touche [KEYGESTURESTASKMANAGERDISPLAY] pour accéder au gestionnaire de programmes.
-tutorial_4b_xin                        Vous dessinez des figures dans le gestionnaire de programmes pour créer des choses sur Darwinia.
 tutorial_5                             Une fois le gestionnaire de programmes ouvert, effectuez cette figure pour créer une ESCOUADE. Il n'est pas nécessaire d'être très précis, mais il faut simplement dessiner rapidement.
 tutorial_5_kbd                         Tout en maintenant enfoncée la touche [KEYGESTURESTASKMANAGERDISPLAY], dessinez cette figure pour créer une escouade. Il n'est pas nécessaire d'être très précis, mais il faut simplement dessiner rapidement.
 tutorial_5_error                       Oups, ce n'est pas la bonne figure. Réessayez.
 tutorial_7_kbd                         Parfait. Maintenant, cliquez dans la zone de départ mise en évidence pour placer l'ESCOUADE.
-tutorial_7_xin                         Parfait. Maintenant, sélectionnez la zone de départ mise en évidence pour placer l'ESCOUADE.
 tutorial_8_kbd                         Les escouades doivent être contrôlées directement. Cliquez avec le bouton gauche pour les faire progresser.
 tutorial_9_kbd                         Maintenez enfoncé le bouton droit de la souris pour qu'elle utilise ses lasers.
 tutorial_10_kbd                        Ils peuvent également lancer des grenades. Maintenez le bouton droit de la souris enfoncé pour activer les lasers et appuyez sur le bouton gauche pour ce faire.
@@ -500,7 +461,6 @@ tutorial_20                            Cette construction est un incubateur. Il 
 tutorial_20b                           Il ne fonctionne malheureusement pas pour l'heure, à cause du virus. Mais nous en avons besoin pour commencer à reconstruire des Darwiniens.
 tutorial_20c                           Nous allons avoir besoin d'un INGÉNIEUR pour faire fonctionner cet édifice.
 tutorial_21_kbd                        Pour requérir un INGÉNIEUR, maintenez enfoncée la touche [KEYGESTURESTASKMANAGERDISPLAY] pour accéder au gestionnaire de programmes et dessinez cette figure.
-tutorial_21_xin                        Pour requérir un INGÉNIEUR, ouvrez le gestionnaire de programmes et dessinez cette figure.
 tutorial_22                            Vous pouvez placer des ingénieurs près des zones de départ, ou près de vos escouades. Placez votre ingénieur et déplacez-le près de l'incubateur.
 tutorial_23                            L'ingénieur va tout d'abord reprogrammer l'incubateur et effacer le virus, à l'aide de la tour de commande adjacente.
 tutorial_24                            Il va à présent collecter les esprits laissés par les Virii tués et les apporter à l'incubateur.
@@ -510,7 +470,6 @@ tutorial_25                            Le premier Darwinien est à nouveau né. C'
 tutorial_26                            Cette planète leur appartenait avant que le virus n'envahisse tout. Et nous allons les aider à reconquérir le monde.
 
 tutorial_28_kbd                        Maintenez enfoncée la touche [KEYGESTURESTASKMANAGERDISPLAY] et dessinez cette figure pour créer une autre ESCOUADE.
-tutorial_28_xin                        Ouvrez le gestionnaire de programmes et dessinez cette figure pour créer une autre escouade.
 tutorial_29                            Vous pouvez maintenant placer votre ESCOUADE dans une zone plus avancée. Placez-la près de la tour de commande que vous avez capturée.
 
 tutorial_30                            Très bien, poursuivons.
@@ -520,13 +479,11 @@ tutorial_32                            Sélectionnez à présent votre escouade et 
 tutorial_33                            Très bon travail. Je suis très impressionné.
 tutorial_33b                           Un ingénieur doit à présent reprogrammer cet incubateur, et rassembler les esprits environnants.
 tutorial_34_kbd                        Déplacez à présent l'ingénieur près du nouvel incubateur pour qu'il le reprogramme. Cliquez simplement avec le bouton gauche pour déplacer un ingénieur.
-tutorial_34_xin                        Déplacez à présent l'ingénieur près du nouvel incubateur pour qu'il le reprogramme.
 tutorial_35                            Cet ingénieur va maintenant rassembler les esprits environnants et les placer dans l'incubateur, créant ainsi davantage de Darwiniens.
 tutorial_35b                           Je vais à présent vous expliquer comment déplacer les Darwiniens existants.
 tutorial_35c                           Les Darwiniens ne peuvent pas être directement contrôlés, mais nous pouvons leur donner des ordres avec un officier.
 tutorial_351                           Pour créer un officier, dessinez cette figure.
 tutorial_36_kbd                        Cliquez sur un Darwinien existant pour le nommer officier.
-tutorial_36_xin                        Sélectionnez un Darwinien existant pour le nommer officier.
 tutorial_37                            La fonction la plus importante des officiers est de donner des ordres aux Darwiniens proches.
 tutorial_37_kbd                        Vous pouvez déplacer des officiers en cliquant avec le bouton gauche. Mais leur fonction la plus importante consiste à donner des ordres aux Darwiniens les entourant.
 tutorial_37b_kbd                       Vous pouvez désigner un point avec le bouton droit de la souris sur les terres pour ordonner aux Darwiniens environnants de s'y rendre.
@@ -541,7 +498,6 @@ tutorial_40                            Vous faites déjà fonctionner une escouade
 tutorial_40b_kbd                       Pour sélectionner votre escouade, maintenez enfoncée la touche [KEYICONSTASKMANAGERDISPLAY] et appuyez sur TAB jusqu'à ce que l'escouade soit sélectionnée. Ou vous pouvez directement cliquer sur l'escouade.
 
 tutorial_41_kbd                        Pour requérir un autre INGÉNIEUR, maintenez enfoncée la touche [KEYGESTURESTASKMANAGERDISPLAY] pour accéder au gestionnaire de programmes et dessinez cette figure.
-tutorial_41_xin                        Pour requérir un autre INGÉNIEUR, ouvrez le gestionnaire de programmes et dessinez cette figure.
 tutorial_42                            Placez à présent l'ingénieur près d'une escouade ou d'une tour de commande.
 
 tutorial_43                            Vous faites déjà fonctionner un ingénieur, mais il n'est pas sélectionné.
@@ -551,7 +507,6 @@ tutorial_squaddeath                    Il semble que votre escouade ait été détr
 tutorial_engineerdeath                 Il semble que votre ingénieur ait été détruit. Nous allons devoir en créer un autre.
 
 tutorial_skipped_kbd                   OK, je vais vous laisser vous débrouiller. Souvenez-vous simplement que vous pouvez appuyer sur [KEYSEPULVEDAHELP] à tout moment pour obtenir de l'aide. Bonne chance.
-tutorial_skipped_xin                   OK, je vais vous laisser vous débrouiller. Bonne chance.
 
 
 # ================================================
@@ -694,7 +649,6 @@ dialog_unplugged1                      Manette débranchée
 dialog_unplugged2                      Votre manette a été débranchée. Veuillez la rebrancher pour continuer.
 
 dialog_skiptutorial_kbd                Appuyez sur [KEYSKIPTUTORIAL] pour éluder le didacticiel
-dialog_skiptutorial_xin                Appuyez sur Back pour éluder le didacticiel
 
 dialog_skipprologue                    Passer prologue
 dialog_playprologue                    Jouer prologue
@@ -839,25 +793,19 @@ launchpad_middemo_14                   Et si le virus n'était pas venu, ils sera
 
 launchpad_tutorial_1                   Bien, nous allons devoir aider les Darwiniens.
 launchpad_tutorial_2_kbd               Habituez-vous d'abord à la caméra. Servez-vous des touches [KEYCAMERAFORWARDS], [KEYCAMERALEFT], [KEYCAMERABACKWARDS] et [KEYCAMERARIGHT] pour la déplacer.
-launchpad_tutorial_2_xin               Habituez-vous d'abord à la caméra. Servez-vous du stick analogique gauche pour la déplacer.
 launchpad_tutorial_3                   Pour modifier la hauteur de la caméra, appuyez sur haut et bas du BMD.
 launchpad_tutorial_3_kbd               Pour changer la hauteur de la caméra, servez-vous de la molette de la souris. Ou vous pouvez appuyer sur [KEYCAMERAUP] et [KEYCAMERADOWN].
 launchpad_tutorial_4_kbd               Afin de combattre la menace rouge, nous allons devoir créer des unités d'attaque. Maintenez enfoncée la touche [KEYICONSTASKMANAGERDISPLAY] pour afficher le gestionnaire de programmes.
-launchpad_tutorial_4_xin               Nous allons devoir créer des unités d'attaque pour combattre la menace rouge. Appuyez sur X pour ouvrir le gestionnaire de tâches.
 launchpad_tutorial_5_kbd               L'ESCOUADE constitue votre première arme contre l'armée rouge. Créez une ESCOUADE en cliquant sur l'icône d'escouade au milieu de l'écran lorsque le gestionnaire de programmes est ouvert.
-launchpad_tutorial_5_xin               L'ESCOUADE constitue votre première arme contre l'armée rouge. Créez une ESCOUADE en sélectionnant l'icône d'escouade au milieu de l'écran et en appuyant sur A.
 launchpad_tutorial_5_error             Ce n'est pas la bonne icône. Réessayez.
 launchpad_tutorial_6_kbd               Cliquez à l'intérieur de la zone mise en évidence pour placer votre nouvelle ESCOUADE.
-launchpad_tutorial_6_xin               Pour placer votre nouvelle ESCOUADE, déplacez votre curseur dans la zone de départ mise en évidence et appuyez sur A.
 launchpad_tutorial_7_kbd               Les escouades doivent être contrôlées directement. Cliquez avec le bouton gauche pour les faire progresser.
-launchpad_tutorial_7_xin               Vous devez contrôler directement les escouades. Servez-vous du stick analogique gauche pour les déplacer.
 launchpad_tutorial_8                   Servez-vous du stick analogique droit pour les faire tirer au laser. Orientez le stick analogique droit dans la direction vers laquelle vous souhaitez tirer.
 launchpad_tutorial_8_kbd               Maintenez enfoncé le bouton droit de la souris pour qu'elle utilise ses lasers.
 launchpad_tutorial_9                   Déplacez à présent votre escouade et occupez-vous de ces Virii. Ne les laissez pas trop s'approcher.
 launchpad_tutorial_9_error             Votre escouade a été détruite. Ce n'est pas vraiment un problème, nous pouvons en créer une autre.
 launchpad_tutorial_10                  Cet objet bleu constitue une partie de mes recherches. Il contient une arme que nous pouvons utiliser contre les Virii.
 launchpad_tutorial_11_kbd              Nous devons créer un ingénieur pour capturer ces données de recherche. Maintenez enfoncée la touche [KEYICONSTASKMANAGERDISPLAY], puis cliquez sur le bouton d'ingénieur.
-launchpad_tutorial_11_xin              Nous devons créer un ingénieur pour capturer ces données de recherche. Ouvrez le gestionnaire de programmes, sélectionnez le bouton d'ingénieur et appuyez sur A.
 launchpad_tutorial_12                  Placez votre nouvel ingénieur près de votre escouade et déplacez-le près de l'objet.
 launchpad_tutorial_12b                 Les ingénieurs ne sont que des outils de débug stupides, mais ils servent à plusieurs choses.
 launchpad_tutorial_12c                 Vous pouvez voir que l'ingénieur récupère ces données.
@@ -865,7 +813,6 @@ launchpad_tutorial_12d                 Une fois qu'il en aura terminé, il téléch
 launchpad_tutorial_12e                 Il se peut que vous trouviez d'autres données ici. Elles seraient d'un grand secours si vous parveniez à les récupérer.
 launchpad_tutorial_13                  Fantastique, vous êtes parvenu à retrouver les grenades.
 launchpad_tutorial_13b_kbd             Cliquez sur l'escouade existante pour la contrôler à nouveau. Ou vous pouvez autrement cliquer directement sur l'unité, ou appuyer sur la touche 1.
-launchpad_tutorial_13b_xin             Mettez en évidence une escouade existante et appuyez sur A pour en reprendre le contrôle. Ou vous pouvez la sélectionner dans le gestionnaire de tâches ou encore passer d'une tâche active à une autre avec les gâchettes hautes droite et gauche.
 launchpad_tutorial_14                  Pour lancer une grenade, appuyez sur la gâchette droite tout en tirant au laser. Plus vous orientez le stick analogique droit dans une direction et plus loin ira la grenade.
 launchpad_tutorial_14_kbd              Tout en maintenant le bouton droit de la souris enfoncé, cliquez avec le bouton gauche pour lancer une grenade.
 launchpad_tutorial_15                  Je vous recommande à présent de nettoyer ces Virii sur la colline avec les nouvelles armes de votre escouade.
@@ -875,16 +822,11 @@ launchpad_tutorial_18                  Nous allons maintenant l'utiliser pour re
 launchpad_tutorial_19                  Ce radar a malheureusement été infecté par le même virus que vous avez combattu.
 launchpad_tutorial_20                  Un ingénieur doit reprogrammer ce radar pour le désinfecter. Nous pourrons ensuite l'utiliser.
 launchpad_tutorial_21_kbd              Sélectionnez à nouveau votre ingénieur et déplacez-le près du radar pour qu'il le reprogramme. Cliquez sur son icône dans le gestionnaire de programmes pour le sélectionner, ou cliquez sur l'ingénieur directement.
-launchpad_tutorial_21_xin              Sélectionnez à nouveau votre ingénieur et déplacez-le près du radar pour qu'il le reprogramme. Sélectionnez son icône dans le gestionnaire de programmes pour le resélectionner, ou sélectionnez-le directement.
 launchpad_tutorial_22                  L'ingénieur peut accéder au radar par la tour de commande avoisinante. Il le reprogramme afin que nous puissions nous en servir.
 launchpad_tutorial_23_kbd              OK, nous contrôlons à présent le radar. Désélectionnez votre ingénieur en appuyant sur [KEYUNITDESELECT], puis sélectionnez le radar en cliquant dessus.
-launchpad_tutorial_23_xin              OK, nous contrôlons à présent le radar. Désélectionnez votre ingénieur en appuyant sur B, puis sélectionnez le radar en le mettant en évidence et en appuyant sur A.
 launchpad_tutorial_24_kbd              Alignez maintenant le radar en cliquant sur le récepteur de l'autre île. J'ai mis en évidence ce récepteur. Vous pouvez effectuer un zoom avant avec la molette de la souris ou avec la touche [KEYCAMERAZOOM].
-launchpad_tutorial_24_xin              Alignez maintenant le radar en visant le récepteur sur l'île lointaine et en appuyant sur A. J'ai mis en évidence le récepteur pour vous. Vous pouvez zoomer dessus en appuyant longuement sur la gâchette gauche.
 launchpad_tutorial_25_kbd              Les deux radars devraient à présent être alignés, et nous pouvons envoyer notre escouade. Désélectionnez le radar en appuyant sur [KEYUNITDESELECT], puis sélectionnez à nouveau votre ESCOUADE.
-launchpad_tutorial_25_xin              Les deux radars devraient à présent être alignés, et nous pouvons envoyer notre escouade. Désélectionnez le radar en appuyant sur B, puis sélectionnez à nouveau votre ESCOUADE.
 launchpad_tutorial_26_kbd              Vous pouvez maintenant envoyer votre ESCOUADE par le radar en cliquant dessus lorsqu'elle est sélectionnée.
-launchpad_tutorial_26_xin              Vous pouvez maintenant envoyer votre ESCOUADE par le radar en la déplaçant dans sa direction.
 
 launchpad_tutorial_defend_1            Soyez prudent, il y a d'autres Virii tout proches.
 launchpad_tutorial_defend_2            Défendez-vous !
@@ -893,7 +835,6 @@ launchpad_tutorial_40                  Cette construction est un incubateur. C'e
 launchpad_tutorial_41                  Nous pouvons nous en servir pour convertir les esprits des créatures que vous venez de détruire en Darwiniens.
 launchpad_tutorial_42                  Mais comme pour le radar, nous devons tout d'abord le reprogrammer afin d'en ôter l'infection.
 launchpad_tutorial_43_kbd              Créez un ingénieur près de l'incubateur pour le reprogrammer. Maintenez simplement enfoncé [KEYICONSTASKMANAGERDISPLAY] et cliquez sur la touche d'ingénieur. Ou appuyez sur la touche [KEYICONSTASKMANAGERNEWENGINEER].
-launchpad_tutorial_43_xin              Créez un ingénieur près de l'incubateur pour le reprogrammer. Ouvrez simplement le gestionnaire de programmes et sélectionnez le bouton d'ingénieurs.
 launchpad_tutorial_44                  L'incubateur étant opérationnel, l'ingénieur va collecter des esprits.
 launchpad_tutorial_45                  Toutes les créatures de Darwinia ont un esprit. Que ce soit un Darwinien amical ou un virus.
 launchpad_tutorial_46                  Les ingénieurs peuvent rassembler les esprits des créatures décédées et les déposer dans un incubateur pour qu'ils renaissent.
@@ -914,14 +855,10 @@ launchpad_tutorial_59                  Cette énergie est générée par ces panneau
 launchpad_tutorial_60                  Nous devons escorter des Darwiniens jusqu'à chacun de ces panneaux pour les faire fonctionner.
 launchpad_tutorial_61                  Et le programme que vous avez récupéré nous permet d'y parvenir. Nous allons pouvoir guider les Darwiniens avec des officiers.
 launchpad_tutorial_62_kbd              Maintenez enfoncée la touche [KEYICONSTASKMANAGERDISPLAY] et cliquez sur le bouton pour créer un officier. Ou vous pouvez appuyer sur [KEYICONSTASKMANAGERNEWOFFICER].
-launchpad_tutorial_62_xin              Ouvrez le gestionnaire de programmes et sélectionnez le bouton pour créer un officier.
 launchpad_tutorial_63_kbd              Nous devons à présent sélectionner un Darwinien pour le nommer officier. Cliquez sur n'importe lequel.
-launchpad_tutorial_63_xin              Nous devons à présent sélectionner un Darwinien pour le nommer officier. Mettez en évidence un Darwinien et appuyez sur A pour le promouvoir.
 launchpad_tutorial_64_kbd              Nous pouvons maintenant influencer les autres Darwiniens autour de nous. Cliquez avec le bouton droit de la souris sur l'officier pour le placer en ordre FOLLOW.
-launchpad_tutorial_64_xin              Nous pouvons maintenant influencer les autres Darwiniens autour de nous. Mettez en évidence l'officier et appuyez sur la gâchette droite pour le mettre en mode SUIVRE.
 launchpad_tutorial_65                  Ces Darwiniens suivront l'officier partout où il ira. Dans ce cas, nous avons rassemblé tous les Darwiniens environnants.
 launchpad_tutorial_66_kbd              Cliquez avec le bouton droit de la souris près des panneaux solaires pour placer l'officier en ordre GOTO.
-launchpad_tutorial_66_xin              Déplacez votre curseur près des panneaux solaires et appuyez sur la gâchette droite pour placer l'officier en mode GOTO.
 launchpad_tutorial_67                  L'officier ordonne ainsi à tous les Darwiniens environnants de se rendre à cet endroit.
 launchpad_tutorial_68                  Vous pouvez avoir autant d'officiers que vous voulez. Servez-vous-en à présent pour qu'ils ordonnent d'occuper les panneaux de contrôle à la base de chacun des trois panneaux solaires.
 launchpad_tutorial_69                  Très bon travail. Le premier groupe de panneaux solaires fonctionne à nouveau.
@@ -935,11 +872,8 @@ launchpad_tutorial_76                  Deux autres pompes doivent encore être ré
 launchpad_tutorial_77                  Vous devriez probablement passer par-là ensuite.
 
 launchpad_reprogram_1_kbd              Pour aligner ce radar, attendez d'abord qu'il ait été reprogrammé, puis désélectionnez votre programme actuel avec la touche [KEYUNITDESELECT].
-launchpad_reprogram_1_xin              Pour aligner ce radar, attendez d'abord qu'il ait été reprogrammé, puis désélectionnez votre programme actuel en appuyant sur B.
 launchpad_reprogram_2_kbd              Vous pouvez alors cliquer sur le radar et l'aligner en cliquant sur le radar récepteur.
-launchpad_reprogram_2_xin              Vous pouvez alors sélectionner le radar avec A et l'aligner en prenant pour cible le radar récepteur et en appuyant à nouveau sur A.
 launchpad_reprogram_3_kbd              Lorsque vous avez terminé, désélectionnez le radar en appuyant sur [KEYUNITDESELECT].
-launchpad_reprogram_3_xin              Lorsque vous avez terminé, désélectionnez le radar en appuyant sur B.
 
 launchpad_dgupgrade_1                  Vous avez découvert une partie de mes recherches en armes darwiniennes.
 launchpad_dgupgrade_2                  Ceci nous permettra d'équiper nos Darwiniens verts avec les mêmes grenades que celles utilisées par les escouades.
@@ -1051,9 +985,7 @@ containment_incubator_4                Mais nous pouvons les influencer autremen
 
 containment_officer_1                  Fantastique, vous avez trouvé mon programme Officier. Ce petit programme pratique va vous permettre de nommer officiers des Darwiniens, et d'utiliser ces officiers pour donner des ordres aux Darwiniens proches.
 containment_officer_2_kbd              Pour créer un officier, dessinez cette figure puis cliquez sur le Darwinien que vous souhaitez promouvoir.
-containment_officer_2_xin              Pour créer un officier, dessinez cette figure puis sélectionnez le Darwinien que vous souhaitez promouvoir.
 containment_officer_2_icons_kbd        Pour créer un officier, affichez le gestionnaire de programmes et cliquez sur l'icône d'officier. Puis cliquez sur le Darwinien que vous souhaitez promouvoir.
-containment_officer_2_icons_xin        Pour créer un officier, affichez le gestionnaire de programmes et sélectionnez l'icône d'officier. Puis sélectionnez le Darwinien que vous souhaitez promouvoir.
 containment_officer_3                  Les Darwiniens qui sont nés jusqu'alors ne sont pas en sécurité… Je veux que vous les déplaciez sous l'arbre à l'intérieur de la zone protégée mise en évidence. Utilisez pour ce faire le programme Officier.
 
 containment_rescuedws_1                Bon travail, certains Darwiniens ont atteint la zone sécurisée. Mais ce n'est pas assez. Si nous voulons refaire fonctionner Darwinia, nous allons en avoir besoin davantage.
@@ -1100,7 +1032,6 @@ containmentend_7_kbd                   Si vous avez besoin d'aide pour accomplir
 containmentend_7_icons                 Si vous avez besoin d'aide pour accomplir ces tâches, ouvrez l'écran Objectifs.
 containmentend_7_icons_kbd             Si vous avez besoin d'aide pour accomplir ces tâches, maintenez enfoncé [KEYICONSTASKMANAGERDISPLAY] et placez votre souris en bas pour accéder à l'écran Objectifs.
 containmentend_7b_kbd                  ...Vous pouvez y cliquer sur un objectif et je ferai de mon mieux pour le clarifier.
-containmentend_7b_xin                  ...Vous pouvez y sélectionner un objectif et je ferai de mon mieux pour le clarifier.
 containmentend_8                       Bonne chance !
 
 
@@ -1170,7 +1101,6 @@ yard_progressarmour_3                  Je recommande que vous utilisiez la nouve
 
 yard_finished_1                        J'ai ajouté le programme Blindé à votre liste de figures. Vous pouvez à présent requérir un blindé dans n'importe quel secteur en dessinant cette figure.
 yard_finished_1_icons_kbd              J'ai ajouté le programme Blindé à votre liste. Vous pouvez à présent requérir un blindé dans n'importe quel secteur en cliquant sur l'icône de blindé dans le gestionnaire de programmes.
-yard_finished_1_icons_xin              J'ai ajouté le programme Blindé à votre liste. Vous pouvez à présent requérir un blindé dans n'importe quel secteur en sélectionnant l'icône de blindé dans le gestionnaire de programmes.
 yard_finished_2                        Le blindé devra voyager par le système de points de passage. Vous ne pourrez donc requérir de blindé que près d'un point de passage que vous contrôlez.
 
 
