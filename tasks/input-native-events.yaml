@@ -252,8 +252,50 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
-    notes: >
+    status: done
+    notes: |
+      Landed 2026-08-06.
+
+      THE PREMISE WAS VERIFIED BEFORE ANYTHING WAS TOUCHED, because this is
+      simulation input and being wrong about it is a desync rather than a bug.
+      NetworkUpdate::GetByteStream for UpdateType::Alive writes teamId, three
+      world-position floats, m_teamControls.GetFlags() and m_sync;
+      ReadByteStream reads the same five. Neither touches the deltas. And there
+      is no shortcut path: ClientToServer::SendLetter queues the object, but
+      AdvanceSender calls GetByteStream on every letter and writes bytes to a
+      socket — in single player too, over loopback — so the TeamControls that
+      reaches Location::UpdateTeam is always a default-constructed one with
+      SetFlags called on it. TeamControls() runs Clear(), which memsets. The
+      deltas were structurally zero at every read on every machine.
+
+      WHAT THE DELETION REVEALS, and it is not what the task expected to find:
+      direct unit move does nothing. InsertionSquad set a waypoint at
+      pointMan->m_pos plus two zeros, which is pointMan->m_pos — the squaddie is
+      told to walk to where it already stands. The flag crosses the wire and the
+      offset never did, so the feature has been inert since the protocol was
+      written. Removing the fields did not break it; it made the breakage
+      legible. Fixing it means deciding what the wire should carry, which is a
+      task and not a tidy-up. NOT DONE HERE.
+
+      A SECOND DEAD PAIR went with them: m_directUnitFireDx/Dy were written by
+      Team.cpp and read by NOBODY, on either side of the wire. Pure dead stores.
+
+      AND ONE THING WORTH MORE THAN THE FIELDS. The waypoint calculation in
+      Team.cpp read g_camera->GetControlVector(). That code runs while building
+      the 10Hz IAmAlive payload, so it was a per-machine camera value feeding a
+      simulation input — harmless only because the result was then thrown away.
+      It is gone with the members it fed.
+
+      LEFT FOR T11: CameraAccess::GetControlVector now has ZERO callers, and
+      Camera::m_controlVector exists only to feed it. Both are input-plan
+      residue and belong in the closing sweep, not here — this task's file list
+      does not include the camera and a virtual leaving an interface deserves
+      its own diff.
+
+      The wire tests passed unchanged, as the acceptance required: the
+      serialised bytes never contained these fields, so nothing in
+      NetworkUpdateTests had anything to say about them.
+
       Do not run concurrently with network-transport T1 - that task rewrites
       the serialisers that include TeamControls.h.
 
@@ -525,6 +567,7 @@ tasks:
     files:
       - GameData/Input/InputPreferences.txt
     acceptance:
+      - CameraAccess::GetControlVector and Camera::m_controlVector are gone - T3 removed their last caller and recorded them here
       - grep XInput over GameData returns nothing (baseline 2026-08-06 - 69 lines)
       - grep for InputDriverPipe, InputDriverValue, InputDriverAlias, InputDriverPrefs and InputFilterManager returns nothing outside tasks/Archive
       - grep for "extern signed char g_keys" and "g_keys\[" returns nothing (baseline - 1 extern site, 2 live readers outside the driver)
