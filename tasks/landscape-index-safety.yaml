@@ -1,0 +1,203 @@
+# Guard-rail fixes for 16-bit index arithmetic in the landscape containers.
+# Schema and conventions: docs/TASK_DAG.md
+# Validate with:  python3 tools/check_task_dag.py tasks/landscape-index-safety.yaml
+
+plan: landscape-index-safety
+title: Make the landscape containers fail loudly instead of wrapping at 16-bit limits
+summary: >
+  Array2D stores its dimensions as unsigned short while the editor permits
+  worldSizeX/Z up to 1e6 and cellSize down to 1.0, and LevelFile parses both
+  with atoi and no validation. Three defects fall out, all recorded under
+  AGENTS.md Known issues on 2026-08-06 after being found while scoping
+  tasks/_large-location-prompt.md: SurfaceMap2D construction narrows a float
+  cell count into unsigned short (undefined behaviour past 65,535),
+  MergeTileIntoLandscape loops unsigned short counters against an int cell
+  count (never terminates at >= 65,536 cells), and GetValue wraps out-of-range
+  indices to zero instead of clamping (the outermost cell blends with the
+  opposite edge). A fourth, smaller, was found in the same read:
+  GetHighestValue bounds its inner loop on m_numRows rather than m_numColumns,
+  which every square map hides.
+
+  This plan is the minimal today-fix: guard rails that make the overflows loud
+  and the edge lookups sane at the sizes the current types can express. It is
+  NOT the index-widening decision - whether Array2D grows past unsigned short,
+  and what (worldSize, cellSize) envelope the editor should permit, belong to
+  the 65,536x65,536 Location design (tasks/_large-location-prompt.md, area A
+  and open question 7), which this plan must not pre-empt.
+
+tasks:
+  - id: T1
+    title: Characterise SurfaceMap2D and Array2D edge behaviour in tests
+    intent: >
+      Pin what ships today - in-range bilinear interpolation, the wrap-to-zero
+      at the far edge, and Array2D answering m_outsideValue off the edge - so
+      T2 and T4 change behaviour against a recorded baseline rather than an
+      assumed one. This is the characterise-before-converting pattern from
+      docs/TASK_DAG.md; the preferences tests (containers-replaced T19) are
+      the precedent for why it pays.
+    project: Tests
+    depends_on: []
+    files:
+      - Tests/NeuronClientTests/SurfaceMap2DTests.cpp
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj.filters
+      - Tests/NeuronCoreTests/Array2DTests.cpp
+      - Tests/NeuronCoreTests/NeuronCoreTests.vcxproj
+      - Tests/NeuronCoreTests/NeuronCoreTests.vcxproj.filters
+    acceptance:
+      - SurfaceMap2DTests pins in-range GetValue bilinear interpolation on a
+        small map against hand-computed values, for both the generic template
+        and the XMFLOAT3 specialisation (they are separate code paths,
+        NeuronClient/2dSurfaceMap.h:104 and 168)
+      - SurfaceMap2DTests pins today's edge behaviour as characterisation - a
+        query in the outermost cell interpolates against column/row zero, and
+        a query past the far edge aliases cell zero - each with a comment
+        naming it as the defect T4 changes, not as intended behaviour
+      - Array2DTests pins GetData and GetConstPointer answering m_outsideValue
+        for out-of-range indices
+      - Both .vcxproj files list the new sources
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+
+  - id: T2
+    title: Fail loudly when a map's cell count cannot fit the 16-bit index type
+    intent: >
+      SurfaceMap2D's constructor and Initialise pass ceilf(worldSize/cellSize)
+      - a float - straight into Array2D's unsigned short parameters
+      (NeuronClient/2dSurfaceMap.h:70 and 98). Past 65,535 cells that
+      narrowing is undefined behaviour, and the editor already permits pairs
+      that reach it: worldSize 1e6 at the default cellSize 12 is 83,334 cells
+      (GameLogic/LandscapeWindow.cpp:407-409), and LevelFile::ParseLandscape
+      applies atoi with no validation (GameLogic/LevelFile.cpp:503-507). After
+      this task an unrepresentable map is an attributable failure at
+      construction, not heap corruption at a distance.
+    project: NeuronCore
+    depends_on: [T1]
+    files:
+      - NeuronCore/2dArray.h
+      - NeuronClient/2dSurfaceMap.h
+      - Tests/NeuronClientTests/SurfaceMap2DTests.cpp
+      - Tests/NeuronCoreTests/Array2DTests.cpp
+    acceptance:
+      - No float-to-unsigned-short narrowing remains in 2dSurfaceMap.h
+        construction; the cell count is computed in a type that can hold it
+        and range-checked before it reaches Array2D
+      - A dimension that cannot fit the index type is a DEBUG_ASSERT naming
+        the offending sizes in Debug, and defined behaviour (not UB) in
+        Release
+      - Tests cover the largest constructible cell count and the
+        one-past-it failure path, in whatever form the Native Unit Test
+        Framework can observe
+      - Behaviour is unchanged for every map in GameData/Levels (largest is
+        5,372 units; all far below the limit)
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+    notes: >
+      Depends on T1 because its tests land in the files T1 creates. This task
+      guards the container layer only. Whether the editor's value controls or
+      LevelFile parsing should reject bad pairs earlier - and what envelope
+      they enforce - is the large-location design's call
+      (tasks/_large-location-prompt.md open question 7); do not decide it
+      here.
+
+  - id: T3
+    title: Widen MergeTileIntoLandscape's narrowed counters so every tile terminates
+    intent: >
+      The merge loop counters are unsigned short compared against an int cell
+      count, and the tile origin narrows through unsigned short too
+      (GameLogic/Landscape.cpp:364-390). A tile spanning >= 65,536 world cells
+      wraps 65,535 to 0 and never terminates - not reachable through the
+      editor's tile-size control (capped at 10,000,
+      GameLogic/LandscapeWindow.cpp:160), but expressible in a level file
+      (m_size is atoi with no cap, GameLogic/LevelFile.cpp:557) and
+      approachable through the unbounded scale button
+      (GameLogic/LandscapeWindow.cpp:290-330). After this task the loop
+      bounds are computed and compared in one type that holds them.
+    project: GameLogic
+    depends_on: []
+    files:
+      - GameLogic/Landscape.cpp
+    acceptance:
+      - No loop counter or index in MergeTileIntoLandscape narrows to
+        unsigned short; posX/posZ and the loop variables hold and compare in
+        int
+      - Values are bit-identical to before for every tile whose counts fit
+        both types, which is every tile in GameData/Levels - this is a
+        type-widening with no arithmetic change, so the generated landscape
+        and therefore the sync value are untouched
+    verify:
+      - python3 tools/check_format.py
+      - python3 tools/check_math_types.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+    notes: >
+      Not unit-tested because MergeTileIntoLandscape is private to Landscape
+      and reachable only through Landscape::Init with a parsed LevelFile;
+      nothing in Tests/ constructs one (the untested-GameLogic gap AGENTS.md
+      records). Stated here per docs/TASK_DAG.md: "not tested because X" is a
+      finding, silence is not. T2's construction assert does NOT make this
+      fix redundant: the oversized world map asserts, but a big tile merging
+      into a small world reaches this loop with the world map valid.
+
+  - id: T4
+    title: Clamp out-of-range SurfaceMap2D lookups instead of aliasing cell zero
+    intent: >
+      GetValue wraps any index at or past the far edge to zero
+      (NeuronClient/2dSurfaceMap.h:125-128, and the XMFLOAT3 specialisation
+      copies the same clamps at 183-190), so the outermost cell interpolates
+      against the opposite edge of the map - and entities clamped to
+      GetWorldSizeX/Z (GameLogic/Entity.cpp:426-435) sit exactly on that
+      boundary. Silent today because map edges are water; a live
+      client-dependent wrong answer the moment terrain residency becomes
+      partial (tasks/_large-location-prompt.md, the determinism trap). Also
+      fixes the GetHighestValue inner loop bounding x on m_numRows rather
+      than m_numColumns (2dSurfaceMap.h:236), found in the same read and
+      hidden by every map being square.
+    project: NeuronClient
+    depends_on: [T1, T2]
+    files:
+      - NeuronClient/2dSurfaceMap.h
+      - Tests/NeuronClientTests/SurfaceMap2DTests.cpp
+    acceptance:
+      - No accessor in 2dSurfaceMap.h maps an out-of-range index to cell
+        zero; the chosen semantics (clamp to the edge sample, or fall through
+        to Array2D's m_outsideValue) are stated in a comment at the site and
+        are the same in the generic template and the XMFLOAT3 specialisation
+      - The specialisation's do-not-tidy comment (2dSurfaceMap.h:162-166) is
+        updated in the same change - it currently declares the wrap
+        load-bearing for landscape normals, which stops being true here
+      - GetHighestValue's inner loop bounds on m_numColumns
+      - T1's characterisation tests are updated to the new semantics, with a
+        negative control pinning that the wrap to cell zero is gone
+      - In-range interior lookups are bit-identical to before; only the
+        outermost cell and beyond-edge queries change, and the tests show it
+    verify:
+      - python3 tools/check_format.py
+      - python3 tools/check_project_files.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+    notes: >
+      Determinism cost, stated up front: heights and normals read in the
+      outermost cell change, every client on one build computes the same new
+      values, but a build carrying this fix can desync against one without it
+      wherever edge queries feed simulation state - the same
+      version-skew-only cost determinism T1/T5 accepted, and protocol
+      version 2 already refuses pre-2026-08-06 builds outright. If the next
+      owner Garden run follows a build with this in it, the acf283b baseline
+      note in AGENTS.md inherits the same caveat determinism T5 added there.
+
+      The T2 edge is a file-collision serialisation, not a logical
+      dependency: both tasks edit 2dSurfaceMap.h and SurfaceMap2DTests.cpp
+      and would otherwise share a wave. docs/TASK_DAG.md names the edge as
+      the sanctioned fix for exactly this.

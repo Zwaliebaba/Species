@@ -505,11 +505,14 @@ minimum:
 2. A closing report in chat: the shape of the design in ten sentences, the
    recommendations made, the questions asked and what you assumed pending
    answers, and anything the analysis turned up that changes the picture —
-   including anything worth adding to `AGENTS.md` *Known issues*. If the
-   `unsigned short` ceiling, the `MergeTileIntoLandscape` loop counter or the
-   `GetValue` wrap-to-zero turn out to be reachable bugs at sizes the editor
-   already permits **today**, they are `AGENTS.md` *Known issues* material
-   regardless of what this design concludes — say so.
+   including anything worth adding to `AGENTS.md` *Known issues*. The
+   `unsigned short` ceiling, the `MergeTileIntoLandscape` loop counter and the
+   `GetValue` wrap-to-zero are already recorded there (2026-08-06), and
+   `tasks/landscape-index-safety.yaml` owns the guard-rail fixes — check that
+   plan's state before analysing, because whichever of its tasks have landed
+   change what the code you are reading does at the limits. The index-widening
+   decision (area A) is explicitly NOT decided by that plan; it is deferred to
+   this design.
 3. Commit the documents (and nothing else) to your working branch with a clear
    message. Do not push to `main`.
 

@@ -71,8 +71,9 @@ reference rather than a satisfied one. They are not validated or
 reported by default, because a finished plan does not need re-listing on every
 run.
 
-> **As of 2026-08-06 `tasks/` holds two open plans** — `input-native-events`
-> and `network-transport`. Twelve finished plans are in `Archive/`, every task
+> **As of 2026-08-06 `tasks/` holds three open plans** — `input-native-events`
+> and `network-transport`, each one owner Garden run from closing, and
+> `landscape-index-safety`. Twelve finished plans are in `Archive/`, every task
 > in every one of them `done` or `abandoned`; `sound-xaudio2` opened and closed
 > on the same day and joined them. Read
 > `python3 tools/check_task_dag.py --next tasks/<plan>.yaml` for what can be

@@ -52,12 +52,14 @@ closed the same day at 11 of 11 and is in
 [`tasks/Archive/sound-xaudio2.yaml`](tasks/Archive/sound-xaudio2.yaml): one
 native XAudio2 backend with X3DAudio positioning and the effects on XAudio2,
 and DirectSound, the software mixer, the waveOut layer and the `SoundLibrary`
-preference all deleted. Two remain open:
+preference all deleted. Two remain open, and a third — smaller — opened later
+the same day from scoping work rather than the owner's direction:
 
 | Plan | What it does | State |
 |---|---|---|
 | [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse; the gamepad mode and the control-icon plumbing deleted | **14 of 15 — all code done, T12 is the owner's Garden run** |
 | [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | **11 of 12 — all code done and CI-green at `5da1e86`; T12 is the owner's Garden run** |
+| [`tasks/landscape-index-safety.yaml`](tasks/landscape-index-safety.yaml) | Guard rails for the 16-bit index arithmetic in the landscape containers — the three reachable defects under *Known issues* below, found scoping `tasks/_large-location-prompt.md` | **0 of 4 — not started** |
 
 **`input-native-events` has one node left and it is not code.** T12 is a
 seven-step Garden run on a build carrying every other node, and **nothing in that plan has
@@ -804,11 +806,13 @@ day at 20 of 20. T13 narrowed the read-only name parameters to `string_view`,
 T17 replaced `FileWriter::printf` with `std::format` templates, and T9 swept
 the `strcpy`/`sprintf` family to a tree-wide zero and deleted `NewStr` with it.
 
-**Ready tasks exist**, and `--next` will name them — but as of 2026-08-06 they
-are all in ONE plan. `input-native-events` has no ready node left: twelve of its
-thirteen are done and the thirteenth is an owner Garden run, so `--next` reports
-nothing for it. Everything schedulable is in `network-transport`, which has not
-started. Work outside the open plans still needs a plan written for it before
+**Ready tasks exist**, and `--next` will name them — as of late 2026-08-06 they
+are all in ONE plan again, and it is `landscape-index-safety`, which has not
+started. `input-native-events` and `network-transport` each have every code node
+done and one owner Garden run left, so `--next` schedules nothing for either.
+An earlier revision of this paragraph said everything schedulable was in
+`network-transport`; its T1–T11 have since landed and gone CI-green at
+`5da1e86`. Work outside the open plans still needs a plan written for it before
 code is written — see *How work is broken down* below and
 [`docs/TASK_DAG.md`](docs/TASK_DAG.md). What the closed plans left behind, each
 recorded and still unowned: the three raw-ownership survivors above, the unswept
@@ -821,10 +825,10 @@ The tree is namespaced; that is its own section, [above](#namespaces).
 **Migration stage 5 is finished**, and the scheduling problem the batch files
 exist to solve went with the last of those plans. It came back on 2026-08-06 and
 has largely gone again: of the three plans opened that day, `sound-xaudio2`
-closed at 11 of 11, `input-native-events` is at 12 of 13 with only its owner gate
-left, and `network-transport` has 12 tasks none of which has started. So there is
-no collision to schedule around today — one plan is open for work and nothing
-else is touching those files. `check_task_dag.py --next` answers what to
+closed at 11 of 11, and `input-native-events` and `network-transport` are each
+complete in code with only their owner gates left. So there is
+no collision to schedule around today — `landscape-index-safety` is the one
+plan open for code work, and nothing else is touching its files. `check_task_dag.py --next` answers what to
 schedule rather than any of the batch files, which describe the eleven that
 closed. **Two nodes are gated on the owner rather than on code**, and both are
 Garden runs: `sound-xaudio2` T11 is discharged, `input-native-events` T12 is
@@ -939,6 +943,44 @@ Real, currently true, and worth knowing before you trip over them:
   going away. They are gone, and `SoundLibraryXAudio2` sizes its channel vector
   from `GetNumMainChannels()` so the callback can only ever be handed an index
   the array holds.
+- **THE LANDSCAPE CONTAINERS DO 16-BIT INDEX ARITHMETIC, AND THREE DEFECTS ARE
+  REACHABLE AT SIZES TODAY'S TOOLS ALREADY PERMIT.** Found 2026-08-06 while
+  scoping [`tasks/_large-location-prompt.md`](tasks/_large-location-prompt.md);
+  [`tasks/landscape-index-safety.yaml`](tasks/landscape-index-safety.yaml) owns
+  the fixes, none started. The common root: `Array2D` stores its dimensions as
+  `unsigned short` (`NeuronCore/2dArray.h:28-29`) while the editor's landscape
+  controls permit `worldSizeX/Z` up to 1e6 and `cellSize` down to 1.0
+  (`GameLogic/LandscapeWindow.cpp:407-409`), and `LevelFile` parses both with
+  `atoi` and no validation (`LevelFile.cpp:503-507`).
+  - **Construction is undefined behaviour past 65,535 cells.** `SurfaceMap2D`'s
+    constructor and `Initialise` pass `ceilf(worldSize / cellSize)` — a float —
+    straight into `Array2D(unsigned short, ...)`
+    (`NeuronClient/2dSurfaceMap.h:70, 98`). A float-to-unsigned-short
+    conversion out of range is UB, not modulo, and the editor reaches it
+    without touching `cellSize`: worldSize 1e6 at the default cell size 12 is
+    83,334 cells.
+  - **`MergeTileIntoLandscape` cannot terminate on a big tile.** Its loop
+    counters are `unsigned short` compared against an `int` cell count
+    (`GameLogic/Landscape.cpp:364-390`); a tile spanning ≥ 65,536 world cells
+    wraps 65,535 → 0 forever. Not reachable through the tile-size control
+    (capped at 10,000, `LandscapeWindow.cpp:160`), but `m_size` is `atoi` with
+    no cap in a level file (`LevelFile.cpp:557`) and the scale button
+    multiplies tile sizes without bound (`LandscapeWindow.cpp:290-330`).
+  - **Out-of-range lookups alias cell zero.** `GetValue` wraps any index at or
+    past the far edge to 0 rather than clamping
+    (`NeuronClient/2dSurfaceMap.h:125-128`; the `XMFLOAT3` specialisation
+    copies the same clamps at 183–190), so a query in the outermost cell
+    blends the far edge with the NEAR edge — and entities clamped to
+    `GetWorldSizeX/Z()` (`Entity.cpp:426-435`) sit exactly on that boundary.
+    Silent today because map edges are water; a live client-dependent wrong
+    answer the moment terrain residency becomes partial, which is why the
+    large-location prompt names it under *the determinism trap*. Fixing it
+    changes edge heights and normals — a version-skew-only sync cost of the
+    `determinism` T5 shape, recorded on the owning task (T4).
+  - A fourth, smaller, found in the same read and folded into the same plan:
+    `GetHighestValue`'s inner loop bounds `x` on `m_numRows` rather than
+    `m_numColumns` (`2dSurfaceMap.h:236`). Every map in the tree is square, so
+    nothing has ever hit it.
 - **THERE ARE TWO RANDOM STREAMS, AND THE DOCUMENTATION SAID THERE WAS ONE.**
   This is the correction that retired the two determinism bullets that used to
   stand here, and it is the thing to know before reading any RNG call in this
