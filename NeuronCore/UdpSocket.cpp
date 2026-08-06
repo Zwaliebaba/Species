@@ -14,8 +14,8 @@ namespace Neuron
     // Winsock's errors are ints from WSAGetLastError. Wrapping them in
     // system_category is what lets a caller print one, compare it against
     // std::errc, or propagate it without every layer above knowing it came from
-    // Winsock — which is the point, because T7 replaces this class with an
-    // interface that has other implementations.
+    // Winsock — which is the point, because T7 puts this class behind an
+    // abstract base that has other implementations.
     std::error_code LastError() { return std::error_code(WSAGetLastError(), std::system_category()); }
   } // namespace
 

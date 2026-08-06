@@ -60,7 +60,7 @@ namespace Neuron
   //
   // It stays one socket at any client count. IOCP and RIO earn their complexity
   // at thousands of sockets; a UDP game server is one socket talking to
-  // everybody, and ITransport (T7) is where a different implementation would
+  // everybody, and Transport (T7) is where a different implementation would
   // slot in without the protocol noticing.
   class UdpSocket
   {

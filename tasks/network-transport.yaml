@@ -47,7 +47,7 @@ summary: >
   Deliberate design calls, so nobody relitigates them mid-task: the transport
   stays a SINGLE non-blocking socket polled from the tick - IOCP/RIO earn their
   complexity at thousands of sockets and a UDP game server is one socket at any
-  client count; ITransport is the seam where a fancier implementation would
+  client count; Transport is the seam where a fancier implementation would
   slot in later with zero protocol change. Single player STAYS real UDP over
   loopback (recorded stance, NeuronServer/Server.h:55); the loopback transport
   introduced here is a TEST seam, not a runtime shortcut. Payload encodings
@@ -502,7 +502,7 @@ tasks:
       confirm or refute.
 
   - id: T7
-    title: Put ITransport behind the endpoints and test the protocol end to end
+    title: Put Transport behind the endpoints and test the protocol end to end
     intent: >
       The protocol has never once been exercised by CI - the tests cover
       encodings, not conversations. A two-method transport interface with a
@@ -528,7 +528,7 @@ tasks:
       - Tests/NeuronServerTests/NeuronServerTests.vcxproj
       - Tests/NeuronServerTests/NeuronServerTests.vcxproj.filters
     acceptance:
-      - Server and ClientToServer send and receive through ITransport; the game injects UdpTransport, so runtime behaviour is unchanged and single player still runs real loopback UDP
+      - Server and ClientToServer send and receive through Transport; the game injects UdpTransport, so runtime behaviour is unchanged and single player still runs real loopback UDP
       - ServerProtocolTests drives a scripted client over LoopbackTransport - join produces HelloClient, RequestTeam produces TeamAssign, updates come back sequenced, an unacked letter is retransmitted, an acked one is not
       - The new test file is in the vcxproj (check_project_files is the guard) and runs in CI
     verify:
