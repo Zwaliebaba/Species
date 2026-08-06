@@ -20,10 +20,17 @@ summary: >
 
   This plan is the minimal today-fix: guard rails that make the overflows loud
   and the edge lookups sane at the sizes the current types can express. It is
-  NOT the index-widening decision - whether Array2D grows past unsigned short,
-  and what (worldSize, cellSize) envelope the editor should permit, belong to
-  the 65,536x65,536 Location design (tasks/_large-location-prompt.md, area A
-  and open question 7), which this plan must not pre-empt.
+  NOT the index-widening decision - that design has since been written
+  (docs/LARGE_LOCATION.md, 2026-08-06) and decided AGAINST widening: chunking
+  makes whole-world addressing unnecessary, and this plan's T2 check becomes
+  the enforcement that nothing regresses. This plan is that design's
+  milestone M0 and lands first.
+
+  Ordering note (LARGE_LOCATION D13): the design's M1 moves 2dSurfaceMap.h
+  from NeuronClient down to NeuronCore. This plan precedes M1, so the
+  NeuronClient paths declared below are correct at execution time - but if
+  any task here is somehow run after M1, ls the paths first; docs/TASK_DAG.md
+  warns that declared paths are not checked against the disk.
 
 tasks:
   - id: T1

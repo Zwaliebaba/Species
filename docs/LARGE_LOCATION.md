@@ -21,10 +21,11 @@ leans on its questions, not on answers it does not have.
 
 ## Decisions already made
 
-Dated, owned, and not reopened by this document. The first four were taken
-when the prompt was written; the last four were put to the owner during this
-session (Step 5 of the prompt, asked before finalising) and answered
-2026-08-06.
+Dated, owned, and not reopened by this document. D1–D4 were taken when the
+prompt was written; D5–D8 were put to the owner during the design session
+(Step 5 of the prompt, asked before finalising); D9–D15 resolved the
+document's seven open questions in a follow-up the same day. **No question in
+this design remains open.**
 
 | # | Decision | Owner, date |
 |---|---|---|
@@ -36,6 +37,13 @@ session (Step 5 of the prompt, asked before finalising) and answered
 | D6 | **Terrain becomes procedural**: heights are a pure function of `(worldSeed, chunkCoord)`. The diamond-square tile list is retired for the large map; authored maps keep it (D7). | Owner, 2026-08-06 |
 | D7 | **The twelve authored maps are unchanged, alongside.** They keep their sizes and their load path; the large Location is additive. The Garden seven-step smoke test stays valid throughout this work. | Owner, 2026-08-06 |
 | D8 | **The far plane stays 15,000; no horizon renderer.** Distant terrain is fog, as today. Resident set is bounded by view distance, not world size. | Owner, 2026-08-06 |
+| D9 | **Work proceeds on arithmetic; the Garden baseline is captured later** — before M2, the first milestone with a new map to measure against. Until then the bar's numbers are estimates by declaration, not omission. | Owner, 2026-08-06 |
+| D10 | **Population is biome-clumped** at the D5 total: nests and settlements keyed off the terrain octaves, empty plains between. Activation worst case is the largest clump, clamped by the generation layer. | Owner, 2026-08-06 |
+| D11 | **Water and clouds recentre on the camera** at their constant vertex counts; wave phase keys to world position so recentring is invisible. Nothing beyond the fog line buys polygons. | Owner, 2026-08-06 |
+| D12 | **The large map uses `cellSize` 16** — chunk-exact, 32×32 chunks of 128×128 cells, within the 10.66–21.17 range authored maps already use. This is the accepted reading of D1. | Owner, 2026-08-06 |
+| D13 | **`2dSurfaceMap.h` moves down to `NeuronCore`**, beside `2dArray.h`. Downward, legal, lands in M1; what lets a headless server hold terrain later. | Owner, 2026-08-06 |
+| D14 | **`SpiritReceiver`'s spawn scatter is scoped to the receiver's region**, accepting the version-skew-only `syncrand` sequence shift — the `determinism` T5 cost shape, to be recorded in `AGENTS.md` when it lands as T5's was. | Owner, 2026-08-06 |
+| D15 | **No external dependency enters.** Noise is hand-rolled integer hashing; the sparse grid is standard-library; there is no store because the world regenerates. The tree keeps its one header-only dependency. | Owner, 2026-08-06 |
 
 Decisions recorded in the tree that this design builds on: deterministic
 lockstep is to be replaced *eventually* but governs everything here
@@ -303,15 +311,14 @@ the chunk record, and it is the seam the open world's int64 design later
 widens — int64 world → chunk id + local offset is the same shape
 (`_openworld-prompt.md` area A), so nothing here is thrown away.
 
-**Chunk-aligned cell size.** 65,536/12 = 5,461.3 samples — ragged against any
-power-of-two chunk. **Recommend `cellSize` 16 for the large map**: 4,096
-samples per axis = 32×32 chunks of exactly 128×128 cells (129² samples with
-the shared border row), chunk edge 2,048 world units, integers throughout.
-16 sits inside the 10.66–21.17 range the authored maps already use
-(`MapGenerator.txt` uses 20), which is this design's reading of D1's "today's
-cell size"; it is 33% coarser than the 12 default, and that reading is put to
-the owner as **open question Q4** rather than assumed silently. Fallback if
-vetoed: `cellSize` 12.8 → 5,120 samples, 40×40 chunks of 128.
+**Chunk-aligned cell size — decided, D12.** 65,536/12 = 5,461.3 samples —
+ragged against any power-of-two chunk. **The large map uses `cellSize` 16**:
+4,096 samples per axis = 32×32 chunks of exactly 128×128 cells (129² samples
+with the shared border row), chunk edge 2,048 world units, integers
+throughout. 16 sits inside the 10.66–21.17 range the authored maps already
+use (`MapGenerator.txt` uses 20); the owner accepted this as the reading of
+D1's "today's cell size" on 2026-08-06. (The declined alternative, kept for
+the record: `cellSize` 12.8 → 5,120 samples, 40×40 chunks of 128.)
 
 **Consequences.** No signature in `GameLogic` changes type; the envelope the
 types can express is enforced at construction; the editor's `cellSize`/
@@ -348,14 +355,15 @@ constant** — the camera window on the client, the active-region set for
 simulation, both expressed against the same interface, because the open
 world will hand this seam a third policy (interest management, its area F).
 
-**Layering.** The chunk record needs heights on a headless server eventually;
-`SurfaceMap2D` lives in `NeuronClient` today (`NeuronClient/2dSurfaceMap.h`).
-**Recommendation: move `2dSurfaceMap.h` down to `NeuronCore`** beside
-`2dArray.h` — it includes only `2dArray.h` and `NeuronMath.h`
-(`2dSurfaceMap.h:1-10`), both already in `NeuronCore`, so the move is
-downward, legal, and small; the chunk record itself lives in `GameLogic`.
-This is the one project-file/topology-adjacent change in the design and is
-flagged to the owner (Q5) per the ask-first rule in `AGENTS.md`.
+**Layering — decided, D13.** The chunk record needs heights on a headless
+server eventually; `SurfaceMap2D` lives in `NeuronClient` today
+(`NeuronClient/2dSurfaceMap.h`). **`2dSurfaceMap.h` moves down to
+`NeuronCore`** beside `2dArray.h` — it includes only `2dArray.h` and
+`NeuronMath.h` (`2dSurfaceMap.h:1-10`), both already in `NeuronCore`, so the
+move is downward, legal, and small; the chunk record itself lives in
+`GameLogic`. This was the one project-file/topology-adjacent change in the
+design; the owner approved it on 2026-08-06 per the ask-first rule in
+`AGENTS.md`, and it lands in M1.
 
 **What stays whole-world:** teams, lights, water, clouds, sky, fog — the
 environment layer, none of which scales with area (§1.1, water/clouds rows).
@@ -448,11 +456,12 @@ draw calls without noticing (assertion the owner's frame-time measurement
 either confirms or kills — it is the first number to look at if the bar
 fails). The strip builder is reused per chunk verbatim (below-water skip
 included); `m_landscapeColour` sampling and UV generation take chunk-local
-offsets. Water: constant-count grid already (§1.1); recentre its 200×200
-grid on the camera instead of the world and its polygon budget is unchanged
-while tessellation stays at Garden density near the viewer — the visual
-change distant water would have shown is behind fog (D8). Clouds: already
-fixed-extent; anchor to camera like water. Camera pan speed
+offsets. Water — decided, D11: constant-count grid already (§1.1); its
+200×200 grid recentres on the camera instead of the world, wave phase keyed
+to world position so the recentring is invisible; polygon budget unchanged,
+tessellation at Garden density near the viewer, and the visual change
+distant water would have shown is behind fog (D8). Clouds: already
+fixed-extent; anchored to camera the same way. Camera pan speed
 (`Camera.cpp:87-89`): stop deriving from world size — 65,536/30 ≈ 2,185
 units/s is unusable near ground; clamp to the largest authored-map speed and
 make faster travel an explicit control, not a formula surprise.
@@ -474,9 +483,10 @@ D5 moved from the open world's plate onto this milestone's.
 - **Generated:** a population layer of the §C function — per chunk,
   `(worldSeed, chunkCoord, 'population')` yields deterministic spawn groups
   (species, counts, positions), biome-keyed by the terrain octaves.
-  Replaces `InstantUnits` for the large map. Density calibration is put to
-  the owner (Q2) — pro-rata-uniform is the stated assumption, biome-clumped
-  the recommendation.
+  Replaces `InstantUnits` for the large map. Shape decided, D10:
+  **biome-clumped** at the D5 total — nests and settlements where the
+  octaves say so, empty plains between, and the worst-case activation cost
+  is the largest clump, which the generation layer clamps.
 - **Ledgered:** dormant population is *data* in a per-chunk ledger (counts,
   species, coarse positions), not entities in slot maps. It costs no
   Advance, no grid cells, no sync-sum entries.
@@ -504,13 +514,13 @@ D5 moved from the open world's plate onto this milestone's.
   bounded again — plus a cheap ledger checksum folded in per modified
   chunk, so dormant divergence (impossible by construction, but the check
   exists to catch bugs) is still caught.
-- **`SpiritReceiver`'s `syncfrand(worldSize)`** (§1.1): unchanged code, but
-  its meaning at 65,536 — spirits scattered anywhere on the map — is almost
-  certainly not the wanted behaviour and the draws advance the lockstep
-  stream. Recommendation: scope the spawn to the receiver's active region;
-  this changes the `syncrand` sequence, the same accepted, recorded cost as
-  `determinism` T5 (version-skew only). Flagged as its own decision record
-  for the plan, not smuggled in.
+- **`SpiritReceiver`'s `syncfrand(worldSize)`** (§1.1) — decided, D14: the
+  spawn is scoped to the receiver's region. The draws advance the lockstep
+  stream, so this shifts the `syncrand` sequence — the same accepted,
+  recorded cost as `determinism` T5 (version-skew only; protocol v2 already
+  refuses old builds). On the authored maps the region spans most of the
+  map, so behaviour there barely moves. To be recorded in `AGENTS.md` when
+  it lands, as T5's shift was.
 
 **Decision record — D4 re-argued, as the prompt requires.** Analysis
 confirms: terrain, renderer, editor and both grids cost the same in any
@@ -549,8 +559,8 @@ is done per-sample any more, which is what kills `ScaleLandscapeButton`'s
 cost model — for the large map that button and the per-tile windows simply
 do not apply (they remain for authored maps, D7). Validation: the
 `worldSize`/`cellSize` controls get the same envelope check as construction
-(`landscape-index-safety` T2), closing Q7 of the prompt at the container
-boundary. `LevelFile::Save` for the large map writes the parameter block —
+(`landscape-index-safety` T2), closing the prompt's cell-size-envelope
+question (its open question 7) at the container boundary. `LevelFile::Save` for the large map writes the parameter block —
 kilobytes, text, exactly the current format's shape.
 
 ## H. The migration path
@@ -564,7 +574,7 @@ phasing adds no third.
 |---|---|---|---|---|
 | M0 | `landscape-index-safety` lands (plan exists, 0/4) | The container limits are loud; edge lookups sane | Everything else | Garden 7 steps (regression only) |
 | M1 | Terrain storage chunked *behind today's sizes*: heightmap/normals as chunk blocks, per-chunk renderer, `SurfaceMap2D` moved to `NeuronCore`; **all twelve authored maps unchanged in behaviour** | The chunk seam and per-chunk rendering, against known content | Generation (tiles still merge into chunk blocks); residency (all chunks resident) | Garden 7 steps — landscape visually identical; renderer chunk count > 1 |
-| M2 | The generation function + the large map loads **empty**: chunked residency live, camera window streaming, editor parameter mode | Purity, borders, streaming, the bar's memory/load numbers | Population (none yet); water/cloud recentring may land here or M3 | New: enter the 65,536² map, fly the camera for minutes, `GroundHeight` everywhere, no assert; Garden 7 steps unchanged |
+| M2 | The generation function + the large map loads **empty**: chunked residency live, camera window streaming, editor parameter mode | Purity, borders, streaming, the bar's memory/load numbers | Population (none yet); water/cloud recentring may land here or M3 | New: enter the 65,536² map, fly the camera for minutes, `GroundHeight` everywhere, no assert; Garden 7 steps unchanged. **The D9 Garden baseline is captured at this gate**, and the bar's numbers become falsifiable here |
 | M3 | Population: generation layer, ledger, region activation, sparse `EntityGrid`, per-chunk `ObstructionGrid` | D5 at the bar; lockstep holds with materialisation on | Stable ids (slot identity retained, §F); persistence (none, as today) | New: enter, find generated Citizens/Virii at deterministic spots, watch 30 s of behaviour, sync assert quiet; Garden 7 steps unchanged |
 | M4 | Editor at scale: overview, resident-window regen, envelope validation | D3's editor half | — | Owner authors a seed/biome change and plays it |
 
@@ -603,10 +613,12 @@ arithmetic above; the mechanism stands even where a constant moves):
 **How each is measured, and by whom.** Nothing in CI can measure any of
 them — CI builds x64 Debug and runs the unit suite; it does not launch the
 client (`AGENTS.md`). All four are owner measurements on Windows. **The
-Garden baseline must be captured first** (Q1): frame time at the standard
-camera, peak working set, and stopwatch load, on a current build — those
-three numbers are what makes this design falsifiable, and they do not exist
-today.
+Garden baseline — frame time at the standard camera, peak working set, and
+stopwatch load on a current build — does not exist yet, and the owner
+decided (D9) that work proceeds on arithmetic with the baseline captured
+before M2**, the first milestone that produces a new map to measure against.
+Until it exists, every number in this table is an estimate by declaration,
+and M2's gate includes capturing it.
 
 **"No regression" is not "no cost".** Streaming introduces artefacts a
 frame-time average hides, named so they are looked for: chunk pop at the
@@ -646,24 +658,28 @@ land fraction; "resident" = camera window (B) + active regions (F).
 | Load-time terrain work | 35 K samples | 29.8 M samples | ~4.3 M (window) |
 | Editor regen per change | whole map | whole map ×844 | resident window |
 
-# Open questions
+# Open questions — all resolved
 
-Asked of the owner with recommendations beside them (D5–D8 were already
-asked and answered this session; these remain):
+The document went to the owner with seven open questions on 2026-08-06 and
+all seven were answered the same day. Each is now a decision record in the
+table at the top; this table is kept as the record of what was asked and
+what was chosen.
 
-| # | Question | Recommendation |
-|---|---|---|
-| Q1 | **Garden baseline**: frame time (standard camera), peak working set, stopwatch load — measured on your machine, current build. Nothing above is falsifiable until these exist. | Capture before M1 lands |
-| Q2 | **Population shape**: pro-rata uniform, or biome-clumped (dense nests, empty plains) at the same total? | Biome-clumped — same D5 total, better gameplay and better worst-case activation cost |
-| Q3 | **Water/cloud fidelity**: recentring on the camera keeps near-water at Garden tessellation (E); accept unchanged distant water behind fog? | Accept |
-| Q4 | **`cellSize` 16 for the large map** (chunk-exact, within the authored 10.66–21.17 range) — acceptable reading of D1, or hold 12 (then 12.8/40-chunk layout)? | 16 |
-| Q5 | **Move `2dSurfaceMap.h` to `NeuronCore`** (downward, no new dependency; build-topology-adjacent so asked, not assumed) | Yes |
-| Q6 | **`SpiritReceiver` spawn scope** at world size (F) — accept the `syncrand`-sequence shift of scoping it to the active region? | Yes; record like `determinism` T5 |
-| Q7 | **Dependency posture**: everything above is hand-rolled on OS + DirectXMath — confirm no storage/noise library enters. | Confirm none |
+| # | Question | Answer | Decision |
+|---|---|---|---|
+| Q1 | **Garden baseline** — when are the three numbers captured? | Proceed on arithmetic; capture before M2 | D9 |
+| Q2 | **Population shape** at the D5 total | Biome-clumped | D10 |
+| Q3 | **Water/cloud fidelity** — accept camera-recentred constant-count grids? | Accept | D11 |
+| Q4 | **`cellSize` 16** as the reading of D1? | Yes | D12 |
+| Q5 | **Move `2dSurfaceMap.h` to `NeuronCore`?** | Yes, in M1 | D13 |
+| Q6 | **Scope `SpiritReceiver`'s spawn**, accepting the `syncrand` shift? | Yes; record like `determinism` T5 | D14 |
+| Q7 | **Dependency posture** — nothing external? | Confirmed, nothing | D15 |
 
 ---
 
 *Analysis before design; argument before conclusion; the numbers are
-arithmetic until Q1 makes them falsifiable. A reader with `AGENTS.md` and
-this document has the whole design, the eight decisions it stands on, and
-the seven questions still open.*
+arithmetic until D9's baseline capture makes them falsifiable at M2. A
+reader with `AGENTS.md` and this document has the whole design and the
+fifteen decisions it stands on; no question remains open, and the next
+artefact is the task DAG written from Part 2's milestones per
+`docs/TASK_DAG.md`.*
