@@ -1,12 +1,4 @@
 #include "pch.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <ctype.h>
-#include <string.h>
-
-#include "Debug.h"
 #include "Preferences.h"
 
 PrefsManager* g_prefsManager = nullptr;
@@ -185,11 +177,7 @@ int GetDefaultHelpEnabled() { return 1; }
 
 const char* GetDefaultSoundLibrary()
 {
-#ifdef HAVE_DSOUND
-  return "dsound";
-#else
-  return "software";
-#endif
+  return "xaudio2";
 }
 
 int GetDefaultSoundDSP() { return 1; }
