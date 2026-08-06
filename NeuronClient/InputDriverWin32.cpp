@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include <algorithm>
 #include <windows.h>
 #include <string>
 
@@ -9,6 +10,7 @@
 #include "ControlBindings.h"
 #include "Win32EventHandler.h"
 #include "InputDriverWin32.h"
+#include "InputRouter.h"
 #include "KeyNames.h"
 
 #include "WindowManager.h"
@@ -88,10 +90,10 @@ namespace Neuron
     DEBUG_ASSERT(0 <= button && button < KEY_MAX);
     details.type = InputType::INPUT_TYPE_BOOL;
 
-    // The UI took this one. See m_textConsumedKeys — the state underneath is
+    // The UI took this one. See m_consumedKeys — the state underneath is
     // untouched and still says what the keyboard is doing; this is the read
     // being answered as though the key were not there.
-    if (m_textConsumedKeys[button])
+    if (m_consumedKeys[button])
       return false;
 
     // spec.condition is a driver-defined int; this driver reads it as an
@@ -140,12 +142,23 @@ namespace Neuron
 
     if (button >= 0)
     {
+      // A CONSUMED BUTTON HIDES ITS EDGES AND NOT ITS HELD STATE, which is the
+      // one place this mask is narrower than the key mask, and deliberately.
+      // What the UI consumes is a CLICK, and a click is an edge — while UI code
+      // itself still polls `mouse left pressed` to know the button is down over
+      // it. EclipseLMousePressed is read that way by the landscape editor, the
+      // input scrollers and the profile window, and blanking it would break
+      // every one of them. It matches the suppression this replaces:
+      // suppressEvent named ControlEclipseLMouseDown alone and left
+      // ControlEclipseLMousePressed answering.
+      const bool consumed = m_consumedButtons[button];
+
       switch (static_cast<InputCondition>(spec.condition))
       {
       case InputCondition::COND_DOWN:
-        return (m_state.m_mbDeltas[button] == 1);
+        return !consumed && (m_state.m_mbDeltas[button] == 1);
       case InputCondition::COND_UP:
-        return (m_state.m_mbDeltas[button] == -1);
+        return !consumed && (m_state.m_mbDeltas[button] == -1);
       case InputCondition::COND_PRESSED:
         return (m_state.m_mb[button]);
       default:
@@ -259,7 +272,16 @@ namespace Neuron
     // would report travel from the position this call just overwrote.
     if (!UsingRawMouseMovement())
     {
-      std::erase_if(m_events, [](InputEvent const& _event) { return _event.m_type == InputEventType::MouseMove; });
+      // ONLY WHAT IS STILL QUEUED, never the events the current frame has
+      // already derived: those are waiting for DispatchEvents to walk them, and
+      // erasing from under it would shift the window it walks. The first
+      // m_frameEventCount entries are the frame's, and they are past being a
+      // warp's problem anyway — the phantom travel this suppresses is in the
+      // messages that have NOT been read yet.
+      const auto queued = m_events.begin() + static_cast<std::ptrdiff_t>(m_frameEventCount);
+      m_events.erase(std::remove_if(queued, m_events.end(), [](InputEvent const& _event) { return _event.m_type == InputEventType::MouseMove; }),
+                     m_events.end());
+
       m_state.m_mouseVel[X] = 0;
       m_state.m_mouseVel[Y] = 0;
     }
@@ -312,14 +334,19 @@ namespace Neuron
 
   void W32InputDriver::Advance()
   {
-    // A key the text field took stays taken until it comes back up. This runs
+    // A control the UI took stays taken until it comes back up. This runs
     // BEFORE the derivation, so it reads the PREVIOUS frame's held state: a key
     // released last frame had its up edge suppressed last frame, and clearing
     // the mark now is the first moment at which nothing is left to hide.
     for (int key = 0; key < KEY_MAX; ++key)
     {
-      if (m_textConsumedKeys[key] && m_state.m_keys[key] == 0)
-        m_textConsumedKeys[key] = false;
+      if (m_consumedKeys[key] && m_state.m_keys[key] == 0)
+        m_consumedKeys[key] = false;
+    }
+    for (int button = 0; button < NUM_MB; ++button)
+    {
+      if (m_consumedButtons[button] && !m_state.m_mb[button])
+        m_consumedButtons[button] = false;
     }
 
     // Pump first, so everything Windows has for us is in the queue, then
@@ -327,52 +354,24 @@ namespace Neuron
     // and is the first thing the next frame sees.
     PollForEvents();
 
-    // The modifier state BEFORE the frame is derived, because
-    // ApplyConsumedEventSideEffects has to report what the modifiers were at
-    // each event rather than what they ended up as. Reading m_state afterwards
-    // would give every keystroke in the frame the same, final, answer.
-    const ModifierState modifiersAtFrameStart{m_state.m_keys[KEY_SHIFT] == 1, m_state.m_keys[KEY_CONTROL] == 1, m_state.m_keys[KEY_ALT] == 1};
+    m_frameEventCount = DeriveFrameState(m_events.data(), m_events.size(), m_state);
+    ApplyConsumedEventSideEffects(m_frameEventCount);
 
-    const size_t consumed = DeriveFrameState(m_events.data(), m_events.size(), m_state);
-    ApplyConsumedEventSideEffects(consumed, modifiersAtFrameStart);
-    m_events.erase(m_events.begin(), m_events.begin() + static_cast<std::ptrdiff_t>(consumed));
+    // THE EVENTS ARE NOT ERASED HERE ANY MORE. DispatchEvents still has to walk
+    // them, and it runs later in the frame — after the cursor has moved — so
+    // they are held until then. See DispatchEvents.
   }
 
 
-  // The two things a consumed event does BESIDES change the state. They are
-  // here rather than in DeriveFrameState because that function is pure -- it is
-  // what the tests exercise -- and because both of these reach outside the
-  // driver entirely.
-  void W32InputDriver::ApplyConsumedEventSideEffects(size_t _consumed, ModifierState _modifiers)
+  // The side effects a consumed event has on the WINDOW rather than on the
+  // game: mouse capture, and nothing else since the Eclipse calls moved to the
+  // router's sink. Separate from DeriveFrameState so that stays pure and
+  // testable.
+  void W32InputDriver::ApplyConsumedEventSideEffects(size_t _consumed)
   {
-    // Which key produced the character that is about to arrive. Windows sends
-    // WM_CHAR from TranslateMessage on the WM_KEYDOWN before it, so the most
-    // recent key down in this walk IS the one — and it is the key the mark has
-    // to land on, because a character carries no key code of its own.
-    int lastKeyDown = -1;
-
     for (size_t i = 0; i < _consumed; ++i)
     {
-      InputEvent const& event = m_events[i];
-
-      // Tracked as the walk goes, so shift-then-letter inside one frame
-      // reports the letter as shifted and the letter-then-shift case does not.
-      if (event.m_type == InputEventType::KeyDown || event.m_type == InputEventType::KeyUp)
-      {
-        const bool down = (event.m_type == InputEventType::KeyDown);
-        if (event.m_key == KEY_SHIFT)
-          _modifiers.m_shift = down;
-        else if (event.m_key == KEY_CONTROL)
-          _modifiers.m_control = down;
-        else if (event.m_key == KEY_ALT)
-          _modifiers.m_alt = down;
-      }
-      else if (event.m_type == InputEventType::FocusLost)
-      {
-        _modifiers = ModifierState{};
-      }
-
-      switch (event.m_type)
+      switch (m_events[i].m_type)
       {
       case InputEventType::MouseButtonDown:
         // Capture at frame time rather than message time costs nothing: this
@@ -385,33 +384,69 @@ namespace Neuron
         g_windowManager->UncaptureMouse();
         break;
 
-      case InputEventType::KeyDown:
-        if (event.m_key >= 0 && event.m_key < KEY_MAX)
-          lastKeyDown = event.m_key;
-
-        // Eclipse's keyboard hook, with the modifier state AS OF THIS EVENT,
-        // which is why it is called from the loop rather than once afterwards.
-        //
-        // NOT for a system key: the old window procedure hooked WM_KEYDOWN and
-        // not WM_SYSKEYDOWN, so Eclipse has never been told about Alt+anything
-        // and this is not the task that changes that.
-        if (!event.m_systemKey)
-          EclUpdateKeyboard(event.m_key, _modifiers.m_shift, _modifiers.m_control, _modifiers.m_alt);
-        break;
-
-      case InputEventType::Char:
-        // IN EVENT ORDER, not batched at the end of the frame, and that is the
-        // whole reason characters are dispatched from here rather than off a
-        // per-frame list. Typing "ab" and pressing enter inside one frame has to
-        // append both letters BEFORE the enter reaches EclUpdateKeyboard and
-        // commits the field; the other order commits an empty name.
-        if (EclUpdateChar(event.m_char) && lastKeyDown >= 0)
-          m_textConsumedKeys[lastKeyDown] = true;
-        break;
-
       default:
         break;
       }
+    }
+  }
+
+
+  // THE UI GETS FIRST REFUSAL, and what it takes is then invisible to the
+  // bindings for as long as the control is held. This is the whole of the
+  // consume semantics: everything that used to be suppressEvent, the
+  // AdvanceMenus poll-and-push, and T6's text capture is now this one loop.
+  void W32InputDriver::DispatchEvents(InputRouter const& _router)
+  {
+    // Which key produced the character that is about to arrive. Windows sends
+    // WM_CHAR from TranslateMessage on the WM_KEYDOWN before it, so the most
+    // recent key down in this walk IS the one — and it is the key the mark has
+    // to land on, because a character carries no key code of its own.
+    int lastKeyDown = -1;
+
+    for (size_t i = 0; i < m_frameEventCount; ++i)
+    {
+      InputEvent const& event = m_events[i];
+
+      if (event.m_type == InputEventType::KeyDown && event.m_key >= 0 && event.m_key < KEY_MAX)
+        lastKeyDown = event.m_key;
+
+      if (_router.Dispatch(event) == EventDisposition::Consumed)
+        MarkConsumed(event, lastKeyDown);
+    }
+
+    m_events.erase(m_events.begin(), m_events.begin() + static_cast<std::ptrdiff_t>(m_frameEventCount));
+    m_frameEventCount = 0;
+  }
+
+
+  void W32InputDriver::MarkConsumed(InputEvent const& _event, int _lastKeyDown)
+  {
+    switch (_event.m_type)
+    {
+    case InputEventType::KeyDown:
+    case InputEventType::KeyUp:
+      if (_event.m_key >= 0 && _event.m_key < KEY_MAX)
+        m_consumedKeys[_event.m_key] = true;
+      break;
+
+    case InputEventType::Char:
+      // A character carries no key of its own, so the mark lands on the key
+      // that produced it — which is why the walk above tracks the last key
+      // down at all.
+      if (_lastKeyDown >= 0)
+        m_consumedKeys[_lastKeyDown] = true;
+      break;
+
+    case InputEventType::MouseButtonDown:
+    case InputEventType::MouseButtonUp:
+      if (_event.m_button >= 0 && _event.m_button < NUM_MB)
+        m_consumedButtons[_event.m_button] = true;
+      break;
+
+    default:
+      // Movement and the wheel are not consumable: no sink acts on them, and
+      // there is no edge to hide even if one did.
+      break;
     }
   }
 

@@ -16,8 +16,12 @@ namespace Neuron
 
   static int mouseX = 0;
   static int mouseY = 0;
+
+  // Is the left button held? Set by EclMouseDown and EclMouseUp, read by the
+  // drag tick and by EclGetCurrentClickedButton. The `rmb` that used to sit
+  // beside it is GONE: nothing in this file ever assigned it, so the three
+  // right-button arms that tested it were unreachable as well as empty.
   static bool lmb = false;
-  static bool rmb = false;
 
   static int screenW = 0;
   static int screenH = 0;
@@ -46,7 +50,11 @@ namespace Neuron
     screenH = _screenH;
   }
 
-  void EclUpdateMouse(int _mouseX, int _mouseY, bool _lmb, bool _rmb)
+  // THE HOVER AND DRAG TICK. Every branch below is the one EclUpdateMouse ran
+  // when the buttons had not changed, moved here unaltered — what changed is
+  // how it is reached: this is called once a frame with the cursor position,
+  // rather than being one arm of an if-chain over polled booleans.
+  void EclMouseMove(int _mouseX, int _mouseY)
   {
     int oldMouseX = mouseX;
     int oldMouseY = mouseY;
@@ -54,7 +62,7 @@ namespace Neuron
     mouseX = _mouseX;
     mouseY = _mouseY;
 
-    if (!_lmb && !lmb && !_rmb && !rmb) // No buttons changed, mouse move only
+    if (!lmb) // No button held, mouse move only
     {
       EclWindow* currentWindow = EclGetWindow(windowFocus);
       if (currentWindow)
@@ -96,46 +104,7 @@ namespace Neuron
         }
       }
     }
-    else if (_lmb && !lmb) // Left button down
-    {
-      buttonDownMouseX = mouseX;
-      buttonDownMouseY = mouseY;
-
-      EclWindow* currentWindow = EclGetWindow(mouseX, mouseY);
-      if (currentWindow)
-      {
-        windowFocus = currentWindow->m_name;
-        EclBringWindowToFront(currentWindow->m_name);
-        mouseDownWindow = currentWindow->m_name;
-
-        EclButton* button = currentWindow->GetButton(mouseX - currentWindow->m_x, mouseY - currentWindow->m_y);
-        if (button)
-        {
-          currentButton = button->m_name;
-          button->MouseDown();
-        }
-        else
-        {
-          currentButton = "None";
-          currentWindow->MouseEvent(true, false, false, true);
-          if (currentWindow->m_movable)
-          {
-            mouseDownWindowX = mouseX - currentWindow->m_x;
-            mouseDownWindowY = mouseY - currentWindow->m_y;
-          }
-        }
-      }
-      else
-      {
-        if (windowFocus != "None")
-        {
-          windowFocus = "None";
-        }
-      }
-
-      lmb = true;
-    }
-    else if (_lmb && lmb) // Left button dragged
+    else // Left button dragged
     {
       buttonDownMouseX = mouseX;
       buttonDownMouseY = mouseY;
@@ -191,42 +160,92 @@ namespace Neuron
         }
       }
     }
-    else if (!_lmb && lmb) // Left button up
-    {
-      mouseDownWindow = "None";
-      lmb = false;
+  }
 
-      EclWindow* currentWindow = EclGetWindow(buttonDownMouseX, buttonDownMouseY);
-      if (currentWindow)
+
+  bool EclMouseDown(int _mouseX, int _mouseY, bool _rightButton)
+  {
+    mouseX = _mouseX;
+    mouseY = _mouseY;
+
+    // THE RIGHT BUTTON DOES NOTHING HERE, and it never did: EclUpdateMouse's
+    // three right-button arms were all empty, and the `rmb` static they tested
+    // was never assigned anywhere in this file, so every one of them was
+    // unreachable as well as empty. They are gone rather than translated.
+    if (_rightButton)
+      return false;
+
+    buttonDownMouseX = mouseX;
+    buttonDownMouseY = mouseY;
+    lmb = true;
+
+    EclWindow* currentWindow = EclGetWindow(mouseX, mouseY);
+    if (!currentWindow)
+    {
+      windowFocus = "None";
+      return false;
+    }
+
+    windowFocus = currentWindow->m_name;
+    EclBringWindowToFront(currentWindow->m_name);
+    mouseDownWindow = currentWindow->m_name;
+
+    EclButton* button = currentWindow->GetButton(mouseX - currentWindow->m_x, mouseY - currentWindow->m_y);
+    if (button)
+    {
+      currentButton = button->m_name;
+      button->MouseDown();
+    }
+    else
+    {
+      currentButton = "None";
+      currentWindow->MouseEvent(true, false, false, true);
+      if (currentWindow->m_movable)
       {
-        EclButton* button = currentWindow->GetButton(buttonDownMouseX - currentWindow->m_x, buttonDownMouseY - currentWindow->m_y);
-        if (button)
-        {
-          button->MouseUp();
-        }
-        else
-        {
-          currentWindow->MouseEvent(true, false, true, false);
-          EclRemovePopup();
-        }
+        mouseDownWindowX = mouseX - currentWindow->m_x;
+        mouseDownWindowY = mouseY - currentWindow->m_y;
+      }
+    }
+
+    // The click landed in a window. That is the same test UserInput::AdvanceMenus
+    // made before calling suppressEvent, made here instead — where the answer
+    // comes from the code that acted on it rather than from a second lookup
+    // afterwards.
+    return true;
+  }
+
+
+  void EclMouseUp(int _mouseX, int _mouseY, bool _rightButton)
+  {
+    mouseX = _mouseX;
+    mouseY = _mouseY;
+
+    if (_rightButton)
+      return;
+
+    mouseDownWindow = "None";
+    lmb = false;
+
+    // The PRESS position, not this one. Dragging off a button and releasing
+    // still counts as clicking it, which is what the widget toolkit has always
+    // done and is not this task's to change.
+    EclWindow* currentWindow = EclGetWindow(buttonDownMouseX, buttonDownMouseY);
+    if (currentWindow)
+    {
+      EclButton* button = currentWindow->GetButton(buttonDownMouseX - currentWindow->m_x, buttonDownMouseY - currentWindow->m_y);
+      if (button)
+      {
+        button->MouseUp();
       }
       else
       {
+        currentWindow->MouseEvent(true, false, true, false);
         EclRemovePopup();
       }
     }
-
-    if (_rmb && !rmb)
+    else
     {
-      // Right button down
-    }
-    else if (_rmb && rmb)
-    {
-      // Right button dragged
-    }
-    else if (!_rmb && rmb)
-    {
-      // Right button up
+      EclRemovePopup();
     }
   }
 

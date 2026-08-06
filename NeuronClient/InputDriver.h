@@ -21,6 +21,8 @@
 
 namespace Neuron
 {
+  class InputRouter;
+
   enum class InputCondition : int
   {
     COND_DOWN,     // Button was just pushed down
@@ -103,6 +105,17 @@ namespace Neuron
 
       // This triggers a read from the input hardware and does message polling
       virtual void Advance() = 0;
+
+      // Offer this frame's events to the router, and act on what it says was
+      // consumed. Called AFTER every driver has advanced and after the cursor
+      // has been moved, because the UI sink needs the cursor where it is THIS
+      // frame — putting the dispatch inside Advance would hand Eclipse the
+      // previous frame's pointer position and land clicks one frame late.
+      //
+      // Only a driver that produces events has anything to do here. The
+      // combinators derive their answers from other drivers' state and never
+      // see a message, which is why this is not pure virtual.
+      virtual void DispatchEvents(InputRouter const& router);
 
       // Poll for system events that may require immediate, hard-coded action
       // eg. Window minimise or XInput plug pulled may always be required to

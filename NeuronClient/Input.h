@@ -8,6 +8,7 @@
 #include "InputTypes.h"
 #include "InputSpec.h"
 #include "InputDriver.h"
+#include "InputRouter.h"
 #include "ControlTypes.h"
 #include "ControlBindings.h"
 
@@ -20,6 +21,14 @@ namespace Neuron
       std::vector<InputDriver*> drivers;
 
       ControlBindings bindings;
+
+      // EVENTS GO HERE FIRST, AND THE UI IS THE FIRST SINK. See InputRouter.h
+      // for what that replaces. The Eclipse sink is a member rather than
+      // something Species registers, because Eclipse is part of this layer and
+      // the UI-before-game ordering is the design rather than a caller's
+      // choice.
+      InputRouter m_router;
+      EclipseInputSink m_eclipseSink;
 
       bool m_idle;
 
@@ -43,8 +52,11 @@ namespace Neuron
 
       const std::string& controlIcon(ControlType type) const;
 
-      // Suppress an event for this frame
-      void suppressEvent(ControlType type);
+      // suppressEvent IS GONE. It existed so UserInput::AdvanceMenus could
+      // notice, after the fact, that a click it had already read out of the
+      // bindings had really been meant for a window, and take it back for the
+      // rest of the frame. A sink that consumes the event says so before
+      // anything reads it; see InputRouter.h.
 
       // This triggers a read from the input hardware and does message polling
       void Advance();

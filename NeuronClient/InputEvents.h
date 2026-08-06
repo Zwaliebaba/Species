@@ -35,6 +35,15 @@
 
 namespace Neuron
 {
+  // The mouse button indices carried in InputEvent::m_button. The driver has
+  // always had these as three file-scope L, R and M macros; they are named here
+  // so that a reader of an event, in another file, can say which button it is
+  // holding without redefining single letters.
+  constexpr int MouseButtonLeft = 0;
+  constexpr int MouseButtonRight = 1;
+  constexpr int MouseButtonMiddle = 2;
+
+
   enum class InputEventType
   {
     KeyDown,
@@ -73,7 +82,8 @@ namespace Neuron
       // is not a character on any layout but US.
       unsigned int m_char{0};
 
-      // MouseButtonDown, MouseButtonUp. An index into the NUM_MB arrays.
+      // MouseButtonDown, MouseButtonUp. An index into the NUM_MB arrays; see
+      // MouseButtonLeft and friends below.
       int m_button{0};
 
       // MouseMove: client-area pixels, an absolute position.

@@ -473,7 +473,27 @@ void LocationGameLoop()
           }
         }
 
-        if (TheTaskManagerInterface()->m_visible || EclGetWindows()->size() != 0 || chatLog || entityUnderMouse)
+        // THE WINDOW-OPEN TERM IS GONE, replaced by consumption. A click over
+        // an Eclipse window is taken by the UI sink before the bindings ever
+        // see it, so it cannot set a flag in the first place; and the guard at
+        // `if (!WindowsOnScreen()) teamControls.Advance()` above already stops
+        // any flag being set at all while a window is up.
+        //
+        // WHAT THAT TERM STILL DID, measured rather than assumed, because this
+        // is simulation input and the difference is a real one: teamControls
+        // accumulates across every frame of a 100ms IAmAlive period and is
+        // cleared only when the letter is sent. So the term was reaching back
+        // and discarding orders given in the WINDOW-CLOSED frames earlier in
+        // the same period, before the window opened. Those are genuine orders
+        // the player gave with nothing on screen, and they are now sent.
+        // Deliberate, and named here for the smoke test rather than left to be
+        // discovered: open a menu within ~6 frames of ordering a unit and the
+        // order now stands where it used to be dropped.
+        //
+        // The other three terms stay. The task manager is not an Eclipse window
+        // and has no sink, and neither chatLog nor entityUnderMouse is about
+        // the UI at all.
+        if (TheTaskManagerInterface()->m_visible || chatLog || entityUnderMouse)
           teamControls.ClearFlags();
 
         g_app->m_clientToServer->SendIAmAlive(g_globalWorld->m_myTeamId, teamControls);

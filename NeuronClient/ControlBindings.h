@@ -27,9 +27,6 @@ namespace Neuron
       // Hold icon file paths
       std::string icons[Neuron::I(ControlType::NumControlTypes)];
 
-      // Allows us to a control event for the rest of the frame
-      unsigned char suppressed[Neuron::I(ControlType::NumControlTypes)];
-
     public:
       ControlBindings();
 
@@ -61,14 +58,14 @@ namespace Neuron
 
       // bool replacePrimaryBinding( controltype_t type, InputSpec const &spec );
 
-      // Signals a frame change
-      void Advance();
-
-      // Suppress an event until the end of the frame
-      void suppress(ControlType id);
-
-      // Check if an event is suppressed
-      bool isActive(ControlType id) const;
+      // THE SUPPRESSION MECHANISM IS GONE, and with it Advance(), which existed
+      // only to clear it once a frame. suppress() marked one control name dead
+      // for the rest of the frame, and its single caller was
+      // UserInput::AdvanceMenus taking back a click it had already read once it
+      // noticed the click was over a window. A sink that consumes the EVENT
+      // says so before anything reads it, and says it about the input rather
+      // than about one of the control names bound to that input. See
+      // InputRouter.h.
 
       // Remove all bindings
       void Clear();

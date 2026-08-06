@@ -88,6 +88,9 @@ namespace Neuron
   void InputDriver::PollForEvents() {}
 
 
+  void InputDriver::DispatchEvents(InputRouter const& router) {}
+
+
   bool InputDriver::isIdle() { return true; }
 
 

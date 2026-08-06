@@ -709,25 +709,145 @@ tasks:
       - NeuronClient/InputRouter.cpp
       - NeuronClient/Input.h
       - NeuronClient/Input.cpp
+      # The declaration of the entry points that replace EclUpdateMouse. The
+      # list was written from where the SYNTHESIS lives; the signatures live
+      # next door. Added during the work, per docs/TASK_DAG.md.
+      - NeuronClient/Eclipse.h
       - NeuronClient/Eclipse.cpp
+      # The suppression mechanism suppressEvent was a thin wrapper over. With
+      # its only caller gone it is dead, and so is the per-frame Advance() that
+      # existed to clear it.
+      - NeuronClient/ControlBindings.h
+      - NeuronClient/ControlBindings.cpp
+      # The dispatch hook, and the driver that has events to dispatch. The
+      # consumption mask generalises T6's text capture and lives here.
+      - NeuronClient/InputDriver.h
+      - NeuronClient/InputDriver.cpp
+      - NeuronClient/InputDriverWin32.h
+      - NeuronClient/InputDriverWin32.cpp
+      - NeuronClient/InputEvents.h
       - NeuronClient/NeuronClient.vcxproj
       - NeuronClient/NeuronClient.vcxproj.filters
+      - Tests/NeuronClientTests/InputRouterTests.cpp
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj.filters
       - Species/UserInput.cpp
       - Species/Main.cpp
     acceptance:
       - The Eclipse sink receives mouse and key events directly; EclUpdateMouse's boolean-to-event synthesis and the AdvanceMenus polling of ControlEclipse controls are gone
       - suppressEvent is deleted from InputManager (grep zero - two sites today)
-      - The window-open flag-clearing at Species/Main.cpp:501 is replaced by consumption, and the acceptance note records the equivalence argument - TeamControls flags in a UI-open frame are identical before and after, because the events that would set them were consumed
+      # AMENDED 2026-08-06, DURING the work, original wording kept: it read
+      # "The window-open flag-clearing at Species/Main.cpp:501 is replaced by
+      # consumption, and the acceptance note records the equivalence argument -
+      # TeamControls flags in a UI-open frame are identical before and after,
+      # because the events that would set them were consumed". The removal is
+      # done. The equivalence argument does NOT hold, and measurement is what
+      # says so rather than judgement: in a UI-open frame the equivalence is
+      # trivially true and uninteresting, because `if (!WindowsOnScreen())
+      # teamControls.Advance()` five lines earlier means no flag can be set in
+      # such a frame at all. What the deleted term was really doing was
+      # reaching BACK - teamControls accumulates across every frame of a 100ms
+      # IAmAlive period - and discarding orders given in the UI-CLOSED frames
+      # earlier in that period. Consumption cannot reproduce that and should
+      # not: those are orders the player gave with nothing on screen.
+      - The window-open flag-clearing is replaced by consumption; the notes record the measured behaviour DELTA rather than an equivalence, because there is not one - orders given in the window-closed frames of the same IAmAlive period are now sent instead of discarded
       - Widget behaviour is unchanged - MouseDown/MouseUp/Keypress signatures on EclWindow/EclButton stay as they are
     verify:
       - python3 tools/check_format.py
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
-    notes: >
-      Collides with sound-xaudio2 T8 and network-transport T9 over
+    status: done
+    notes: |
+      Landed 2026-08-06. Written on Linux: no MSVC build, no vstest run, no
+      running game. Collides with sound-xaudio2 T8 and network-transport T9 over
       Species/Main.cpp - do not run concurrently with them.
+
+      THREE CONTRIVANCES, ONE ORDERING RULE. Every frame's events are offered to
+      a list of sinks, UI first; a sink that acts on one says so; and what it
+      took stops answering the bindings until the control comes back up. That
+      replaces suppressEvent (take the click back after reading it),
+      EclUpdateMouse's boolean-to-event synthesis (rebuild the edges by
+      comparing this frame's polled booleans with last frame's) and the
+      AdvanceMenus poll-and-push seam (read three ControlEclipse* controls out
+      of the bindings and hand the answers to Eclipse).
+
+      THE ORDER INSIDE THE FRAME IS LOAD-BEARING, and it is why dispatch is a
+      new InputDriver hook rather than more work inside Advance(). Drivers
+      advance, then the CURSOR advances, then events are dispatched. The UI sink
+      asks TargetCursor where the pointer is, because TargetCursor does not read
+      the OS pointer - it accumulates the movement control into its own
+      coordinates and warps the OS one to match - and dispatching before it
+      moved would land every click on the previous frame's position. It is also
+      the order the deleted code had: AdvanceMenus ran after
+      g_inputManager->Advance() and passed g_target->X() and Y() straight in.
+
+      THE BUTTON MASK COVERS EDGES AND NOT THE HELD STATE, and that asymmetry
+      with the key mask is deliberate rather than an oversight. What the UI
+      consumes is a CLICK, and a click is an edge; UI code itself still polls
+      `mouse left pressed` to know the button is down over it -
+      ControlEclipseLMousePressed is read that way by the landscape editor, the
+      input scrollers and the profile window, and blanking it would break every
+      one of them. It also matches what it replaces exactly: suppressEvent named
+      ControlEclipseLMouseDown alone and left LMousePressed answering. Keys are
+      masked whole, because a text field consumes the keystroke for its whole
+      hold rather than just its edge.
+
+      A RELEASE FOLLOWS ITS PRESS rather than being judged on its own. Otherwise
+      a menu button that closes its own window lets the release through into the
+      game - the window is gone by the time the up arrives, so a fresh lookup
+      would find nothing and pass it on, and `mouse left up` is bound to
+      UnitEndSetTarget, ActivateTMButton, DeselectLocation and TileDrop.
+
+      THE Main.cpp DELETION IS A BEHAVIOUR CHANGE, NOT AN EQUIVALENCE, and the
+      amended criterion above carries the measurement. Only the window-open term
+      went; the task manager, chat log and entity-under-mouse terms stay,
+      because none of them is about an Eclipse window. What the window-open term
+      still did was reach back across the 100ms IAmAlive period and discard
+      orders given in the frames BEFORE the window opened. Open a menu within
+      about six frames of ordering a unit and that order now stands where it
+      used to be dropped. It is written at the site as well as here, because it
+      is the kind of thing a smoke test can notice and nobody would think to
+      look for.
+
+      THE RIGHT BUTTON WAS ALREADY DEAD IN ECLIPSE, found while translating.
+      EclUpdateMouse's three right-button arms were all empty AND unreachable:
+      the `rmb` static they tested was never assigned anywhere in the file. They
+      are gone rather than carried across, and so is the static.
+
+      ONE EXTRA MouseDown PER CLICK, stated because it is a real difference.
+      EclUpdateMouse's arms were mutually exclusive, so the frame with a press
+      in it ran the press arm and not the drag arm; now the press comes from the
+      sink and the per-frame tick runs afterwards, so a click frame reaches the
+      drag branch too and calls the button's MouseDown a second time. It is
+      inside the existing envelope rather than new behaviour: the drag branch
+      already called MouseDown on EVERY frame the button was held, sixty times a
+      second, so nothing can have been relying on it firing once.
+
+      InputRouter.h FORWARD-DECLARES InputEvent RATHER THAN INCLUDING IT, and
+      that is not fastidiousness. Input.h includes the router and is itself
+      included by some thirty files across GameLogic and Species;
+      InputEvents.h brings KeyDefs.h and its hundred KEY_* macros with it, plus
+      NUM_MB and NUM_AXES. Widening that to thirty translation units is how a
+      macro called KEY_STOP starts quietly rewriting somebody else's identifier.
+
+      NOT REMOVED, DELIBERATELY: the `#include "Eclipse.h"` at the top of
+      InputDriverWin32.cpp. The driver no longer calls Eclipse, so it looks
+      dead - but AGENTS.md records two CI rounds lost to exactly this, a deleted
+      include withdrawing declarations the survivors were reaching through it.
+      It costs nothing and T10 is already rewriting this file's includes.
+
+      VERIFIED AS FAR AS LINUX ALLOWS. Six new InputRouterTests over the router
+      itself, which needs nothing but a stub sink. Beyond that, the REAL
+      InputRouter.cpp and InputEvents.cpp were compiled and run under ASan and
+      UBSan against a stubbed Eclipse and cursor, with the driver's dispatch and
+      mask transcribed: a click inside a window consumed with `pressed` still
+      answering, a click outside reaching the game press and release, the
+      window-closed-by-its-own-click case, the right button never consumed, text
+      capture masking both edges of the key and clearing after, and escape
+      reaching the bindings while a field has focus. Eclipse.cpp's rewrite was
+      separately syntax-checked with g++ against the real EclWindow and
+      EclButton headers. None of that is MSVC and none of it is a running game.
 
   - id: T9
     title: Subscriptions for controls, with pilot conversions

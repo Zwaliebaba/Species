@@ -26,6 +26,9 @@
     <ClCompile Include="InputEventTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="InputRouterTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="ShapeMarkerTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

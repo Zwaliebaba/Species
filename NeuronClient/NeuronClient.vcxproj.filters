@@ -82,6 +82,9 @@
     <ClCompile Include="InputEvents.cpp">
       <Filter>Input</Filter>
     </ClCompile>
+    <ClCompile Include="InputRouter.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
     <ClCompile Include="InputSpec.cpp">
       <Filter>Input</Filter>
     </ClCompile>
@@ -207,6 +210,9 @@
       <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="InputEvents.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputRouter.h">
       <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="InputSpec.h">

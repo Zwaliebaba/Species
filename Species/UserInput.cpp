@@ -59,23 +59,19 @@ namespace Species
     //	if ( g_keyDeltas[KEY_F1] )
     //		DebugKeyBindings::DebugMenu();
 
-    InputManager* im = g_inputManager;
-    int mouseX = g_target->X();
-    int mouseY = g_target->Y();
-    bool lmb = im->controlEvent(ControlType::ControlEclipseLMousePressed);
-    bool rmb = im->controlEvent(ControlType::ControlEclipseRMousePressed);
-
-    EclUpdateMouse(mouseX, mouseY, lmb, rmb);
+    // THE POLL-AND-PUSH SEAM IS GONE. This used to read three ControlEclipse*
+    // controls out of the bindings, hand the booleans to EclUpdateMouse so it
+    // could reconstruct the click edges by comparing them against last frame's,
+    // and then take one of them back with suppressEvent once it had checked
+    // whether the click was over a window. The clicks are events now, offered
+    // to the UI sink before anything else sees them — see InputRouter.h.
+    //
+    // WHAT IS LEFT IS THE PER-FRAME TICK, and it has to stay a tick rather than
+    // becoming an event: hover highlighting, the one-second tooltip delay and
+    // window dragging all continue while the mouse is perfectly still, and a
+    // still mouse produces no events at all.
+    EclMouseMove(g_target->X(), g_target->Y());
     EclUpdate();
-
-    if (im->controlEvent(ControlType::ControlEclipseLMouseDown))
-    {
-      EclWindow* winUnderMouse = EclGetWindow(mouseX, mouseY);
-      if (winUnderMouse)
-      {
-        im->suppressEvent(ControlType::ControlEclipseLMouseDown);
-      }
-    }
   }
 
 

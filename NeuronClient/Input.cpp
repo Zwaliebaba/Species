@@ -24,6 +24,10 @@ namespace Neuron
       m_idle(true),
       m_inputMode(InputMode::INPUT_MODE_KEYBOARD)
   {
+    // FIRST IN, FIRST OFFERED. The UI is the only sink today and it is added
+    // here, before any driver exists, so the ordering cannot depend on
+    // construction order elsewhere.
+    m_router.AddSink(&m_eclipseSink);
   }
 
 
@@ -142,14 +146,17 @@ InputParserState InputManager::parseInputSpecTokens(InputSpecTokens const& token
 
 bool InputManager::controlEventA(ControlType type, InputDetails& details)
 {
-  if (bindings.isActive(type))
-  {
-    const InputSpecList& specs = bindings[type];
+  // The isActive() guard that used to wrap this went with suppressEvent. It
+  // asked whether something had taken this control back AFTER the fact; the
+  // driver now answers the underlying input as absent from the moment a sink
+  // consumed it, which is one frame earlier and per INPUT rather than per
+  // control name — so a consumed click hides from every control bound to it
+  // instead of from the one the caller happened to name.
+  const InputSpecList& specs = bindings[type];
 
-    for (unsigned i = 0; i < specs.size(); ++i)
-      if (checkInput(*(specs[i]), details))
-        return true;
-  }
+  for (unsigned i = 0; i < specs.size(); ++i)
+    if (checkInput(*(specs[i]), details))
+      return true;
 
   details.type = InputType::INPUT_TYPE_FAIL;
   return false;
@@ -171,8 +178,6 @@ const std::string& InputManager::controlIcon(ControlType type) const { return bi
 
 void InputManager::Advance()
 {
-  bindings.Advance();
-
   bool idleNext = true;
   InputMode nextInputMode = InputMode::INPUT_MODE_NONE;
 
@@ -197,8 +202,21 @@ void InputManager::Advance()
   if (nextInputMode > InputMode::INPUT_MODE_NONE)
     m_inputMode = nextInputMode;
 
+  // THE CURSOR MOVES BEFORE THE EVENTS ARE DISPATCHED, and the order is
+  // load-bearing rather than tidy. The UI sink asks TargetCursor where the
+  // pointer is when it handles a click, because that is the cursor the player
+  // sees — TargetCursor does not read the OS pointer, it accumulates the
+  // movement control into its own coordinates and warps the OS one to match.
+  // Dispatching before this line would hand Eclipse the PREVIOUS frame's
+  // position and land every click one frame behind the arrow.
+  //
+  // It is also the order the code being replaced had: AdvanceMenus ran after
+  // g_inputManager->Advance() and passed g_target->X() and Y() straight in.
   if (g_target)
     g_target->Advance();
+
+  for (unsigned i = 0; i < drivers.size(); ++i)
+    drivers[i]->DispatchEvents(m_router);
 }
 
 
@@ -242,9 +260,6 @@ void InputManager::addDriver(InputDriver* driver)
   if (driver)
     drivers.push_back(driver);
 }
-
-
-void InputManager::suppressEvent(ControlType type) { bindings.suppress(type); }
 
 
 bool InputManager::getBoundInputDescription(ControlType type, InputDescription& desc)

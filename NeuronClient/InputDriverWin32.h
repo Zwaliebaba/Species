@@ -69,6 +69,11 @@ namespace Neuron
       // This triggers a read from the input hardware and does message polling
       void Advance();
 
+      // Offers this frame's events to the router, UI first, and hides from the
+      // bindings whatever a sink says it consumed. Called after every driver
+      // has advanced and after the cursor has moved — see InputDriver.h.
+      void DispatchEvents(InputRouter const& router) override;
+
       // Poll for system events that may require immediate, hard-coded action
       void PollForEvents();
 
@@ -104,24 +109,33 @@ namespace Neuron
       // arrays; nothing outside this class reads them now.
       InputFrameState m_state;
 
-      // THE CAPTURE RULE, in its first and narrowest form. A key whose
-      // character a focused text field took is marked here, and getKeyInput
-      // answers false for it until it is released — so typing a name does not
-      // also fire whatever game control that letter is bound to, and `key g up`
-      // does not fire when you let go either.
+      // WHAT THE UI TOOK. A control a sink consumed is marked here and stops
+      // answering the bindings until it is released — so clicking a button does
+      // not also give a unit an order, and typing a name does not fire whatever
+      // game control that letter is bound to, including on the way back up.
       //
-      // It is deliberately NOT "suppress every key while a field has focus".
-      // Enter, escape and the arrows produce no character the field accepts, so
-      // they are not marked and still reach the bindings exactly as they did —
-      // which is what keeps menu navigation and escape-to-close working while
-      // the cursor is in a text box.
+      // It is deliberately NOT "suppress everything while the UI is up". Only
+      // what a sink actually ACTED ON is marked: enter, escape and the arrows
+      // produce no character a text field accepts, so they are never marked and
+      // still reach the bindings, which is what keeps menu navigation and
+      // escape-to-close working while the cursor sits in a text box.
       //
-      // The mask is a mask over READS, not over the state: m_keys and
-      // m_keyDeltas stay truthful underneath it, so nothing is left stuck when
-      // the mark clears, and getFirstActiveInput — the key-rebinding window's
-      // door — is unaffected. T8 replaces all of this with the router's
-      // consuming sinks, of which this is the one case that could not wait.
-      bool m_textConsumedKeys[KEY_MAX]{};
+      // The mask is over READS, not over the state: m_keys, m_keyDeltas and
+      // m_mb stay truthful underneath it, so nothing is left stuck when a mark
+      // clears, and getFirstActiveInput — the key-rebinding window's door — is
+      // unaffected. See getMouseInput for why the button mask covers edges only.
+      bool m_consumedKeys[KEY_MAX]{};
+      bool m_consumedButtons[NUM_MB]{};
+
+      // How many of m_events this frame's derivation took. The events are held
+      // rather than erased at the end of Advance, because DispatchEvents walks
+      // the same ones later in the frame.
+      size_t m_frameEventCount{0};
+
+      // Records a consumed event against the control it belongs to.
+      // _lastKeyDown is the key a Char event came from; a character carries no
+      // key code of its own.
+      void MarkConsumed(InputEvent const& _event, int _lastKeyDown);
 
       // Has a RELATIVE raw mouse packet ever arrived? Registration succeeding
       // is not enough to answer it — an absolute-reporting device registers
@@ -129,21 +143,12 @@ namespace Neuron
       // movement sources the bindings are served from.
       bool m_rawMouseMovementSeen{false};
 
-      // Shift, control and alt as they were at one particular moment. Passed
-      // through the side-effect walk rather than read off the frame state,
-      // because the frame state is what the modifiers ended up as and Eclipse
-      // needs what they were when each key was struck.
-      struct ModifierState
-      {
-          bool m_shift{false};
-          bool m_control{false};
-          bool m_alt{false};
-      };
-
-      // Applies the side effects of the events a frame consumed -- mouse
-      // capture, the Eclipse keyboard notification and the character delivery.
-      // Separate from DeriveFrameState so that stays pure and testable.
-      void ApplyConsumedEventSideEffects(size_t _consumed, ModifierState _modifiers);
+      // Applies the side effects of the events a frame consumed on the WINDOW:
+      // mouse capture, and nothing else since the Eclipse calls moved into the
+      // router's sink. Separate from DeriveFrameState so that stays pure and
+      // testable. The ModifierState this used to carry went with them — the
+      // sink tracks shift, control and alt from the events it is handed.
+      void ApplyConsumedEventSideEffects(size_t _consumed);
 
       // Appends one event, or drops it if the queue has hit its bound. The
       // callable fills in the fields the type uses; everything else stays
