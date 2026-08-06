@@ -17,7 +17,6 @@ CameraDown                        = key e pressed
 CameraForwards                    = key w pressed
 CameraBackwards                   = key s pressed
 CameraZoom                        = key z pressed
-CameraDeZoom                      = key c pressed
 
 CameraZoom                        = mouse middle pressed
 
@@ -27,7 +26,6 @@ CameraSpeedup                     = key shift pressed
 CameraSlowdown                    = mouse right pressed
 
 CameraDebugRotate                 = mouse right pressed
-GestureActive                     = mouse left pressed
 
 UnitDeselect                      = key space down
 
@@ -48,15 +46,8 @@ UnitCreate                        = mouse left down
 
 TaskManagerSwitchTask             INPUT_TYPE_BOOL
 
-GesturesTaskManagerDisplay        = key alt pressed
-GesturesTaskManagerHide           = key alt up
-GesturesTaskManagerEndTask        = key control ++ key c
 GesturesChatLog                   = key l pressed
 GesturesSwitchUnit                = key tab down
-GestureLeft                       = key a down
-GestureLeft                       = key left down
-GestureRight                      = key d down
-GestureRight                      = key right down
 
 IconsTaskManagerDisplay           = key tab pressed
 IconsTaskManagerHide              = key tab up
@@ -102,46 +93,13 @@ IconsTaskManagerSelectRocket      = key f6 down
 IconsTaskManagerSelectAirStrike   = key f7 down
 IconsTaskManagerSelectController  = key f8 down
 
-LoaderHelp                        = key h pressed
-SepulvedaHelp                     = key h down
-
-GOLLoaderSpeedup                  = key p pressed
-GOLLoaderSlowdown                 = key o pressed
-GOLLoaderReset                    = key g down
-
-RTLoaderReflectivenessIncrease    = key p pressed
-RTLoaderReflectivenessDecrease    = key o pressed
 RTLoaderPixelWaveIncrease         = key l pressed
 RTLoaderPixelWaveDecrease         = key k pressed
-RTLoaderMotionBlurIncrease        = key m pressed
-#RTLoaderMotionBlurDecrease        = key n pressed
-RTLoaderPixelBlurIncrease         = key i down
-RTLoaderPixelBlurDecrease         = key u down
-RTLoaderBrightnessIncrease        = key b pressed
-RTLoaderBrightnessDecrease        = key v pressed
-RTLoaderResolutionIncrease        = key x down
-RTLoaderResolutionDecrease        = key c down
-RTLoaderCameraMode1               = key 1 pressed
-RTLoaderCameraMode2               = key 2 pressed
-RTLoaderCameraMode3               = key 3 pressed
-RTLoaderLMB                       = mouse left pressed
-RTLoaderLMB                       = mouse right pressed
-
-#StartAttractMode                  = key f1 down
-#StartAttractMode                  = idle reaches 60
-StopAttractMode                   = idle no longer
-StopAttractMode                   = key space down
-StopAttractMode                   = key enter down
-StopAttractMode                   = key esc down
 
 CameraFreeMovement                = key f2 pressed
 
 DebugCameraFixUp                  = key g pressed
 
-SkipTutorial                      = key t pressed
-
 GamePause                         = key pause down
 ToggleEditor                      = key f9 down
-CreateScreenShot                  = key p down
 ToggleCheatMenu                   = key f11 down
-

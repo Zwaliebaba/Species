@@ -632,7 +632,7 @@ tasks:
       - NeuronClient/ControlTypes.inc
     acceptance:
       - CameraAccess::GetControlVector and Camera::m_controlVector are gone - T3 removed their last caller and recorded them here
-      - The 38 control types with no code consumer are audited one by one and each is either deleted with its bindings or given a note saying what it is waiting for; the three GesturesTaskManager* controls are deleted outright (see notes)
+      - Decide whether the Chord and Idle drivers stay: T13 deleted the last binding data exercising either, so both are now registered and reachable by nothing (see T13 notes)
       - grep XInput over GameData returns nothing (baseline 2026-08-06 - 69 lines)
       - grep for InputDriverPipe, InputDriverValue, InputDriverAlias, InputDriverPrefs and InputFilterManager returns nothing outside tasks/Archive
       - grep for "extern signed char g_keys" and "g_keys\[" returns nothing (baseline - 1 extern site, 2 live readers outside the driver)
@@ -718,6 +718,80 @@ tasks:
       follows the art out, or whether the art is restored — do not leave the
       two disagreeing.
 
+  - id: T13
+    title: Delete the 38 control types nothing consumes
+    intent: >
+      Thirty-eight of the 131 names in ControlTypes.inc have no reference in
+      any .cpp or .h - nothing calls controlEvent for them and nothing names
+      the enumerator. Most belong to the GOL and ray-tracer loader screens and
+      the gesture task manager, all of which were removed from the game. A
+      declared control that nothing asks about is a binding the user can set
+      and never observe, and it teaches the wrong lesson about what the input
+      system has to support.
+    project: NeuronClient
+    # No graph dependency: this is a deletion of things nothing references, so
+    # nothing in the plan blocks it. Directed by the owner on 2026-08-06 after
+    # T11's audit surfaced the list - the loader screens they belong to are
+    # gone, which is the fact the audit could not establish from the code.
+    depends_on: []
+    files:
+      - NeuronClient/ControlTypes.inc
+      - GameData/Input/InputPreferences.txt
+      - GameData/Input/Keyboards/de_DE.txt
+      - GameData/Input/Keyboards/fr_FR.txt
+    acceptance:
+      - The 38 unused control types are gone from ControlTypes.inc and every binding naming one is gone from every file under GameData/Input
+      - The audit is re-run afterwards and reports zero unused control types
+      - RTLoaderPixelWaveIncrease and RTLoaderPixelWaveDecrease STAY - they have a live consumer at GameLogic/Location.cpp:1124 behind CHEATMENU_ENABLED, and are the reason this is a per-name audit rather than a prefix sweep
+      - Both ControlBindingsTests end-of-table tests still name MenuLeft and IconsTaskManagerQuickUnitRight and still pass; neither is in the deletion set
+      - The consequences for the Chord and Idle drivers are recorded in notes
+    verify:
+      - python3 tools/check_format.py
+      - python3 tools/check_hygiene.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: done
+    notes: |
+      Landed 2026-08-06 on the owner's direction: "loader screens was something
+      we had in the past, but they are removed, so you can remove the 35 unused
+      control types". That is the fact the audit could not get from the code —
+      an unreferenced control is indistinguishable from one waiting for a
+      feature — so it was asked rather than assumed.
+
+      38 control types gone, 131 down to 93, and the audit re-run afterwards
+      reports ZERO unused. 39 binding lines went with them: 37 from
+      InputPreferences.txt (including three commented-out ones that named a
+      deleted control) and one each from the de_DE and fr_FR keyboard layouts.
+      Every remaining binding in GameData/Input names a control that still
+      exists — checked, not assumed.
+
+      A PER-NAME AUDIT, NOT A PREFIX SWEEP, and RTLoaderPixelWaveIncrease and
+      RTLoaderPixelWaveDecrease are why. Sixteen of the eighteen RTLoader
+      controls were dead; those two have a live consumer at
+      GameLogic/Location.cpp:1124 behind CHEATMENU_ENABLED, where they toggle
+      RenderSpecialLighting. Deleting by prefix would have taken them and the
+      cheat-menu lighting toggle with them.
+
+      THE CONSEQUENCE, and it is the reason this note matters more than the
+      deletion: THE CHORD AND IDLE DRIVERS NOW HAVE NO DATA EXERCISING THEM.
+      `GesturesTaskManagerEndTask = key control ++ key c` was the only ++ line
+      in the tree and `StopAttractMode = idle no longer` was the only live idle
+      line. Both are now zero. T1 kept Chord and Idle precisely BECAUSE the
+      binding data used them — that justification is gone, and the two drivers
+      are now in the same position InputDriverPipe was in when T1 deleted it:
+      registered, functional, and reachable by nothing.
+
+      They are NOT deleted here. That was not directed, and it is a judgement
+      about whether the binding language keeps a feature with no current user.
+      T11 decides. What is NOT affected either way: InputManager::isIdle() and
+      the m_idle computation at Input.cpp:176-190 are independent of the Idle
+      DRIVER — the manager polls every driver's isIdle() each frame regardless
+      of bindings, and W32InputDriver::isIdle() still answers it.
+
+      The two ControlBindingsTests that pin the table's ends were untouched and
+      needed no repointing: MenuLeft is still the first row and
+      IconsTaskManagerQuickUnitRight still the last, because the deletions were
+      all interior.
   - id: T12
     title: Owner-run Garden smoke test on the event-driven input
     intent: >
