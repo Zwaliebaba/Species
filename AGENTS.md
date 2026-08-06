@@ -57,7 +57,7 @@ preference all deleted. Two remain open:
 | Plan | What it does | State |
 |---|---|---|
 | [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse; the gamepad mode and the control-icon plumbing deleted | **14 of 15 — all code done, T12 is the owner's Garden run** |
-| [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | **11 of 12 — all code done, T12 is the owner's Garden run** |
+| [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | **11 of 12 — all code done and CI-green at `5da1e86`; T12 is the owner's Garden run** |
 
 **`input-native-events` has one node left and it is not code.** T12 is a
 seven-step Garden run on a build carrying every other node, and **nothing in that plan has
@@ -450,19 +450,29 @@ The game **does** run, so the smoke test is something you can actually perform
 rather than something to wait for. If you are working somewhere that cannot
 launch a Windows client, say so instead of implying you checked.
 
-**WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-06.** CI has been green on
-every `network-transport` task as it landed, most recently through T7 at
-`7ce7aa7` — the `Transport` seam and the protocol tests. The last full figure
-recorded here is `f169ab1`, which carried the whole of `input-native-events` and
-`network-transport` T1–T6: **258 of 258** tests on x64 Debug, and the headless
-server reaching sequence id 20 in 2.10s with no client attached. That last
-number is the one worth reading twice — it is `Server::Initialise` opening a
-real socket and twenty real ticks of `Advance` draining it, with the listen
-thread deleted.
+**WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-06.** CI is green at
+`5da1e86`, which carries the whole of `input-native-events` and the whole of
+`network-transport` T1–T11: it builds x64 Debug, passes **281 of 281** tests,
+and the headless server reaches sequence id 20 in 2.04s with no client
+attached. That last number is the one worth reading twice — it is
+`Server::Initialise` opening a real socket and twenty real ticks of `Advance`
+draining it, with the listen thread deleted.
 
-**T8 THROUGH T11 ARE PUSHED AND THEIR CI ANSWER IS NOT IN THIS FILE YET.** They
-are the frame and the version bump, the identity change, liveness and pruning,
-and the closing sweep. Read the run rather than this paragraph.
+**THREE RED ROUNDS GOT THERE AND EACH ONE IS A LESSON THIS FILE ALREADY
+TEACHES.** T1–T7 each went green first round, pushed and checked one at a time.
+T8–T11 went in as one block without a CI answer between them, and cost three:
+
+| Round | What it was |
+|---|---|
+| 1 | `speciesRandom` used without including `Random.h` — a C3861 in a file no Linux harness compiles |
+| 2 | `LNK2019` on `ClientToServer::GetNextLetterSeqID`. Deleting `GetOurIP_Int` cut a RANGE between two function names and took the next function with it. The header still declared it, so every translation unit compiled and only the executable's link step could see it |
+| 3 | 3 of 279 tests. Two were a payload that grew by four bytes and was corrected in the sanitizer harness but not in the suite; one was an assertion that was simply wrong about the protocol — see below |
+
+**The third is the one worth keeping.** A test asserted that a timed-out client
+receives its own `GoodbyeClient`. It does not: it is removed before that tick's
+broadcast, so it is not in the list of recipients — which is correct, since it
+is the client that stopped answering. The letter is for the REST of the session.
+The test was wrong, not the code, and only a running suite could say so.
 
 **This entry warned about an uncompiled block twice and both are now
 discharged.** The nine input tasks written on Linux and the six network tasks
@@ -1053,11 +1063,12 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin, and less thin than it was.** Four projects, **279**
-  tests as of `network-transport` T11 (2026-08-06) — 141 `NeuronCoreTests`, 74
-  `NeuronClientTests`, 39 `GameLogicTests`, 25 `NeuronServerTests`. The count
-  should be read off a CI run's *Total tests* line; `git grep -c TEST_METHOD`
-  agrees with it today. **`NeuronServerTests` went from 5 to 25**, and that is
+- **The test suite is thin, and less thin than it was.** Four projects, **281**
+  tests as of `network-transport` T11 (2026-08-06) — 142 `NeuronCoreTests`, 74
+  `NeuronClientTests`, 39 `GameLogicTests`, 26 `NeuronServerTests`, all green at
+  `5da1e86`. The count should be read off a CI run's *Total tests* line;
+  `git grep -c TEST_METHOD` agrees with it today. **`NeuronServerTests` went
+  from 5 to 26**, and that is
   the substantive change rather than the number: `ServerProtocolTests` drives a
   scripted client against a real `Server` over a fake in-memory wire, so join,
   team assignment, sequencing, acknowledgement, retransmission, the datagram

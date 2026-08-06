@@ -839,7 +839,49 @@ tasks:
       - python3 tools/check_hygiene.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: >
+      EVERY GREP IS AT ZERO OVER CODE, and two of them needed work rather than a
+      declaration. Ten comments across UdpSocket, ClientToServer, ServerToClient,
+      Server and the letter tests still spelled the names of deleted classes to
+      explain why the current shape is what it is; they now describe what was
+      there - "a socket per client, and a listener on its own blocking thread" -
+      which loses nothing a reader needs. Server/WinMain.cpp was printing the
+      port as a literal beside the constant.
+
+      ONE PORT, NOT TWO. The acceptance says "both ports"; T9 deleted the
+      client's, so ServerPort is the only one. MaxDatagramSize,
+      ClientTimeoutTicks and ServerSilenceTimeout are in ProtocolLimits.h with
+      it, and nowhere else.
+
+      GREEN AT 5da1e86: all eight tools/ checks, the x64 Debug build, 281 of 281
+      tests, and the headless server at sequence id 20 in 2.04s. THAT TOOK THREE
+      RED ROUNDS and the reason is worth recording against this plan rather than
+      against the tasks that caused it. T1-T7 were pushed and checked ONE AT A
+      TIME and every one went green first round. T8-T11 went in as a block
+      without a CI answer between them, and cost:
+
+      1. speciesRandom used without including Random.h. A C3861, in a file no
+      Linux harness compiles.
+
+      2. LNK2019 on ClientToServer::GetNextLetterSeqID. T9 deleted GetOurIP_Int
+      by cutting the RANGE between two function names, and the next function was
+      inside it. The header still declared it, so every translation unit
+      compiled and only the executable's link step could notice - the same shape
+      as the two sound-xaudio2 failures AGENTS.md records.
+
+      3. Three tests. Two were ClientJoin's payload growing by the join token,
+      corrected in the sanitizer harness and not in the suite - the harness and
+      the suite are two places the same fact is written down, and that is the
+      cost of having one. The third asserted that a timed-out client receives
+      its own GoodbyeClient; it does not, because it is removed before that
+      tick's broadcast, and that is correct. The test was wrong about who the
+      letter is for. Only a running suite could have said so.
+
+      THE TRANSFERABLE PART: a plan whose tasks are pushed individually gets one
+      CI answer per task and a bisected failure. A plan whose tasks are pushed
+      in a block gets one answer for four tasks and three rounds to separate
+      them.
 
   - id: T12
     title: Owner-run Garden smoke test on the v2 transport
