@@ -641,30 +641,58 @@ tasks:
       Species/Main.cpp - do not run concurrently with them.
 
   - id: T9
-    title: Give music a stereo voice
+    title: Give music a stereo voice, and make a stereo sample safe to load
+    # THE ORIGINAL INTENT WAS WRONG ON ITS FACTS, and the correction is the
+    # reason this task changed shape. It read: "The music channel has been
+    # silently mono since Darwinia - the DirectSound secondary buffer was
+    # created with one channel even though the decoder reads stereo WAVs."
+    #
+    # Every WAV in GameData is mono. All 1332 of them, including the three
+    # music tracks. Music is mono because the FILES are mono, and no buffer
+    # width was ever the reason. Checked with a header census over
+    # GameData/Sounds: (channels=1, rate=44100) x1330 and (1, 22050) x2.
+    #
+    # And the thing the premise assumed already worked does not. A stereo file
+    # today is memory corruption, not a downmix: SoundStreamDecoder handles
+    # interleaved data correctly, but everything above it confuses a FRAME
+    # count with a SHORT count. CachedSample::Read memcpy's
+    # m_numChannels * _numSamples shorts into a buffer the caller sized for
+    # _numSamples, and indexes its source by frame into a short array.
+    # Nothing rejects such a file either: SoundSourceNotMono exists, but its
+    # only caller is IsSoundSourceOK, reached only from LoadtimeVerify, whose
+    # one call site is commented out at SoundSystem.cpp:582.
     intent: >
-      The music channel has been silently mono since Darwinia - the DirectSound
-      secondary buffer was created with one channel even though the decoder
-      reads stereo WAVs. A stereo music voice and an interleaved music callback
-      are the first audible improvement the new backend unlocks, and the
-      mono-only rule correctly remains enforced for positional effect samples.
+      Make the stereo path real rather than nominal. The frame/short confusion
+      above the decoder is fixed so interleaved data is indexed correctly, the
+      music voice becomes stereo so a stereo track plays as one, and a mono
+      track fans out across it and plays centred. Effect channels stay mono,
+      and become mono BY CONSTRUCTION rather than by a checker that does not
+      run - the main callback refuses a non-mono sample instead of overrunning
+      its block.
     project: NeuronClient
     depends_on: [T7, T8]
     files:
+      - NeuronClient/SoundStreamDecoder.cpp
+      - NeuronClient/SampleCache.h
+      - NeuronClient/SampleCache.cpp
       - NeuronClient/SoundLibraryXAudio2.h
       - NeuronClient/SoundLibraryXAudio2.cpp
       - NeuronClient/SoundLibrary3d.h
+      - NeuronClient/SoundLibrary3d.cpp
       - NeuronClient/SoundSystem.h
       - NeuronClient/SoundSystem.cpp
     acceptance:
+      - SoundStreamDecoder::Read and CachedSample::Read both count FRAMES, and a stereo sample no longer writes past the buffer it was given
       - The music voice is stereo; a stereo WAV plays with both channels distinct, a mono one plays centred
-      - The music callback carries interleaved frames with an explicit channel count; effect channels are unchanged
-      - LoadtimeVerify still rejects non-mono EFFECT samples (SoundSourceNotMono), and a note records that music files are exempt
+      - The music callback carries interleaved frames with an explicit channel count; the main callback is unchanged and still mono
+      - A non-mono sample on an effect channel produces silence, not a buffer overrun, with no dependence on LoadtimeVerify
+      - Every shipped sample is mono, so none of the above may change what the game sounds like today
     verify:
+      - python3 tools/check_sound_effects.py
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: in_progress
 
   - id: T10
     title: Device-loss resilience and the last dead code
