@@ -2,15 +2,19 @@
 
 #include <xaudio2.h>
 #include <x3daudio.h>
+#include <xaudio2fx.h>
+#include <xapofx.h>
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 #include <vector>
 
 #include "Debug.h"
 #include "MathUtils.h"
 #include "Profiler.h"
 
+#include "SoundFilter.h"
 #include "SoundLibraryXAudio2.h"
 
 
@@ -113,6 +117,24 @@ namespace Neuron
       // being positioned — channels are reused by whatever sound wins them —
       // gets its panning put back rather than inheriting the last sound's.
       bool m_positionalMatrix = false;
+
+      // Where each filter type ended up in the voice's effect chain, or -1 for
+      // one that is not in it. UpdateDspFX addresses an effect by chain INDEX,
+      // which is the only handle XAudio2 offers once SetEffectChain has run.
+      int m_effectIndex[SoundLibrary3d::NUM_FILTERS];
+
+      // The two effects XAudio2 has no equivalent of. They run over the PCM
+      // block during the fill, which is exactly where the DirectSound backend
+      // ran them, so what they sound like does not change.
+      std::unique_ptr<DspEffect> m_inFillEffects[SoundLibrary3d::NUM_FILTERS];
+
+      bool m_voiceFilterActive = false;
+
+      XAudio2Voice()
+      {
+        for (int& index : m_effectIndex)
+          index = -1;
+      }
 
       DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
       DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
@@ -321,7 +343,10 @@ namespace Neuron
 
     auto createVoice = [&](XAudio2Voice& _channel)
     {
-      const HRESULT voiceResult = m_data->m_engine->CreateSourceVoice(&_channel.m_voice, &format, 0, MaxFrequencyRatio);
+      // USEFILTER is what makes the resonant low pass free: it is XAudio2's own
+      // per-voice biquad, so that effect needs no object in the chain at all.
+      // It has to be asked for at creation or SetFilterParameters does nothing.
+      const HRESULT voiceResult = m_data->m_engine->CreateSourceVoice(&_channel.m_voice, &format, XAUDIO2_VOICE_USEFILTER, MaxFrequencyRatio);
       if (FAILED(voiceResult))
       {
         DebugTrace("SOUND : CreateSourceVoice failed (0x{:08x}); that channel is silent\n", static_cast<unsigned long>(voiceResult));
@@ -389,6 +414,16 @@ namespace Neuron
         m_mainCallback(static_cast<unsigned int>(_channel), _block, numSamples, &voice->m_silenceRemaining);
       else
         WriteSilence(_block, numSamples);
+    }
+
+    // The effects XAudio2 has no equivalent of, run over the block that has
+    // just been filled — the same place, on the same 16-bit samples, at the
+    // same point in the signal path as the DirectSound backend ran them in
+    // PopulateBuffer. Everything else is in the voice's own effect chain.
+    for (std::unique_ptr<DspEffect> const& effect : voice->m_inFillEffects)
+    {
+      if (effect)
+        effect->Process(_block, numSamples);
     }
   }
 
@@ -679,17 +714,278 @@ namespace Neuron
 
   void SoundLibraryXAudio2::EnableDspFX(int _channel, int _numFilters, int const* _filterTypes)
   {
-    // sound-xaudio2 T3 gives these bodies: the built-in per-voice filter for the
-    // resonant low pass, stock XAPOs for echo and reverb, and one adapter
-    // hosting the existing DspEffect classes. Until then a channel with effects
-    // plays dry rather than not playing.
+    ASSERT_TEXT(_numFilters > 0, "Bad argument passed to EnableFilters");
+
+    XAudio2Voice* voice = GetVoice(_channel);
+    if (!voice || !voice->m_voice)
+      return;
+
+    DisableDspFX(_channel);
+
+    // Effects that XAudio2 implements go into the voice's chain; the two it has
+    // no equivalent of are built here and run during the fill instead.
+    std::vector<XAUDIO2_EFFECT_DESCRIPTOR> descriptors;
+
+    for (int i = 0; i < _numFilters; ++i)
+    {
+      const int filterType = _filterTypes[i];
+      if (filterType < 0 || filterType >= NUM_FILTERS)
+        continue;
+
+      IUnknown* effect = nullptr;
+
+      switch (filterType)
+      {
+      case DSP_RESONANTLOWPASS:
+        voice->m_voiceFilterActive = true;
+        continue;
+
+      case DSP_ECHO:
+      case DSP_DSOUND_ECHO:
+        if (FAILED(CreateFX(__uuidof(FXEcho), &effect)))
+          effect = nullptr;
+        break;
+
+      case DSP_SIMPLE_REVERB:
+      case DSP_DSOUND_I3DL2REVERB:
+      case DSP_DSOUND_WAVESREVERB:
+        if (FAILED(XAudio2CreateReverb(&effect)))
+          effect = nullptr;
+        break;
+
+      case DSP_GARGLE:
+        voice->m_inFillEffects[filterType] = std::make_unique<DspGargle>(m_sampleRate);
+        continue;
+
+      case DSP_BITCRUSHER:
+        voice->m_inFillEffects[filterType] = std::make_unique<DspBitCrusher>(m_sampleRate);
+        continue;
+
+      default:
+        // The remaining DirectX 8 media objects — chorus, compressor,
+        // distortion, flanger, gargle, parametric EQ. No sound in the data
+        // asks for one, and T4 removes them from the effect list outright.
+        continue;
+      }
+
+      if (!effect)
+      {
+        DebugTrace("SOUND : could not create effect {}; that channel plays dry\n", filterType);
+        continue;
+      }
+
+      XAUDIO2_EFFECT_DESCRIPTOR descriptor = {};
+      descriptor.pEffect = effect;
+      descriptor.InitialState = TRUE;
+      descriptor.OutputChannels = 1; // The voices are mono; the pan comes later, from the output matrix.
+
+      voice->m_effectIndex[filterType] = static_cast<int>(descriptors.size());
+      descriptors.push_back(descriptor);
+    }
+
+    if (!descriptors.empty())
+    {
+      XAUDIO2_EFFECT_CHAIN chain = {};
+      chain.EffectCount = static_cast<UINT32>(descriptors.size());
+      chain.pEffectDescriptors = descriptors.data();
+
+      // Stopped and flushed around the change, which is the same moment the
+      // DirectSound backend stopped and restarted its buffer to attach effects.
+      // ResetChannel runs immediately after this and starts the voice again,
+      // but starting it here too keeps the channel audible even if it does not.
+      voice->m_voice->Stop(0);
+      voice->m_voice->FlushSourceBuffers();
+      if (FAILED(voice->m_voice->SetEffectChain(&chain)))
+      {
+        DebugTrace("SOUND : SetEffectChain failed; that channel plays dry\n");
+        for (int& index : voice->m_effectIndex)
+          index = -1;
+      }
+      voice->m_voice->Start(0);
+    }
+
+    // The chain holds its own reference to each effect, so ours is done. From
+    // here on an effect is addressed by its index in the chain, never by
+    // pointer, which is the only handle XAudio2 gives back.
+    for (XAUDIO2_EFFECT_DESCRIPTOR const& descriptor : descriptors)
+      descriptor.pEffect->Release();
   }
 
 
-  void SoundLibraryXAudio2::UpdateDspFX(int _channel, int _filterType, int _numParams, float const* _params) {}
+  void SoundLibraryXAudio2::UpdateDspFX(int _channel, int _filterType, int _numParams, float const* _params)
+  {
+    XAudio2Voice* voice = GetVoice(_channel);
+    if (!voice || !voice->m_voice || !_params)
+      return;
+
+    if (_filterType < 0 || _filterType >= NUM_FILTERS)
+      return;
+
+    // The two that never entered the chain: same objects, same parameter
+    // layout, same arithmetic as every other backend has always run.
+    if (voice->m_inFillEffects[_filterType])
+    {
+      voice->m_inFillEffects[_filterType]->SetParameters(_params);
+      return;
+    }
+
+    if (_filterType == DSP_RESONANTLOWPASS)
+    {
+      if (!voice->m_voiceFilterActive || voice->m_sourceRate == 0)
+        return;
+
+      // The same two remappings DspResLowPass applies to its raw parameters,
+      // reproduced rather than replaced: the blueprint's "cutoff" is not a
+      // frequency until it has been through this, so dropping it would retune
+      // every sound that uses the filter.
+      const float cutoff = std::exp(_params[0] / 3850.0f + 4.7f);
+      const float resonance = std::exp(_params[1] / 4.0f) - 1.0f;
+
+      XAUDIO2_FILTER_PARAMETERS filterParams = {};
+      filterParams.Type = LowPassFilter;
+      filterParams.Frequency = XAudio2CutoffFrequencyToRadians(cutoff, voice->m_sourceRate);
+      filterParams.OneOverQ = 1.0f / std::max(resonance, 0.1f);
+      voice->m_voice->SetFilterParameters(&filterParams);
+      return;
+    }
+
+    const int index = voice->m_effectIndex[_filterType];
+    if (index < 0)
+      return;
+
+    switch (_filterType)
+    {
+    case DSP_ECHO:
+    case DSP_DSOUND_ECHO:
+    {
+      FXECHO_PARAMETERS echo = {};
+
+      if (_filterType == DSP_ECHO)
+      {
+        // WetDryMix 0..100, Delay in ms, Attenuation 0..100 — DspEcho's layout.
+        echo.WetDryMix = std::clamp(_params[0] * 0.01f, FXECHO_MIN_WETDRYMIX, FXECHO_MAX_WETDRYMIX);
+        echo.Delay = std::clamp(_params[1], FXECHO_MIN_DELAY, FXECHO_MAX_DELAY);
+        echo.Feedback = std::clamp(_params[2] * 0.01f, FXECHO_MIN_FEEDBACK, FXECHO_MAX_FEEDBACK);
+      }
+      else
+      {
+        // DirectSound's layout: WetDryMix, Feedback, LeftDelay, RightDelay,
+        // PanDelay. The voices are mono, so the two delays are one delay.
+        echo.WetDryMix = std::clamp(_params[0] * 0.01f, FXECHO_MIN_WETDRYMIX, FXECHO_MAX_WETDRYMIX);
+        echo.Feedback = std::clamp(_params[1] * 0.01f, FXECHO_MIN_FEEDBACK, FXECHO_MAX_FEEDBACK);
+        echo.Delay = std::clamp(_params[2], FXECHO_MIN_DELAY, FXECHO_MAX_DELAY);
+      }
+
+      voice->m_voice->SetEffectParameters(static_cast<UINT32>(index), &echo, sizeof(echo));
+      break;
+    }
+
+    case DSP_SIMPLE_REVERB:
+    case DSP_DSOUND_I3DL2REVERB:
+    case DSP_DSOUND_WAVESREVERB:
+    {
+      // I3DL2 is the interchange format: XAudio2 converts it to its own native
+      // parameters, and the game's own I3DL2 block is field for field the same
+      // standard. The other two reverbs carry less information, so they fill
+      // the parts they have and take the I3DL2 defaults for the rest — which
+      // are the same defaults Effects.txt lists.
+      XAUDIO2FX_REVERB_I3DL2_PARAMETERS i3dl2 = {};
+      i3dl2.WetDryMix = 100.0f;
+      i3dl2.Room = -1000;
+      i3dl2.RoomHF = -100;
+      i3dl2.RoomRolloffFactor = 0.0f;
+      i3dl2.DecayTime = 1.49f;
+      i3dl2.DecayHFRatio = 0.83f;
+      i3dl2.Reflections = -2602;
+      i3dl2.ReflectionsDelay = 0.007f;
+      i3dl2.Reverb = 200;
+      i3dl2.ReverbDelay = 0.011f;
+      i3dl2.Diffusion = 100.0f;
+      i3dl2.Density = 100.0f;
+      i3dl2.HFReference = 5000.0f;
+
+      if (_filterType == DSP_DSOUND_I3DL2REVERB && _numParams >= 12)
+      {
+        i3dl2.Room = static_cast<INT32>(_params[0]);
+        i3dl2.RoomHF = static_cast<INT32>(_params[1]);
+        i3dl2.RoomRolloffFactor = _params[2];
+        i3dl2.DecayTime = _params[3];
+        i3dl2.DecayHFRatio = _params[4];
+        i3dl2.Reflections = static_cast<INT32>(_params[5]);
+        i3dl2.ReflectionsDelay = _params[6];
+        i3dl2.Reverb = static_cast<INT32>(_params[7]);
+        i3dl2.ReverbDelay = _params[8];
+        i3dl2.Diffusion = _params[9];
+        i3dl2.Density = _params[10];
+        i3dl2.HFReference = _params[11];
+        // _params[12] is DirectSound's Quality knob. XAudio2's reverb has no
+        // equivalent and does not need one; it is dropped rather than faked.
+      }
+      else if (_filterType == DSP_DSOUND_WAVESREVERB && _numParams >= 4)
+      {
+        // InGain, ReverbMix, ReverbTime, HighFreqRTRatio. The mix is decibels
+        // of attenuation, so it becomes a percentage the same way every other
+        // volume in this file does.
+        i3dl2.WetDryMix = std::clamp(100.0f * HundredthsOfDecibelToAmplitude(_params[1] * 100.0f), 0.0f, 100.0f);
+        i3dl2.DecayTime = std::max(_params[2] * 0.001f, 0.1f);
+        i3dl2.DecayHFRatio = std::clamp(_params[3], 0.1f, 2.0f);
+      }
+      else if (_filterType == DSP_SIMPLE_REVERB && _numParams >= 1)
+      {
+        i3dl2.WetDryMix = std::clamp(_params[0], 0.0f, 100.0f);
+      }
+
+      XAUDIO2FX_REVERB_PARAMETERS native = {};
+      ReverbConvertI3DL2ToNative(&i3dl2, &native);
+      voice->m_voice->SetEffectParameters(static_cast<UINT32>(index), &native, sizeof(native));
+      break;
+    }
+
+    default:
+      break;
+    }
+  }
 
 
-  void SoundLibraryXAudio2::DisableDspFX(int _channel) {}
+  void SoundLibraryXAudio2::DisableDspFX(int _channel)
+  {
+    XAudio2Voice* voice = GetVoice(_channel);
+    if (!voice)
+      return;
+
+    for (std::unique_ptr<DspEffect>& effect : voice->m_inFillEffects)
+      effect.reset();
+
+    if (!voice->m_voice)
+      return;
+
+    bool hadChain = false;
+    for (int& index : voice->m_effectIndex)
+    {
+      hadChain = hadChain || index >= 0;
+      index = -1;
+    }
+
+    if (hadChain)
+    {
+      voice->m_voice->Stop(0);
+      voice->m_voice->FlushSourceBuffers();
+      voice->m_voice->SetEffectChain(nullptr);
+      voice->m_voice->Start(0);
+    }
+
+    if (voice->m_voiceFilterActive)
+    {
+      // Back to the state a freshly created voice is in: a low pass at the
+      // maximum frequency, which passes everything.
+      XAUDIO2_FILTER_PARAMETERS filterParams = {};
+      filterParams.Type = LowPassFilter;
+      filterParams.Frequency = XAUDIO2_MAX_FILTER_FREQUENCY;
+      filterParams.OneOverQ = 1.0f;
+      voice->m_voice->SetFilterParameters(&filterParams);
+      voice->m_voiceFilterActive = false;
+    }
+  }
 
 
   bool SoundLibraryXAudio2::Hardware3DSupport() { return false; }
