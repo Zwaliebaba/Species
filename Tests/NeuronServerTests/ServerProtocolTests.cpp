@@ -47,13 +47,15 @@ namespace NeuronServerTests
       class ScriptedClient
       {
         public:
-          ScriptedClient(Neuron::LoopbackNetwork& _network, unsigned short _port)
+          ScriptedClient(Neuron::LoopbackNetwork& _network, unsigned short _port, int _joinToken = 0)
             : m_address(0x0100007F, _port), // 127.0.0.1
-              m_transport(_network, m_address)
+              m_transport(_network, m_address),
+              m_joinToken(_joinToken == 0 ? static_cast<int>(_port) * 7919 : _joinToken)
           {
           }
 
           Neuron::Endpoint const& Address() const { return m_address; }
+          int JoinToken() const { return m_joinToken; }
 
           void Send(NetworkUpdate& _update, Neuron::Endpoint const& _server)
           {
@@ -71,6 +73,7 @@ namespace NeuronServerTests
             NetworkUpdate update;
             update.SetType(NetworkUpdate::UpdateType::ClientJoin);
             update.SetLastSequenceId(-1);
+            update.SetJoinToken(m_joinToken);
             Send(update, _server);
           }
 
@@ -119,7 +122,33 @@ namespace NeuronServerTests
         private:
           Neuron::Endpoint m_address;
           Neuron::LoopbackTransport m_transport;
+          int m_joinToken;
       };
+
+      // The connection id from the HelloClient carrying _token, or -1. This is
+      // what ClientToServer::ReceiveLetter does on the real client.
+      static int ConnectionIdFromWelcome(std::vector<ServerToClientLetter> const& _letters, int _token)
+      {
+        for (ServerToClientLetter const& letter : _letters)
+        {
+          if (letter.m_type == ServerToClientLetter::LetterType::HelloClient && letter.m_joinToken == _token)
+            return letter.m_connectionId;
+        }
+
+        return -1;
+      }
+
+      // Counts the TeamAssigns addressed to one connection id.
+      static int CountAssignsFor(std::vector<ServerToClientLetter> const& _letters, int _connectionId)
+      {
+        int count = 0;
+        for (ServerToClientLetter const& letter : _letters)
+        {
+          if (letter.m_type == ServerToClientLetter::LetterType::TeamAssign && letter.m_connectionId == _connectionId)
+            ++count;
+        }
+        return count;
+      }
 
       // Counts the letters of one type in a batch.
       static int CountOf(std::vector<ServerToClientLetter> const& _letters, ServerToClientLetter::LetterType _type)
@@ -166,7 +195,7 @@ namespace NeuronServerTests
         Server server;
         server.Initialise(s_profiler, std::make_unique<Neuron::LoopbackTransport>(network, serverAddress));
 
-        ScriptedClient client(network, ClientPort);
+        ScriptedClient client(network, 45001);
         client.SendJoin(serverAddress);
 
         server.Advance();
@@ -189,7 +218,7 @@ namespace NeuronServerTests
         Server server;
         server.Initialise(s_profiler, std::make_unique<Neuron::LoopbackTransport>(network, serverAddress));
 
-        ScriptedClient client(network, ClientPort);
+        ScriptedClient client(network, 45001);
         client.SendJoin(serverAddress);
         client.SendJoin(serverAddress);
 
@@ -206,7 +235,7 @@ namespace NeuronServerTests
         Server server;
         server.Initialise(s_profiler, std::make_unique<Neuron::LoopbackTransport>(network, serverAddress));
 
-        ScriptedClient client(network, ClientPort);
+        ScriptedClient client(network, 45001);
         client.SendJoin(serverAddress);
         server.Advance();
         client.Collect();
@@ -230,7 +259,7 @@ namespace NeuronServerTests
         Server server;
         server.Initialise(s_profiler, std::make_unique<Neuron::LoopbackTransport>(network, serverAddress));
 
-        ScriptedClient stranger(network, ClientPort);
+        ScriptedClient stranger(network, 45001);
         stranger.SendRequestTeam(serverAddress);
 
         server.Advance();
@@ -266,7 +295,7 @@ namespace NeuronServerTests
         Server server;
         server.Initialise(s_profiler, std::make_unique<Neuron::LoopbackTransport>(network, serverAddress));
 
-        ScriptedClient client(network, ClientPort);
+        ScriptedClient client(network, 45001);
         client.SendJoin(serverAddress);
         server.Advance();
         client.Collect();
@@ -309,7 +338,7 @@ namespace NeuronServerTests
         Server server;
         server.Initialise(s_profiler, std::make_unique<Neuron::LoopbackTransport>(network, serverAddress));
 
-        ScriptedClient client(network, ClientPort);
+        ScriptedClient client(network, 45001);
         client.SendJoin(serverAddress);
         server.Advance();
         client.Collect();
@@ -352,7 +381,7 @@ namespace NeuronServerTests
         Server server;
         server.Initialise(s_profiler, std::make_unique<Neuron::LoopbackTransport>(network, serverAddress));
 
-        ScriptedClient client(network, ClientPort);
+        ScriptedClient client(network, 45001);
         client.SendJoin(serverAddress);
         server.Advance();
         server.Advance();
@@ -375,32 +404,98 @@ namespace NeuronServerTests
         Assert::AreEqual(1, static_cast<int>(client.Collect().size()), L"an acknowledged client should receive one letter per tick");
       }
 
-      TEST_METHOD(ASecondClientGetsItsOwnTeamAssign)
+      TEST_METHOD(TwoClientsOnOneHostEachGetTheirOwnTeamAssign)
       {
-        // Two clients on one host, which is exactly what today's addressing
-        // cannot do: they are distinguished by source PORT, and the server keys
-        // them by IP string and replies to a fixed port. Both therefore look
-        // like one client to the server and both TeamAssigns go to the same
-        // place.
+        // THE TEST THIS PLAN EXISTS FOR. Two players behind one router are one
+        // address and two ports, which is also two players on one machine, and
+        // it is what the old addressing could not do at all: clients were keyed
+        // by IP string, so the second registered as the first, and replies went
+        // to a fixed port, so only one of them could ever be reached.
         //
-        // THIS TEST PINS THE CURRENT BEHAVIOUR AS A LIMITATION RATHER THAN AS
-        // CORRECT. T9 is what fixes it, and it rewrites this test to assert
-        // that each client receives its own.
+        // Before T9 this asserted the limitation. It asserts the fix now.
         Neuron::LoopbackNetwork network;
         const Neuron::Endpoint serverAddress(0x0100007F, ServerPort);
 
         Server server;
         server.Initialise(s_profiler, std::make_unique<Neuron::LoopbackTransport>(network, serverAddress));
 
-        ScriptedClient first(network, ClientPort);
-        ScriptedClient second(network, ClientPort + 1);
+        ScriptedClient first(network, 45001);
+        ScriptedClient second(network, 45002);
 
         first.SendJoin(serverAddress);
         second.SendJoin(serverAddress);
         server.Advance();
 
-        Assert::AreEqual(1, server.m_clients.NumUsed(), L"two clients on one host register as one, today");
-        Assert::AreEqual(0, static_cast<int>(second.Collect().size()), L"and the second hears nothing at all");
+        Assert::AreEqual(2, server.m_clients.NumUsed(), L"same address, different ports, two clients");
+
+        // Each is told its own connection id, and knows which HelloClient is
+        // its own by the token it chose.
+        const int firstId = ConnectionIdFromWelcome(first.Collect(), first.JoinToken());
+        const int secondId = ConnectionIdFromWelcome(second.Collect(), second.JoinToken());
+
+        Assert::IsTrue(firstId >= 0, L"the first client should have been told its id");
+        Assert::IsTrue(secondId >= 0, L"the second client should have been told its id");
+        Assert::AreNotEqual(firstId, secondId, L"and the two ids differ");
+
+        first.SendRequestTeam(serverAddress);
+        second.SendRequestTeam(serverAddress);
+        server.Advance();
+
+        Assert::AreEqual(2, server.m_teams.NumUsed());
+
+        // Both receive both TeamAssigns — every letter goes to every client —
+        // and each can tell which is its own.
+        const std::vector<ServerToClientLetter> toFirst = first.Collect();
+        const std::vector<ServerToClientLetter> toSecond = second.Collect();
+
+        Assert::AreEqual(1, CountAssignsFor(toFirst, firstId), L"the first client is assigned exactly one team");
+        Assert::AreEqual(1, CountAssignsFor(toSecond, secondId), L"and so is the second");
+        Assert::AreEqual(2, CountOf(toFirst, ServerToClientLetter::LetterType::TeamAssign), L"both assignments reach both clients");
+        Assert::AreEqual(2, CountOf(toSecond, ServerToClientLetter::LetterType::TeamAssign));
+      }
+
+      TEST_METHOD(AClientLearnsItsIdFromTheWelcomeCarryingItsOwnToken)
+      {
+        // The join token is the only client-chosen value in the protocol, and it
+        // exists for exactly one reason: every letter goes to every client, so a
+        // client cannot be told its id privately and cannot match on an id it
+        // does not yet have.
+        Neuron::LoopbackNetwork network;
+        const Neuron::Endpoint serverAddress(0x0100007F, ServerPort);
+
+        Server server;
+        server.Initialise(s_profiler, std::make_unique<Neuron::LoopbackTransport>(network, serverAddress));
+
+        ScriptedClient client(network, 45001);
+        client.SendJoin(serverAddress);
+        server.Advance();
+
+        const std::vector<ServerToClientLetter> letters = client.Collect();
+
+        Assert::AreEqual(0, ConnectionIdFromWelcome(letters, client.JoinToken()), L"the first connection gets id 0");
+        Assert::AreEqual(-1, ConnectionIdFromWelcome(letters, client.JoinToken() + 1), L"and a token that was never sent matches nothing");
+      }
+
+      TEST_METHOD(AClientCannotClaimToBeAnother)
+      {
+        // Identity comes from the datagram's source address, not from anything
+        // in the payload. There is no field a client could put another client's
+        // address in any more — but the shape of the guarantee is worth pinning:
+        // a second endpoint joining is a second client, whatever it sends.
+        Neuron::LoopbackNetwork network;
+        const Neuron::Endpoint serverAddress(0x0100007F, ServerPort);
+
+        Server server;
+        server.Initialise(s_profiler, std::make_unique<Neuron::LoopbackTransport>(network, serverAddress));
+
+        ScriptedClient honest(network, 45001, 4242);
+        ScriptedClient impostor(network, 45002, 4242); // the same token, deliberately
+
+        honest.SendJoin(serverAddress);
+        impostor.SendJoin(serverAddress);
+        server.Advance();
+
+        Assert::AreEqual(2, server.m_clients.NumUsed(), L"two endpoints are two clients even with one token between them");
       }
   };
 } // namespace NeuronServerTests

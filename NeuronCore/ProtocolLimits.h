@@ -34,15 +34,13 @@
 // fragmentation, where losing any fragment loses the whole letter.
 inline constexpr int MaxDatagramSize = 1024;
 
-// The ports. Named here rather than spelled at each socket, which is where they
-// were: 4000 in the server's listen thread and 4001 in three separate places.
+// THE PORT. One, now: the server's.
 //
-// ClientPort is on its way out. A client binds it today so the server has
-// somewhere fixed to reply to, which is exactly what limits a host to one
-// client and breaks through NAT — T9 replaces it with replying to the address
-// the datagram actually came from.
+// There was a second, 4001, which the client bound so the server had somewhere
+// fixed to reply to. That single fact limited a host to one client and could
+// not work through NAT. The server replies to the address a datagram came FROM,
+// so a client binds port 0 and lets the OS choose.
 inline constexpr unsigned short ServerPort = 4000;
-inline constexpr unsigned short ClientPort = 4001;
 
 // ****************************************************************************
 //  THE DATAGRAM FRAME. Four bytes in front of everything that goes out.

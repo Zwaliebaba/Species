@@ -44,14 +44,14 @@ namespace NeuronServerTests
         Assert::AreEqual(0, server.m_teams.NumUsed());
       }
 
-      TEST_METHOD(AnUnknownAddressIsNotAClient)
+      TEST_METHOD(AnUnknownEndpointIsNotAClient)
       {
-        // GetClientId walks the client DArray comparing dotted quads and returns
+        // GetClientId walks the client slot map comparing endpoints and returns
         // -1 for a miss. RegisterNewClient asserts on that -1, so a wrong answer
         // here would register the same client twice rather than fail loudly.
         Server server;
-        char address[] = "127.0.0.1";
-        Assert::AreEqual(-1, server.GetClientId(address));
+        const Neuron::Endpoint stranger(static_cast<unsigned long>(ConvertIPToInt("127.0.0.1")), 45001);
+        Assert::AreEqual(-1, server.GetClientId(stranger));
       }
 
       TEST_METHOD(AServerThatWasNeverInitialisedCanStillBeDestroyed)
@@ -129,22 +129,36 @@ namespace NeuronServerTests
         Assert::IsTrue(pending.empty());
       }
 
-      TEST_METHOD(AClientsEndpointIsItsAddressOnTheClientPort)
+      TEST_METHOD(AClientIsAnEndpointAndAConnectionId)
       {
-        // Constructing one of these used to open a socket and connect it, with
-        // a DEBUG_ASSERT if that failed — so a client registry could not exist
-        // without a network. It is an address now, and the address is the one
-        // ConvertIPToInt produces, in the byte order sockaddr_in wants.
-        char address[] = "127.0.0.1";
-        ServerToClient client(address);
+        // Constructing one of these used to open a socket and connect it to a
+        // dotted quad on a fixed port, with a DEBUG_ASSERT if that failed — so
+        // a client registry could not exist without a network, and could hold
+        // only one client per host. It is two values now: where the client is,
+        // and who it is.
+        const Neuron::Endpoint endpoint(static_cast<unsigned long>(ConvertIPToInt("127.0.0.1")), 45001);
+        ServerToClient client(endpoint, 3);
 
         // Compared as ints: the unit-test framework has no ToString for
         // unsigned long or unsigned short, so a mismatch would fail to compile
         // rather than fail the test.
-        Assert::AreEqual(ConvertIPToInt(address), static_cast<int>(client.GetEndpoint().m_address));
-        Assert::AreEqual(static_cast<int>(ClientPort), static_cast<int>(client.GetEndpoint().m_port));
+        Assert::AreEqual(ConvertIPToInt("127.0.0.1"), static_cast<int>(client.GetEndpoint().m_address));
+        Assert::AreEqual(45001, static_cast<int>(client.GetEndpoint().m_port));
+        Assert::AreEqual(3, client.GetConnectionId());
         Assert::IsTrue(client.GetEndpoint().IsValid());
         Assert::AreEqual(-1, client.m_lastKnownSequenceId);
+      }
+
+      TEST_METHOD(TwoClientsOnOneHostAreDifferentEndpoints)
+      {
+        // The whole of what T9 fixed, at the level of the registry key: same
+        // address, different port, different client.
+        const unsigned long address = static_cast<unsigned long>(ConvertIPToInt("127.0.0.1"));
+        const Neuron::Endpoint first(address, 45001);
+        const Neuron::Endpoint second(address, 45002);
+
+        Assert::IsFalse(first == second);
+        Assert::IsTrue(first == Neuron::Endpoint(address, 45001));
       }
 
       TEST_METHOD(AServerTeamRemembersWhichClientOwnsIt)

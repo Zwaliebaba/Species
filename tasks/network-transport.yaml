@@ -683,11 +683,62 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
     notes: >
       Collides with input-native-events T2/T8 and sound-xaudio2 T8 over
-      Species/Main.cpp - do not run concurrently with them. Both plans are
-      finished, so there is nothing to collide with today.
+      Species/Main.cpp. Both plans are finished, so there was nothing to collide
+      with.
+
+      THE ACCEPTANCE HAS A HOLE AND THIS TASK FILLED IT. "HelloClient carries the
+      assigned connection id; the client stores it" is not implementable as
+      written: EVERY LETTER GOES TO EVERY CLIENT, because the sequence stream has
+      to be identical for all of them or lockstep breaks. So a joining client
+      receives HelloClients for other clients too, and cannot tell which is its
+      own - it cannot match on an id it does not yet have, and it cannot be told
+      privately without breaking the stream.
+
+      A JOIN TOKEN closes it, and it is the only client-chosen value in the
+      protocol. The client picks one, sends it with ClientJoin, and the server
+      echoes it in that client's HelloClient beside the id it assigned. The
+      server never trusts it, stores it or keys anything by it - identity is the
+      datagram's source address and nothing else, so a client cannot claim to be
+      another by sending its token. That last property has its own test.
+
+      The alternative considered and rejected: adopt the id from the first
+      HelloClient to arrive. It works whenever one client joins at a time and
+      fails silently the moment two do, which is the worst shape a bug can have.
+
+      THE TOKEN COMES FROM speciesRandom, NOT syncrand, and that is the rule in
+      CODING_STANDARDS.md rather than a preference: it is client-local and never
+      simulation state, and drawing from the synchronised stream here would shift
+      it by a client-dependent amount and desync everyone. Two draws, because one
+      is not guaranteed wider than 15 bits.
+
+      THE CONNECTION ID IS THE SLOT INDEX. It is already what the outbox routes
+      by, and SlotMap's contract is that an entry's index never changes.
+      GetNextFree reserves the slot so the ServerToClient can be built with its
+      own id in one step rather than being patched afterwards.
+
+      WHAT WENT: GetOurIP_Int and its notes-by-John block, ServerToClient's IP
+      string, NetworkUpdate::m_clientIp and SetClientIp, ServerToClientLetter's
+      m_ip, ClientPort, and the commented-out RegisterNewTeam block that
+      described the identity model this task replaced. The client binds port 0
+      now and lets the OS choose.
+
+      THE BUG THIS FIXES IS NOT SUBTLE: ProcessServerLetters decided "is this
+      TeamAssign mine?" by comparing against GetOurIP_Int, which returned a
+      hard-coded 127.0.0.1. On any real network every client believed every team
+      assignment was its own. It has a test now, and so does the two-clients-on-
+      one-host case that the old addressing could not represent at all - that
+      test previously asserted the limitation and now asserts the fix.
+
+      COMPILED AND RUN under ASan and UBSan for the codecs: every update and
+      letter payload still matches a serialiser written to the new layout, the
+      frame checks still hold, and the 20,000 random datagrams re-run clean. One
+      harness expectation changed and it is worth knowing why - ClientJoin's
+      payload is twelve bytes rather than eight now, because it carries the
+      token, so an eight-byte payload no longer parses as a join.
+
 
   - id: T10
     title: Liveness, history pruning, and runtime lockstep guards

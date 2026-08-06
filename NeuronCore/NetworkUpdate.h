@@ -13,6 +13,7 @@
 #include "ByteStream.h"
 #include "TeamControls.h"
 #include "NeuronMath.h"
+#include "UdpSocket.h"
 
 #define NETWORKUPDATE_BYTESTREAMSIZE 42
 
@@ -48,7 +49,18 @@ class NetworkUpdate
     };
 
     UpdateType m_type;
-    char m_clientIp[16];
+
+    // Where this update came from. NOT on the wire — the server stamps it from
+    // the datagram's source address on receive, and it is how a client is
+    // identified from that point on. It replaces a char[16] holding a dotted
+    // quad, which could name only one client per host and could not survive
+    // NAT: two players behind one router are one address and two ports.
+    Neuron::Endpoint m_source;
+
+    // Chosen by the client, echoed by the server in HelloClient, and how a
+    // client picks its own welcome out of a stream every client receives. See
+    // the note in ServerToClientLetter.h.
+    int m_joinToken;
     unsigned char m_teamType;
     signed char m_desiredTeamId; // Used by the server host to force AI players to have a specific ID. -1 if we don't care
     int m_unitId;
@@ -79,7 +91,7 @@ class NetworkUpdate
     NetworkUpdate(char const* _datagram, int _len);
 
     void SetType(UpdateType _type);
-    void SetClientIp(std::string_view ip);
+    void SetJoinToken(int _token);
     void SetTeamType(unsigned char _teamType);
     void SetDesiredTeamId(signed char _desiredTeamId);
     void SetWorldPos(DirectX::XMFLOAT3 const& _pos);

@@ -27,8 +27,20 @@ namespace Neuron
   ClientToServer* g_clientToServer = nullptr;
 
 
+  namespace
+  {
+    // Client-local and never simulation state, so the cosmetic generator is the
+    // right one — syncrand is the lockstep stream and drawing from it here would
+    // shift it by a client-dependent amount. Two draws because one is not
+    // guaranteed to be wider than 15 bits.
+    int MakeJoinToken() { return (speciesRandom() << 16) ^ speciesRandom(); }
+  } // namespace
+
+
   ClientToServer::ClientToServer()
   {
+    m_connectionId = -1;
+    m_joinToken = MakeJoinToken();
     m_lastValidSequenceIdFromServer = -1;
     m_startTime = DBL_MAX; // Same initial value g_startTime carried in Main.cpp
 
@@ -40,14 +52,15 @@ namespace Neuron
     if (unresolved)
       NetDebugOut("Client could not resolve server address {}: {}", serverAddress, unresolved.message());
 
-    // Bound, not connected. The socket used to be a pair: a NetSocket
-    // "connected" to the server for sending, and a NetSocketListener on a
-    // thread of its own for receiving. The file-scope ClientToServer* that
-    // existed only so a socket callback could find it went with them.
+    // PORT 0: whatever the OS gives us. The client used to bind a fixed 4001 so
+    // the server had somewhere to reply to, and that single fact is what
+    // limited a host to one client and broke NAT — the server replies to the
+    // address a datagram came FROM now, so nothing needs the port to be
+    // predictable.
     auto transport = std::make_unique<UdpTransport>();
-    const std::error_code failure = transport->Open(ClientPort);
+    const std::error_code failure = transport->Open(0);
     if (failure)
-      NetDebugOut("Client could not open port {}: {}", ClientPort, failure.message());
+      NetDebugOut("Client could not open a socket: {}", failure.message());
 
     m_transport = std::move(transport);
   }
@@ -59,6 +72,8 @@ namespace Neuron
   {
     // No NetLib and no preferences: this constructor exists so a test can hold
     // a client, and a test has neither. Nothing in the game calls it.
+    m_connectionId = -1;
+    m_joinToken = MakeJoinToken();
     m_lastValidSequenceIdFromServer = -1;
     m_startTime = DBL_MAX;
   }
@@ -150,67 +165,6 @@ namespace Neuron
   }
 
 
-  int ClientToServer::GetOurIP_Int()
-  {
-    // We're not doing networking for now
-    static int s_localIP = ConvertIPToInt("127.0.0.1");
-    return s_localIP;
-
-    // Notes by John
-    // =============
-    //
-    // The commented code below has the following problems
-    //
-    // - it doesn't always return the same IP (sometimes 127.0.0.1
-    //   and sometimes the real ip). This means that the remote packet
-    //   detection code in ProcessServerLetters in main.cpp
-    //   can incorrectly classify a TeamAssignment message as Remote
-    //   when it should be local.
-    //
-    // - on many machines the hostname has nothing to do with IP address. I
-    //   believe the correct thing to do is open a TCP connection to the
-    //   server and ask the server what it thinks your IP address is
-    //   (see getpeername). This will work even if the client is behind a NAT.
-    //
-    // - h_addr_list[0] is in network byte order. Treating it directly
-    //   as an int leads to endianness problems. ConvertIntToIP and ConvertIPToInt
-    //   assume that the least significant byte of the integer
-    //   corresponds to the A of the ip address A.B.C.D. The problem is that
-    //   a direct cast from h_addr_list[0] to an integer means that the least
-    //   significant byte be different on big endian machines (Macintosh). The effect
-    //   of this is that the IP comes out in reverse order on the Mac.
-    //		See functions ntohl and hton for possible solutions.
-    //
-    // - Constant parsing of IP strings and generation again seems wasteful. I think
-    //   that IPs should be represented as a class, with various different constructors.
-    //	 The private data should be 4 unsigned chars. With this strategy you could
-    //   even support IPv6 (if that actually happens before the year 3000).
-
-    //	char hostName[256];
-    //
-    //	int errorCode = gethostname( hostName, sizeof(hostName) );
-    //	if (errorCode == 0) {
-    //		struct hostent *hostEnt = gethostbyname(hostName);
-    //		if (hostEnt && hostEnt->h_addr_list[0])
-    //			return *((int*)hostEnt->h_addr_list[0]);
-    //	}
-    //	return ConvertIPToInt( "127.0.0.1" );
-  }
-
-
-  int ClientToServer::GetNextLetterSeqID()
-  {
-    int result = -1;
-
-    if (!m_inbox.empty())
-    {
-      result = m_inbox[0]->GetSequenceId();
-    }
-
-    return result;
-  }
-
-
   std::unique_ptr<ServerToClientLetter> ClientToServer::GetNextLetter(int _lastProcessedSequenceId)
   {
     std::unique_ptr<ServerToClientLetter> letter;
@@ -242,6 +196,18 @@ namespace Neuron
       return;
     }
 #endif
+
+    //
+    // Our own welcome, recognised by the token we chose and the server echoed.
+    // Done on arrival rather than when the letter is released from the inbox in
+    // sequence: this is client bookkeeping, not simulation state, and the game
+    // needs the id before it processes the TeamAssign that follows.
+
+    if (letter->m_type == ServerToClientLetter::LetterType::HelloClient && m_connectionId == -1 && letter->m_joinToken == m_joinToken)
+    {
+      m_connectionId = letter->m_connectionId;
+      DebugTrace("CLIENT : the server assigned us connection id {}\n", m_connectionId);
+    }
 
   //
   // Check for duplicates

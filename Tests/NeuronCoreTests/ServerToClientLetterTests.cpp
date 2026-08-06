@@ -48,7 +48,8 @@ namespace NeuronCoreTests
         ServerToClientLetter letter;
         letter.SetType(ServerToClientLetter::LetterType::HelloClient);
         letter.SetSequenceId(0x21436587);
-        letter.SetIp(0x0100007F);
+        letter.SetConnectionId(3);
+        letter.SetJoinToken(0x0BADF00D);
 
         char datagram[MaxDatagramSize];
         const int length = letter.Serialise(datagram, static_cast<int>(sizeof(datagram)));
@@ -57,12 +58,14 @@ namespace NeuronCoreTests
 
         const int type = reader.Read<int>();
         const int sequenceId = reader.Read<int>();
-        const int ip = reader.Read<int>();
+        const int connectionId = reader.Read<int>();
+        const int joinToken = reader.Read<int>();
 
         Assert::AreEqual(static_cast<int>(ServerToClientLetter::LetterType::HelloClient), type);
         Assert::AreEqual(0x21436587, sequenceId);
-        Assert::AreEqual(0x0100007F, ip);
-        Assert::AreEqual(4 + 12, length, L"the frame, then the twelve-byte payload");
+        Assert::AreEqual(3, connectionId);
+        Assert::AreEqual(0x0BADF00D, joinToken, L"echoed so the joining client knows which welcome is its own");
+        Assert::AreEqual(4 + 16, length, L"the frame, then the sixteen-byte payload");
       }
 
       TEST_METHOD(TeamAssignCarriesTeamIdTypeAndAddress)
@@ -74,7 +77,7 @@ namespace NeuronCoreTests
         letter.SetSequenceId(5);
         letter.SetTeamId(2);
         letter.SetTeamType(1);
-        letter.SetIp(0x0100007F);
+        letter.SetConnectionId(7);
 
         char datagram[MaxDatagramSize];
         const int length = letter.Serialise(datagram, static_cast<int>(sizeof(datagram)));
@@ -85,13 +88,13 @@ namespace NeuronCoreTests
         const int sequenceId = reader.Read<int>();
         const unsigned char teamId = reader.Read<unsigned char>();
         const unsigned char teamType = reader.Read<unsigned char>();
-        const int ip = reader.Read<int>();
+        const int connectionId = reader.Read<int>();
 
         Assert::AreEqual(static_cast<int>(ServerToClientLetter::LetterType::TeamAssign), type);
         Assert::AreEqual(5, sequenceId);
         Assert::AreEqual(static_cast<unsigned char>(2), teamId);
         Assert::AreEqual(static_cast<unsigned char>(1), teamType);
-        Assert::AreEqual(0x0100007F, ip);
+        Assert::AreEqual(7, connectionId, L"which client this team belongs to, by id rather than by address");
         Assert::AreEqual(4 + 14, length, L"the frame, then the fourteen-byte payload");
       }
 

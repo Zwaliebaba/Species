@@ -96,22 +96,16 @@ namespace Neuron
       if (!update->IsValid())
         continue;
 
-      in_addr address;
-      address.s_addr = from.m_address;
-      ReceiveLetter(std::move(update), IpToString(address));
+      ReceiveLetter(std::move(update), from);
     }
   }
 
-  int Server::GetClientId(char* _ip)
+  int Server::GetClientId(Endpoint const& _from) const
   {
     for (int i = 0; i < m_clients.Size(); ++i)
     {
-      if (m_clients.ValidIndex(i))
-      {
-        std::string_view const thisIP = m_clients[i]->GetIP();
-        if (thisIP == _ip)
-          return i;
-      }
+      if (m_clients.ValidIndex(i) && m_clients[i]->GetEndpoint() == _from)
+        return i;
     }
 
     return -1;
@@ -119,23 +113,32 @@ namespace Neuron
 
 
   // ***RegisterNewClient
-  void Server::RegisterNewClient(char* _ip)
+  void Server::RegisterNewClient(Endpoint const& _from, int _joinToken)
   {
-    DEBUG_ASSERT(GetClientId(_ip) == -1);
-    m_clients.PutData(std::make_unique<ServerToClient>(_ip));
+    DEBUG_ASSERT(GetClientId(_from) == -1);
+
+    // The slot index IS the connection id. It is already what the outbox routes
+    // by, it is stable for the life of the connection, and SlotMap's contract is
+    // that an entry's index never changes — see CODING_STANDARDS.md, which says
+    // the same thing about the indices that are network identity elsewhere.
+    const int connectionId = m_clients.GetNextFree();
+    m_clients[connectionId] = std::make_unique<ServerToClient>(_from, connectionId);
 
     //
-    // Tell all clients about it
+    // Tell all clients about it. Every client receives this, because the
+    // sequence stream has to be identical for all of them — the joining client
+    // picks its own out by the token it chose and the server echoes.
 
     auto letter = std::make_unique<ServerToClientLetter>();
     letter->SetType(ServerToClientLetter::LetterType::HelloClient);
-    letter->SetIp(ConvertIPToInt(_ip));
+    letter->SetConnectionId(connectionId);
+    letter->SetJoinToken(_joinToken);
     SendLetter(std::move(letter));
   }
 
-  void Server::RemoveClient(char* _ip)
+  void Server::RemoveClient(Endpoint const& _from)
   {
-    int clientId = GetClientId(_ip);
+    int clientId = GetClientId(_from);
     // reset() before MarkNotUsed, and both are load-bearing. MarkNotUsed only
     // clears the occupancy bit — it does not destroy — so without the reset the
     // record would outlive the disconnect and linger until the slot was reused.
@@ -149,14 +152,14 @@ namespace Neuron
 
     auto letter = std::make_unique<ServerToClientLetter>();
     letter->SetType(ServerToClientLetter::LetterType::GoodbyeClient);
-    letter->SetIp(ConvertIPToInt(_ip));
+    letter->SetConnectionId(clientId);
     SendLetter(std::move(letter));
   }
 
   // *** RegisterNewTeam
-  void Server::RegisterNewTeam(char* _ip, int _teamType, int _desiredTeamId)
+  void Server::RegisterNewTeam(Endpoint const& _from, int _teamType, int _desiredTeamId)
   {
-    int clientId = GetClientId(_ip);
+    int clientId = GetClientId(_from);
     DEBUG_ASSERT(clientId != -1); // Client not properly connected
 
     if (_desiredTeamId != -1) // Specified Team ID - An AI
@@ -176,50 +179,11 @@ namespace Neuron
       auto letter = std::make_unique<ServerToClientLetter>();
       letter->SetType(ServerToClientLetter::LetterType::TeamAssign);
       letter->SetTeamId(teamId);
-      letter->SetIp(ConvertIPToInt(_ip));
+      letter->SetConnectionId(clientId);
       letter->SetTeamType(_teamType);
       SendLetter(std::move(letter));
     }
 
-    /*
-        DEBUG_ASSERT(GetClientId(_ip) != -1);
-
-        if (m_teams.NumUsed() < NUM_TEAMS)
-        {
-            int clientId = GetClientId(_ip);
-            ServerTeam *team = new ServerTeam(clientId);
-            int teamId = -1;
-
-            if (_desiredTeamId == -1)
-        {
-          teamId = m_teams.PutData( team );
-        }
-        else
-        {
-          DEBUG_ASSERT(!m_teams.ValidIndex(_desiredTeamId));
-          teamId = _desiredTeamId;
-          if (m_teams.Size() <= _desiredTeamId)
-          {
-            m_teams.SetSize(_desiredTeamId+1);
-          }
-          m_teams.PutData(team, _desiredTeamId);
-        }
-
-            //
-            // Send a TeamAssign letter to all Clients
-
-            if( _teamType != Team::TeamTypeAI )
-            {
-                ServerToClientLetter *letter = new ServerToClientLetter();
-                letter->SetType( ServerToClientLetter::LetterType::TeamAssign );
-                letter->SetTeamId(teamId);
-                letter->SetIp( ConvertIPToInt( _ip ) );
-                letter->SetTeamType( _teamType );
-                letter->SetAIType( _aiType );
-
-                SendLetter( letter );
-            }
-        }*/
   }
 
   std::unique_ptr<NetworkUpdate> Server::GetNextLetter()
@@ -235,9 +199,11 @@ namespace Neuron
     return letter;
   }
 
-  void Server::ReceiveLetter(std::unique_ptr<NetworkUpdate> update, std::string_view fromIP)
+  void Server::ReceiveLetter(std::unique_ptr<NetworkUpdate> update, Endpoint const& _from)
   {
-    update->SetClientIp(fromIP);
+    // Stamped from the datagram's source rather than taken from anything the
+    // sender wrote. A client cannot claim to be another client by saying so.
+    update->m_source = _from;
     m_inbox.push_back(std::move(update));
   }
 
@@ -339,26 +305,26 @@ namespace Neuron
     {
       if (incoming->m_type == NetworkUpdate::UpdateType::ClientJoin)
       {
-        if (GetClientId(incoming->m_clientIp) == -1)
+        if (GetClientId(incoming->m_source) == -1)
         {
-          DebugTrace("SERVER: New Client connected from {}\n", incoming->m_clientIp);
-          RegisterNewClient(incoming->m_clientIp);
+          DebugTrace("SERVER: New Client connected from {}\n", incoming->m_source.ToString());
+          RegisterNewClient(incoming->m_source, incoming->m_joinToken);
         }
       }
       else if (incoming->m_type == NetworkUpdate::UpdateType::ClientLeave)
       {
-        if (GetClientId(incoming->m_clientIp) != -1)
+        if (GetClientId(incoming->m_source) != -1)
         {
-          DebugTrace("SERVER: Client at {} disconnected gracefully\n", incoming->m_clientIp);
-          RemoveClient(incoming->m_clientIp);
+          DebugTrace("SERVER: Client at {} disconnected gracefully\n", incoming->m_source.ToString());
+          RemoveClient(incoming->m_source);
         }
       }
       else if (incoming->m_type == NetworkUpdate::UpdateType::RequestTeam)
       {
-        if (GetClientId(incoming->m_clientIp) != -1)
+        if (GetClientId(incoming->m_source) != -1)
         {
-          DebugTrace("SERVER: New team request from {}\n", incoming->m_clientIp);
-          RegisterNewTeam(incoming->m_clientIp, incoming->m_teamType, incoming->m_desiredTeamId);
+          DebugTrace("SERVER: New team request from {}\n", incoming->m_source.ToString());
+          RegisterNewTeam(incoming->m_source, incoming->m_teamType, incoming->m_desiredTeamId);
         }
       }
       else if (incoming->m_type == NetworkUpdate::UpdateType::Syncronise)
@@ -401,7 +367,7 @@ namespace Neuron
         // which cannot be decided until the loop has finished.
         m_pendingUpdates.push_back(*incoming);
 
-      int clientId = GetClientId(incoming->m_clientIp);
+      int clientId = GetClientId(incoming->m_source);
       if (clientId != -1)
       {
         ServerToClient* sToc = m_clients[clientId].get();

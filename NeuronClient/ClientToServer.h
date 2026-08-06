@@ -36,13 +36,20 @@ namespace Neuron
       // Where datagrams go and come from, polled from the frame loop. It
       // replaces a NetSocket for sending, a NetSocketListener on a blocking
       // thread for receiving, and the two mutexes between them. The default
-      // constructor builds a UdpTransport bound to ClientPort; the other one
+      // constructor builds a UdpTransport on an OS-chosen port; the other one
       // takes whatever it is given, which is how a test drives a client with no
       // socket in it.
       std::unique_ptr<Transport> m_transport;
 
       std::vector<std::unique_ptr<ServerToClientLetter>> m_inbox;
       std::vector<std::unique_ptr<NetworkUpdate>> m_outbox;
+
+      int m_connectionId;
+
+      // Chosen once, sent with ClientJoin, and echoed back in the HelloClient
+      // that belongs to this client. Every client receives every letter, so
+      // this is how one is told apart from another's.
+      int m_joinToken;
 
       int m_lastValidSequenceIdFromServer; // eg if we have 11,12,13,15,18 then this is 13
       // When the client believes server sequence 0 happened, derived from the sequence id of every letter
@@ -56,7 +63,14 @@ namespace Neuron
       ClientToServer(std::unique_ptr<Transport> _transport, Endpoint const& _serverEndpoint);
       ~ClientToServer();
 
-      int GetOurIP_Int();
+      // Assigned by the server and learned from the HelloClient carrying this
+      // client's join token. -1 until then.
+      //
+      // It replaces GetOurIP_Int, which returned a hard-coded 127.0.0.1 with a
+      // "we're not doing networking for now" comment above it — and which
+      // ProcessServerLetters compared every TeamAssign against, so on a real
+      // network every client believed every team assignment was its own.
+      [[nodiscard]] int GetConnectionId() const { return m_connectionId; }
 
       // Releases the head of the inbox only when it is the letter the caller is
       // next expecting. The caller owns that counter — it tracks how far the

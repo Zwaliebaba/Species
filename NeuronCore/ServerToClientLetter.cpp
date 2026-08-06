@@ -13,7 +13,8 @@ ServerToClientLetter::ServerToClientLetter()
     m_sequenceId(0),
     m_teamId(0),
     m_teamType(0),
-    m_ip(0),
+    m_connectionId(-1),
+    m_joinToken(0),
     m_updateBytes(0)
 {
 }
@@ -26,7 +27,8 @@ ServerToClientLetter::ServerToClientLetter(char const* _byteStream, int _len)
     m_sequenceId(0),
     m_teamId(0),
     m_teamType(0),
-    m_ip(0),
+    m_connectionId(-1),
+    m_joinToken(0),
     m_updateBytes(0)
 {
   ByteReader reader(_byteStream, _len > 0 ? static_cast<size_t>(_len) : 0);
@@ -44,14 +46,18 @@ ServerToClientLetter::ServerToClientLetter(char const* _byteStream, int _len)
   switch (static_cast<LetterType>(rawType))
   {
   case LetterType::HelloClient:
+    m_connectionId = reader.Read<int>();
+    m_joinToken = reader.Read<int>();
+    break;
+
   case LetterType::GoodbyeClient:
-    m_ip = reader.Read<int>();
+    m_connectionId = reader.Read<int>();
     break;
 
   case LetterType::TeamAssign:
     m_teamId = reader.Read<unsigned char>();
     m_teamType = reader.Read<unsigned char>();
-    m_ip = reader.Read<int>();
+    m_connectionId = reader.Read<int>();
     break;
 
   case LetterType::Update:
@@ -129,8 +135,10 @@ int ServerToClientLetter::GetClientId() const { return m_clientId; }
 // *** GetSequenceId
 int ServerToClientLetter::GetSequenceId() const { return m_sequenceId; }
 
-// *** SetIp
-void ServerToClientLetter::SetIp(int ip) { m_ip = ip; }
+// *** SetConnectionId
+void ServerToClientLetter::SetConnectionId(int _connectionId) { m_connectionId = _connectionId; }
+
+void ServerToClientLetter::SetJoinToken(int _joinToken) { m_joinToken = _joinToken; }
 
 // *** HeaderSize
 int ServerToClientLetter::HeaderSize() const
@@ -141,8 +149,10 @@ int ServerToClientLetter::HeaderSize() const
   switch (m_type)
   {
   case LetterType::HelloClient:
+    return DatagramHeaderSize + 4 * static_cast<int>(sizeof(int)); // type, sequence id, connection id, join token
+
   case LetterType::GoodbyeClient:
-    return DatagramHeaderSize + 3 * static_cast<int>(sizeof(int)); // type, sequence id, ip
+    return DatagramHeaderSize + 3 * static_cast<int>(sizeof(int)); // type, sequence id, connection id
 
   case LetterType::TeamAssign:
     return DatagramHeaderSize + 3 * static_cast<int>(sizeof(int)) + 2 * static_cast<int>(sizeof(unsigned char)); // ...plus team id and type
@@ -195,14 +205,18 @@ int ServerToClientLetter::Serialise(char* _buffer, int _capacity)
   switch (m_type)
   {
   case LetterType::HelloClient:
+    writer.Write<int>(m_connectionId);
+    writer.Write<int>(m_joinToken);
+    break;
+
   case LetterType::GoodbyeClient:
-    writer.Write<int>(m_ip);
+    writer.Write<int>(m_connectionId);
     break;
 
   case LetterType::TeamAssign:
     writer.Write<unsigned char>(m_teamId);
     writer.Write<unsigned char>(m_teamType);
-    writer.Write<int>(m_ip);
+    writer.Write<int>(m_connectionId);
     break;
 
   case LetterType::Update:

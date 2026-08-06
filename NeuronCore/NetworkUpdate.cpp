@@ -18,7 +18,8 @@ NetworkUpdate::NetworkUpdate()
     m_numTroops(0),
     m_unitId(0),
     m_buildingId(-1),
-    m_sync(0)
+    m_sync(0),
+    m_joinToken(0)
 {
 }
 
@@ -70,6 +71,11 @@ bool NetworkUpdate::ReadByteStream(ByteReader& _reader)
   switch (static_cast<UpdateType>(rawType))
   {
   case UpdateType::ClientJoin:
+    // The one field a join carries, and the only client-chosen value in the
+    // protocol. The server does not trust it for anything — it echoes it.
+    m_joinToken = _reader.Read<int>();
+    break;
+
   case UpdateType::ClientLeave:
   case UpdateType::Pause:
     // Header only. Pause is written the same way and has to be listed here
@@ -163,31 +169,7 @@ bool NetworkUpdate::ReadByteStream(ByteReader& _reader)
 
 void NetworkUpdate::SetType(UpdateType _type) { m_type = _type; }
 
-void NetworkUpdate::SetClientIp(std::string_view ip)
-{
-  // m_clientIp stays a char[16] and this stays a copy into it. The type has to
-  // remain trivially copyable: ServerToClientLetter holds a vector of these by
-  // value, and network-transport T2 removed the hand-written copy assignment
-  // precisely so it would be. Converting the field to std::string is a change
-  // to what the letter's storage costs to copy, not a tidy-up.
-  //
-  // What does change is that the copy is bounded. The old unbounded copy
-  // ran off the end of a 16-byte field for anything longer than a dotted
-  // quad; today every caller passes an address the UDP layer produced, but
-  // nothing in the signature said so.
-  // Written out rather than with std::min, which does not compile anywhere
-  // MathUtils.h is reachable: it defines function-style min and max macros, so
-  // `std::min(` becomes `std::(...)(` and MSVC reports C2589. NOMINMAX
-  // suppresses the Windows pair; nothing suppresses ours. See
-  // tasks/language-hygiene.yaml T8.
-  size_t length = ip.size();
-  if (length > sizeof(m_clientIp) - 1)
-  {
-    length = sizeof(m_clientIp) - 1;
-  }
-  std::memcpy(m_clientIp, ip.data(), length);
-  m_clientIp[length] = '\0';
-}
+void NetworkUpdate::SetJoinToken(int _token) { m_joinToken = _token; }
 
 void NetworkUpdate::SetTeamType(unsigned char _teamType) { m_teamType = _teamType; }
 
@@ -240,6 +222,9 @@ char* NetworkUpdate::GetByteStream(int* _linearSize)
   switch (m_type)
   {
   case UpdateType::ClientJoin:
+    writer.Write<int>(m_joinToken);
+    break;
+
   case UpdateType::ClientLeave:
   case UpdateType::Pause:
     break;

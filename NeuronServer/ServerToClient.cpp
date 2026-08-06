@@ -1,9 +1,5 @@
 #include "pch.h"
 
-
-#include "Debug.h"
-#include "Generic.h"
-#include "ProtocolLimits.h"
 #include "ServerToClient.h"
 
 
@@ -11,20 +7,18 @@ namespace Neuron
 {
 
 
-  ServerToClient::ServerToClient(char* _ip)
-    : m_ip(_ip),
-      // ConvertIPToInt produces the octets in the order sockaddr_in holds
-      // them, so this is the address to send back to with no further
-      // conversion. Constructing one can no longer fail: it used to open and
-      // connect a socket, and assert if that did not work.
-      m_endpoint(static_cast<unsigned long>(ConvertIPToInt(_ip)), ClientPort)
+  ServerToClient::ServerToClient(Endpoint const& _endpoint, int _connectionId)
+    : m_endpoint(_endpoint),
+      m_connectionId(_connectionId),
+      m_lastKnownSequenceId(-1)
   {
-    m_lastKnownSequenceId = -1;
+    // Constructing one of these used to open a socket and connect it to the
+    // client, with a DEBUG_ASSERT if that failed. It is two values now.
   }
 
 
-  std::string_view ServerToClient::GetIP() { return m_ip; }
-
-
   Endpoint const& ServerToClient::GetEndpoint() const { return m_endpoint; }
+
+
+  int ServerToClient::GetConnectionId() const { return m_connectionId; }
 } // namespace Neuron

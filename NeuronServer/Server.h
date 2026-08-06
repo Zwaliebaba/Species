@@ -92,13 +92,16 @@ namespace Neuron
 
       std::unique_ptr<NetworkUpdate> GetNextLetter();
 
-      void ReceiveLetter(std::unique_ptr<NetworkUpdate> update, std::string_view fromIP);
+      void ReceiveLetter(std::unique_ptr<NetworkUpdate> update, Endpoint const& _from);
       void SendLetter(std::unique_ptr<ServerToClientLetter> letter);
 
-      int GetClientId(char* _ip);
-      void RegisterNewClient(char* _ip);
-      void RemoveClient(char* _ip);
-      void RegisterNewTeam(char* _ip, int _teamType, int _desiredTeamId);
+      // Clients are keyed by the (address, port) their datagrams arrive from.
+      // They used to be keyed by a dotted-quad string, which made one client per
+      // host the limit and made NAT impossible.
+      [[nodiscard]] int GetClientId(Endpoint const& _from) const;
+      void RegisterNewClient(Endpoint const& _from, int _joinToken);
+      void RemoveClient(Endpoint const& _from);
+      void RegisterNewTeam(Endpoint const& _from, int _teamType, int _desiredTeamId);
 
       void AdvanceSender();
       void Advance();

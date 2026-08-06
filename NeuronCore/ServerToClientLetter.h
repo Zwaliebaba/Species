@@ -27,7 +27,23 @@ class ServerToClientLetter
     LetterType m_type;
     unsigned char m_teamId;
     unsigned char m_teamType;
-    int m_ip; // This tells you specifically which client gets the HelloClient or TeamAssign
+    // WHICH CLIENT a HelloClient or TeamAssign is about.
+    //
+    // It was an IP address, compared by the client against its own — through
+    // GetOurIP_Int, which was hard-stubbed to 127.0.0.1, so remote team
+    // assignment did not work at all: every client believed every TeamAssign
+    // was its own. It is a server-assigned connection id now.
+    int m_connectionId;
+
+    // Only on a HelloClient, and only so a client can recognise its own.
+    //
+    // EVERY LETTER GOES TO EVERY CLIENT — the sequence stream has to be
+    // identical for all of them, because lockstep depends on it — so a client
+    // cannot be told its id privately, and cannot match on an id it does not
+    // yet have. It sends a token with its join and the server echoes it here.
+    // That is the only thing the token is for; the server never trusts it,
+    // stores it, or keys anything by it.
+    int m_joinToken;
 
     // By value. It held raw owning NetworkUpdate* and the class had no
     // destructor, so every Update letter the client received and every history
@@ -64,7 +80,8 @@ class ServerToClientLetter
     void SetSequenceId(int seqId);
     void SetTeamId(int teamId);
     void SetTeamType(int teamType);
-    void SetIp(int ip);
+    void SetConnectionId(int _connectionId);
+    void SetJoinToken(int _joinToken);
 
     int GetClientId() const;
     int GetSequenceId() const;
