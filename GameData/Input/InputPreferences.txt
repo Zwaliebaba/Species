@@ -5,35 +5,10 @@ MenuDown                          = key down down
 MenuActivate                      = key enter down
 MenuEscape                        = key esc down
 
-MenuLeft                          = XInput dpadleft repeat
-MenuRight                         = XInput dpadright repeat
-MenuLeft                          ~ Icons/ButtonDpadLr.bmp
-MenuUp                            = XInput dpadup repeat
-MenuDown                          = XInput dpaddown repeat
-MenuActivate                      = XInput a down
-MenuActivate                      ~ Icons/ButtonA.bmp
-MenuEscape                        = XInput start down
-MenuClose                         = XInput back down
-MenuClose                         = XInput b down
-
-MenuLeft                          = XInput leftthumbstickleft repeat
-MenuRight                         = XInput leftthumbstickright repeat
-MenuUp                            = XInput leftthumbstickup repeat
-MenuDown                          = XInput leftthumbstickdown repeat
-
-MenuLeft                          = XInput rightthumbstickleft repeat
-MenuRight                         = XInput rightthumbstickright repeat
-MenuUp                            = XInput rightthumbstickup repeat
-MenuDown                          = XInput rightthumbstickdown repeat
 SkipMessage                       = key enter down
 SkipMessage                       = key esc down
-SkipMessage                       = XInput start down
-SkipMessage                       = XInput a down
-SkipMessage                       = XInput b down
-SkipMessage                       = XInput y down
 
 SkipCutscene                      = key enter down
-SkipCutscene                      = XInput b down
 
 CameraLeft                        = key a pressed
 CameraRight                       = key d pressed
@@ -46,69 +21,29 @@ CameraDeZoom                      = key c pressed
 
 CameraZoom                        = mouse middle pressed
 
-CameraMove                        = XInput leftthumbstick position
-CameraMove                        ~ Icons/ButtonLa.bmp
-CameraUp                          = XInput dpadup pressed
-CameraUp                          ~ Icons/ButtonLa.bmp
-CameraDown                        = XInput dpaddown pressed
-CameraDown                        ~ Icons/ButtonRa.bmp
-CameraZoom                        = XInput lefttrigger position
-CameraRotate                      = XInput lefttrigger position
-CameraRotate                      ~ Icons/ButtonLtRa.bmp
-CameraRotateLeft                  = XInput lefttrigger position
-CameraRotateRight                 = XInput righttrigger position
-
 TargetMove                        = mouse axes move
-TargetMoveSecondary               = XInput rightthumbstick position
-TargetMove                        ~ Icons/ButtonRa.bmp
 TargetMoveZ                       = mouse wheel move
-CameraZoomChange                  = XInput lefttrigger position
 CameraSpeedup                     = key shift pressed
 CameraSlowdown                    = mouse right pressed
 
-#CameraSwitchMode                  = XInput y down
-
 CameraDebugRotate                 = mouse right pressed
 GestureActive                     = mouse left pressed
-GestureActive                     = XInput a pressed
 
 UnitDeselect                      = key space down
-UnitDeselect                      = XInput b down
-UnitDeselect                      ~ Icons/ButtonB.bmp
-UnitCycleLeft                     = XInput leftbumper up
-UnitCycleLeft                     ~ Icons/ButtonLb.bmp
-UnitCycleRight                    = XInput rightbumper up
-UnitCycleRight                    ~ Icons/ButtonRb.bmp
 
 UnitCycleLeft                     = key openbrace down
 UnitCycleRight                    = key closebrace down
 
 UnitEndSetTarget                  = mouse left up
-UnitEndSetTarget                  = XInput a up
 UnitSetTarget                     = mouse left pressed && not mouse right pressed
 UnitPrimaryFireTarget             = mouse right pressed
 UnitSecondaryFireTarget           = mouse left down && mouse right pressed
-UnitSetTarget                     = XInput a down
-UnitSetTarget                     ~ Icons/ButtonA.bmp
-UnitMove                          = XInput leftthumbstick position
-UnitMove                          ~ Icons/ButtonLa.bmp
-UnitMoveDirectionChange           = XInput leftthumbstick move
-UnitPrimaryFireDirected           = XInput rightthumbstick position
-UnitPrimaryFireDirected           ~ Icons/ButtonRa.bmp
 
 # Grenade fire just simply activate right trigger
-UnitStartSecondaryFireDirected    = XInput righttrigger position
-UnitStartSecondaryFireDirected    ~ Icons/ButtonRt.bmp
-UnitSecondaryFireDirected         = XInput righttrigger down
-UnitSecondaryFireDirected         ~ Icons/ButtonLt.bmp
-UnitSecondaryAim                  ~ Icons/ButtonRtRa.bmp
 
 UnitCreate                        = mouse left down
-UnitCreate                        = XInput a down
 
-WeaponCycleLeft                   = XInput dpadleft down
 #WeaponCycleLeft                   = key left down
-WeaponCycleRight                  = XInput dpadright down
 #WeaponCycleRight                  = key right down
 
 TaskManagerSwitchTask             INPUT_TYPE_BOOL
@@ -118,38 +53,17 @@ GesturesTaskManagerHide           = key alt up
 GesturesTaskManagerEndTask        = key control ++ key c
 GesturesChatLog                   = key l pressed
 GesturesSwitchUnit                = key tab down
-GesturesTaskManagerDisplay        = XInput x pressed
-GesturesTaskManagerHide           = XInput x up
-GesturesTaskManagerEndTask        = XInput y down
 GestureLeft                       = key a down
 GestureLeft                       = key left down
-GestureLeft                       = XInput leftbumper down
-GestureLeft                       = XInput dpadleft donw
 GestureRight                      = key d down
 GestureRight                      = key right down
-GestureRight                      = XInput rightbumper down
-GestureRight                      = XInput dpadright down
 
 IconsTaskManagerDisplay           = key tab pressed
 IconsTaskManagerHide              = key tab up
 IconsTaskManagerEndTask           = key c down
 IconsChatLog                      = key l pressed
-IconsTaskManagerEndTask           =  XInput y down
-IconsTaskManagerEndTask           ~ Icons/ButtonY.bmp
-IconsTaskManagerDisplayDown       = XInput x down
-IconsTaskManagerDisplayPressed    = XInput x pressed
-IconsTaskManagerDisplayUp         = XInput x up
-IconsTaskManagerHide              = XInput x down
-IconsTaskManagerHide              = XInput b down
-IconsTaskManagerDisplay           ~ Icons/ButtonX.bmp
-
-#IconsTaskManagerQuickUnit         = XInput x down
-#IconsTaskManagerQuickUnitCreate   = XInput a down
-#IconsTaskManagerQuickUnitLeft     = XInput dpadleft down
-#IconsTaskManagerQuickUnitRight    = XInput dpadright down
 
 ActivateTMButton                  = mouse left up
-ActivateTMButton                  = XInput a up
 
 EclipseLMouseDown                 = mouse left down
 EclipseLMousePressed              = mouse left pressed
@@ -159,7 +73,6 @@ ScrollSpeedup                     = key shift pressed
 SelectLocation                    = mouse left down
 LocationDragActive                = mouse left pressed
 DeselectLocation                  = mouse left up
-SelectLocation                    = XInput a down
 
 TileSelect                        = mouse left down
 TileDrop                          = mouse left up
@@ -192,7 +105,6 @@ IconsTaskManagerSelectController  = key f8 down
 LoaderHelp                        = key h pressed
 SepulvedaHelp                     = key h down
 
-
 GOLLoaderSpeedup                  = key p pressed
 GOLLoaderSlowdown                 = key o pressed
 GOLLoaderReset                    = key g down
@@ -221,20 +133,15 @@ StopAttractMode                   = idle no longer
 StopAttractMode                   = key space down
 StopAttractMode                   = key enter down
 StopAttractMode                   = key esc down
-StopAttractMode                   = XInput start down
-StopAttractMode                   = XInput b down
 
 CameraFreeMovement                = key f2 pressed
 
 DebugCameraFixUp                  = key g pressed
 
 SkipTutorial                      = key t pressed
-SkipTutorial                      = XInput back down
 
 GamePause                         = key pause down
 ToggleEditor                      = key f9 down
 CreateScreenShot                  = key p down
 ToggleCheatMenu                   = key f11 down
 
-ControllerUnplugged               = XInput plug up
-ControllerPlugged                 = XInput plug down

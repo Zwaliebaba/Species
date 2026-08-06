@@ -70,8 +70,6 @@ namespace Species
   // g_startTime moved to ClientToServer::m_startTime — it was derived entirely from
   // arriving letters, and this was the only translation unit that read it.
 
-  void SwitchTaskManagerForX360Controller();
-
   // ******************
   //  Local Functions
   // ******************
@@ -209,25 +207,6 @@ namespace Species
   {
     bool curWindowHasFocus = g_eventHandler->WindowHasFocus();
     static bool oldWindowFocus = true;
-
-    static bool controllerPlugged = true;
-    if (controllerPlugged && g_inputManager->controlEvent(ControlType::ControlControllerUnplugged))
-    {
-      auto owned = std::make_unique<MessageDialog>(LANGUAGEPHRASE("dialog_unplugged1"), LANGUAGEPHRASE("dialog_unplugged2"));
-      MessageDialog* dialog = owned.get();
-      EclRegisterWindow(std::move(owned));
-      controllerPlugged = false;
-    }
-
-    if (!controllerPlugged && g_inputManager->controlEvent(ControlType::ControlControllerPlugged))
-    {
-      EclRemoveWindow(LANGUAGEPHRASE("dialog_unplugged1"));
-      controllerPlugged = true;
-    }
-
-    // Pretend we're not focused
-    if (!controllerPlugged && g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
-      curWindowHasFocus = false;
 
     if (!curWindowHasFocus)
     {
@@ -572,9 +551,6 @@ void LocationGameLoop()
 
       TheUserInput()->Advance();
 
-      // Check Task Manager
-      SwitchTaskManagerForX360Controller();
-
       // The following are candidates for running in parallel
       // using something like OpenMP
       g_location->m_water->Advance();
@@ -637,27 +613,6 @@ void LocationGameLoop()
 
   g_globalWorld->m_myTeamId = 255;
   g_globalWorld->EvaluateEvents();
-}
-
-void SwitchTaskManagerForX360Controller()
-{
-  // Typed, not int. It holds an InputMode and is only ever compared against
-  // one; `int` was the pre-scoped-enum spelling.
-  static InputMode oldControlType = InputMode::INPUT_MODE_KEYBOARD;
-
-  if (oldControlType != InputMode::INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD &&
-      !TheTaskManagerInterface()->m_visible)
-  {
-    // user has just switched to the game pad
-    if (g_prefsManager->GetInt("ControlMethod") == 0)
-    {
-      g_appCommands->ReplaceTaskManagerInterface();
-    }
-    oldControlType = InputMode::INPUT_MODE_GAMEPAD;
-  }
-  else if (oldControlType == InputMode::INPUT_MODE_GAMEPAD && g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD &&
-           !TheTaskManagerInterface()->m_visible)
-    oldControlType = g_inputManager->getInputMode();
 }
 
 #ifdef LOCATION_EDITOR

@@ -167,15 +167,32 @@ tasks:
       - Tests/NeuronClientTests/ControlBindingsTests.cpp
     acceptance:
       - SwitchTaskManagerForX360Controller and its call site are gone; the ControllerUnplugged/ControllerPlugged dialog block in HandleCommonConditions and both control types are gone
-      - InputPreferences.txt contains no XInput line (baseline 69); startup parses the file with zero errors
-      - The InputMode enum keeps its gamepad value; grep shows no remaining consumer of INPUT_MODE_GAMEPAD outside the enum and the mode-preference plumbing
+      - InputPreferences.txt contains no XInput line (baseline 69) and no gamepad glyph icon line (baseline 18); startup parses the file with zero errors
+      # AMENDED 2026-08-06, DURING the work, original wording kept: it read
+      # "The InputMode enum keeps its gamepad value; grep shows no remaining
+      # consumer of INPUT_MODE_GAMEPAD outside the enum and the
+      # mode-preference plumbing". Measured, there are TWENTY consumers across
+      # eight files, and they are not what that sentence assumed. They are the
+      # controller USER INTERFACE: a per-mode localised phrase table
+      # (LanguageTable's m_phrasesXin, 6 sites), 360 button prompts in the task
+      # manager (8), the whole ControlHelpSystem - whose Advance early-returns
+      # unless the mode IS gamepad, so the overlay is gamepad-only by
+      # construction (2) - plus camera tracking defaults, cursor rendering, a
+      # task-manager branch and one order-given test. Deleting those removes a
+      # feature and makes reintroducing a controller a UI rewrite rather than a
+      # new driver, which is the opposite of what this plan says it wants. The
+      # line between what went and what stayed is therefore: code that fires on
+      # gamepad EVENTS cannot work and is gone; code that RENDERS differently
+      # while in gamepad mode is a coherent feature waiting for a driver and
+      # stays, unreached, exactly as the enum does.
+      - Every consumer that reacts to a gamepad EVENT is gone; the ~20 that select rendering or defaults by current input mode stay with the enum, and are listed in the notes so the count is checkable
       - The ControlMethod preference and the gestures task manager are untouched - stated here so nobody deletes them as gamepad residue
-      - ControlBindingsTests still passes with the control-type rows removed
+      - ControlBindingsTests still passes, with its end-of-table test repointed rather than deleted
     verify:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: in_progress
     notes: >
       Collides with sound-xaudio2 T8 and network-transport T9 over
       Species/Main.cpp - do not run concurrently with them.
@@ -243,7 +260,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
     notes: |
       CORRECTION, 2026-08-06, before the work. This plan's summary said the
       Alt-Tab machinery was "dead since its only caller was commented out
