@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "ByteStream.h"
 #include "TeamControls.h"
 #include "NeuronMath.h"
 
@@ -25,9 +26,10 @@ const unsigned char EntityTypeInvalid = 0;
 class NetworkUpdate
 {
   public:
-    // enum class with an explicit int: these values go out as WRITE_INT and
-    // come back as READ_INT, so the underlying type is the wire's and the
-    // numbers are pinned by NetworkUpdateTests::TheUpdateTypeValuesAreTheProtocol.
+    // enum class with an explicit int: these values go out as a four-byte write
+    // and come back as a four-byte read, so the underlying type is the wire's
+    // and the numbers are pinned by
+    // NetworkUpdateTests::TheUpdateTypeValuesAreTheProtocol.
     enum class UpdateType : int
     {
       Invalid,          // Unused
@@ -70,7 +72,10 @@ class NetworkUpdate
 
   public:
     NetworkUpdate();
-    NetworkUpdate(char* _byteStream);
+    // _len is the number of bytes the datagram actually carries. An update that
+    // does not fit inside it comes back Invalid; nothing here trusts what the
+    // sender wrote about its own size.
+    NetworkUpdate(char const* _byteStream, int _len);
 
     void SetType(UpdateType _type);
     void SetClientIp(std::string_view ip);
@@ -97,8 +102,15 @@ class NetworkUpdate
     const DirectX::XMFLOAT3& GetWorldPos() const;
     DirectX::XMFLOAT3& GetWorldPos();
 
-    int ReadByteStream(char* _byteStream); // Returns number of bytes read
+    // Reads one update out of a reader shared with whatever contains it, so a
+    // letter carrying several of them stays bounded by the one datagram length.
+    // Returns false — and leaves m_type Invalid — for a truncated or
+    // unrecognised update; the reader's cursor is then not to be trusted, so a
+    // caller reading a sequence of them stops at the first false.
+    bool ReadByteStream(Neuron::ByteReader& _reader);
     char* GetByteStream(int* _linearSize);
+
+    [[nodiscard]] bool IsValid() const { return m_type != UpdateType::Invalid; }
 
     //    void SendToDebugStream(FILE *_out, int _seqNum);
 

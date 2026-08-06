@@ -21,99 +21,118 @@ NetworkUpdate::NetworkUpdate()
 {
 }
 
-NetworkUpdate::NetworkUpdate(char* _byteStream) { ReadByteStream(_byteStream); }
-
-int NetworkUpdate::ReadByteStream(char* _byteStream)
+NetworkUpdate::NetworkUpdate(char const* _byteStream, int _len)
+  : NetworkUpdate()
 {
-  char* byteStreamCopy = _byteStream;
+  // Delegating rather than repeating the member initialisers, which the old
+  // stream constructor did not run at all: an update parsed off the wire left
+  // every field its type does not carry — m_radius, m_yaw, m_program — reading
+  // whatever the stack held.
+  ByteReader reader(_byteStream, _len > 0 ? static_cast<size_t>(_len) : 0);
+  ReadByteStream(reader);
+}
 
-  // Two lines, not one, and the reason is READ_INT: it expands to
-  // `*((int*)_stream); _stream += sizeof(int);` — TWO statements. A
-  // function-style cast has to parenthesise its argument, which puts a `;`
-  // inside the parentheses and does not compile. The C cast this replaces
-  // worked only because it binds to the first sub-expression and lets the
-  // pointer advance follow. Reading into an int first makes the macro's shape
-  // visible instead of load-bearing.
-  const int rawType = READ_INT(_byteStream);
-  m_type = static_cast<UpdateType>(rawType);
-  m_lastSequenceId = READ_INT(_byteStream);
+bool NetworkUpdate::ReadByteStream(ByteReader& _reader)
+{
+  const int rawType = _reader.Read<int>();
+  m_lastSequenceId = _reader.Read<int>();
 
-  switch (m_type)
+  // Switched on the value off the wire rather than on m_type, so that m_type is
+  // only ever set to a type this build recognises. It used to be assigned first
+  // and the switch run against it, which meant a datagram carrying any integer
+  // at all left an update claiming to be that type.
+  switch (static_cast<UpdateType>(rawType))
   {
   case UpdateType::ClientJoin:
   case UpdateType::ClientLeave:
+  case UpdateType::Pause:
+    // Header only. Pause is written the same way and has to be listed here
+    // explicitly now that an unlisted type means "not this protocol" — it used
+    // to fall out of the switch and work by accident.
     break;
 
   case UpdateType::RequestTeam:
-    m_teamType = READ_UNSIGNED_CHAR(_byteStream);
-    m_entityType = READ_UNSIGNED_CHAR(_byteStream);
-    m_desiredTeamId = READ_SIGNED_CHAR(_byteStream);
+    m_teamType = _reader.Read<unsigned char>();
+    m_entityType = _reader.Read<unsigned char>();
+    m_desiredTeamId = _reader.Read<signed char>();
     break;
 
   case UpdateType::Alive:
-    m_teamId = READ_UNSIGNED_CHAR(_byteStream);
-    GetWorldPos().x = READ_FLOAT(_byteStream);
-    GetWorldPos().y = READ_FLOAT(_byteStream);
-    GetWorldPos().z = READ_FLOAT(_byteStream);
-    {
-      unsigned short flags = READ_UNSIGNED_SHORT(_byteStream);
-      m_teamControls.SetFlags(flags);
-    }
-    m_sync = READ_UNSIGNED_CHAR(_byteStream);
+    m_teamId = _reader.Read<unsigned char>();
+    GetWorldPos().x = _reader.Read<float>();
+    GetWorldPos().y = _reader.Read<float>();
+    GetWorldPos().z = _reader.Read<float>();
+    m_teamControls.SetFlags(_reader.Read<unsigned short>());
+    m_sync = _reader.Read<unsigned char>();
     break;
 
   case UpdateType::Syncronise:
-    m_lastProcessedSeqId = READ_INT(_byteStream);
-    m_sync = READ_UNSIGNED_CHAR(_byteStream);
+    m_lastProcessedSeqId = _reader.Read<int>();
+    m_sync = _reader.Read<unsigned char>();
     break;
 
   case UpdateType::SelectUnit:
-    m_teamId = READ_UNSIGNED_CHAR(_byteStream);
-    m_unitId = READ_INT(_byteStream);
-    m_entityId = READ_INT(_byteStream);
-    m_buildingId = READ_INT(_byteStream);
+    m_teamId = _reader.Read<unsigned char>();
+    m_unitId = _reader.Read<int>();
+    m_entityId = _reader.Read<int>();
+    m_buildingId = _reader.Read<int>();
     break;
 
   case UpdateType::CreateUnit:
-    m_teamId = READ_UNSIGNED_CHAR(_byteStream);
-    m_entityType = READ_UNSIGNED_CHAR(_byteStream);
-    m_numTroops = READ_INT(_byteStream);
-    m_buildingId = READ_INT(_byteStream);
-    GetWorldPos().x = READ_FLOAT(_byteStream);
-    GetWorldPos().y = READ_FLOAT(_byteStream);
-    GetWorldPos().z = READ_FLOAT(_byteStream);
+    m_teamId = _reader.Read<unsigned char>();
+    m_entityType = _reader.Read<unsigned char>();
+    m_numTroops = _reader.Read<int>();
+    m_buildingId = _reader.Read<int>();
+    GetWorldPos().x = _reader.Read<float>();
+    GetWorldPos().y = _reader.Read<float>();
+    GetWorldPos().z = _reader.Read<float>();
     break;
 
   case UpdateType::AimBuilding:
-    m_teamId = READ_UNSIGNED_CHAR(_byteStream);
-    m_buildingId = READ_INT(_byteStream);
-    GetWorldPos().x = READ_FLOAT(_byteStream);
-    GetWorldPos().y = READ_FLOAT(_byteStream);
-    GetWorldPos().z = READ_FLOAT(_byteStream);
+    m_teamId = _reader.Read<unsigned char>();
+    m_buildingId = _reader.Read<int>();
+    GetWorldPos().x = _reader.Read<float>();
+    GetWorldPos().y = _reader.Read<float>();
+    GetWorldPos().z = _reader.Read<float>();
     break;
 
   case UpdateType::ToggleLaserFence:
-    m_buildingId = READ_INT(_byteStream);
+    m_buildingId = _reader.Read<int>();
     break;
 
   case UpdateType::RunProgram:
-    m_teamId = READ_UNSIGNED_CHAR(_byteStream);
-    m_program = READ_UNSIGNED_CHAR(_byteStream);
+    m_teamId = _reader.Read<unsigned char>();
+    m_program = _reader.Read<unsigned char>();
     break;
 
   case UpdateType::TargetProgram:
-    m_teamId = READ_UNSIGNED_CHAR(_byteStream);
-    m_program = READ_UNSIGNED_CHAR(_byteStream);
-    GetWorldPos().x = READ_FLOAT(_byteStream);
-    GetWorldPos().y = READ_FLOAT(_byteStream);
-    GetWorldPos().z = READ_FLOAT(_byteStream);
+    m_teamId = _reader.Read<unsigned char>();
+    m_program = _reader.Read<unsigned char>();
+    GetWorldPos().x = _reader.Read<float>();
+    GetWorldPos().y = _reader.Read<float>();
+    GetWorldPos().z = _reader.Read<float>();
     break;
 
   case UpdateType::Invalid:
-    DEBUG_ASSERT(false);
-  };
+  default:
+    // Deliberately NOT a DEBUG_ASSERT, which is what stood here. Every byte
+    // reaching this switch came off a socket, so asserting on a type this build
+    // does not know hands anyone who can send this port a datagram a way to
+    // stop a Debug build.
+    m_type = UpdateType::Invalid;
+    return false;
+  }
 
-  return (_byteStream - byteStreamCopy);
+  if (!_reader.Ok())
+  {
+    // Truncated: the fields above read past the end of the datagram and came
+    // back zeroed. Half an update is not an update.
+    m_type = UpdateType::Invalid;
+    return false;
+  }
+
+  m_type = static_cast<UpdateType>(rawType);
+  return true;
 }
 
 void NetworkUpdate::SetType(UpdateType _type) { m_type = _type; }
@@ -187,85 +206,89 @@ void NetworkUpdate::SetSync(unsigned char _sync) { m_sync = _sync; }
 
 char* NetworkUpdate::GetByteStream(int* _linearSize)
 {
-  char* byteStream = m_byteStream;
+  ByteWriter writer(m_byteStream, sizeof(m_byteStream));
 
-  WRITE_INT(byteStream, static_cast<int>(m_type));
-  WRITE_INT(byteStream, m_lastSequenceId);
+  writer.Write<int>(static_cast<int>(m_type));
+  writer.Write<int>(m_lastSequenceId);
 
   switch (m_type)
   {
   case UpdateType::ClientJoin:
   case UpdateType::ClientLeave:
+  case UpdateType::Pause:
     break;
 
   case UpdateType::RequestTeam:
-    WRITE_UNSIGNED_CHAR(byteStream, m_teamType);
-    WRITE_UNSIGNED_CHAR(byteStream, m_entityType);
-    WRITE_SIGNED_CHAR(byteStream, m_desiredTeamId);
+    writer.Write<unsigned char>(m_teamType);
+    writer.Write<unsigned char>(m_entityType);
+    writer.Write<signed char>(m_desiredTeamId);
     break;
 
   case UpdateType::Alive:
-    WRITE_UNSIGNED_CHAR(byteStream, m_teamId);
-    WRITE_FLOAT(byteStream, GetWorldPos().x);
-    WRITE_FLOAT(byteStream, GetWorldPos().y);
-    WRITE_FLOAT(byteStream, GetWorldPos().z);
-    WRITE_UNSIGNED_SHORT(byteStream, m_teamControls.GetFlags());
-    WRITE_UNSIGNED_CHAR(byteStream, m_sync);
+    writer.Write<unsigned char>(m_teamId);
+    writer.Write<float>(GetWorldPos().x);
+    writer.Write<float>(GetWorldPos().y);
+    writer.Write<float>(GetWorldPos().z);
+    writer.Write<unsigned short>(m_teamControls.GetFlags());
+    writer.Write<unsigned char>(m_sync);
     break;
 
   case UpdateType::Syncronise:
-    WRITE_INT(byteStream, m_lastProcessedSeqId);
-    WRITE_UNSIGNED_CHAR(byteStream, m_sync);
+    writer.Write<int>(m_lastProcessedSeqId);
+    writer.Write<unsigned char>(m_sync);
     break;
 
   case UpdateType::SelectUnit:
-    WRITE_UNSIGNED_CHAR(byteStream, m_teamId);
-    WRITE_INT(byteStream, m_unitId);
-    WRITE_INT(byteStream, m_entityId);
-    WRITE_INT(byteStream, m_buildingId);
+    writer.Write<unsigned char>(m_teamId);
+    writer.Write<int>(m_unitId);
+    writer.Write<int>(m_entityId);
+    writer.Write<int>(m_buildingId);
     break;
 
   case UpdateType::CreateUnit:
-    WRITE_UNSIGNED_CHAR(byteStream, m_teamId);
-    WRITE_UNSIGNED_CHAR(byteStream, m_entityType);
-    WRITE_INT(byteStream, m_numTroops);
-    WRITE_INT(byteStream, m_buildingId);
-    WRITE_FLOAT(byteStream, GetWorldPos().x);
-    WRITE_FLOAT(byteStream, GetWorldPos().y);
-    WRITE_FLOAT(byteStream, GetWorldPos().z);
+    writer.Write<unsigned char>(m_teamId);
+    writer.Write<unsigned char>(m_entityType);
+    writer.Write<int>(m_numTroops);
+    writer.Write<int>(m_buildingId);
+    writer.Write<float>(GetWorldPos().x);
+    writer.Write<float>(GetWorldPos().y);
+    writer.Write<float>(GetWorldPos().z);
     break;
 
   case UpdateType::AimBuilding:
-    WRITE_UNSIGNED_CHAR(byteStream, m_teamId);
-    WRITE_INT(byteStream, m_buildingId);
-    WRITE_FLOAT(byteStream, GetWorldPos().x);
-    WRITE_FLOAT(byteStream, GetWorldPos().y);
-    WRITE_FLOAT(byteStream, GetWorldPos().z);
+    writer.Write<unsigned char>(m_teamId);
+    writer.Write<int>(m_buildingId);
+    writer.Write<float>(GetWorldPos().x);
+    writer.Write<float>(GetWorldPos().y);
+    writer.Write<float>(GetWorldPos().z);
     break;
 
   case UpdateType::ToggleLaserFence:
-    WRITE_INT(byteStream, m_buildingId);
+    writer.Write<int>(m_buildingId);
     break;
 
   case UpdateType::RunProgram:
-    WRITE_UNSIGNED_CHAR(byteStream, m_teamId);
-    WRITE_UNSIGNED_CHAR(byteStream, m_program);
+    writer.Write<unsigned char>(m_teamId);
+    writer.Write<unsigned char>(m_program);
     break;
 
   case UpdateType::TargetProgram:
-    WRITE_UNSIGNED_CHAR(byteStream, m_teamId);
-    WRITE_UNSIGNED_CHAR(byteStream, m_program);
-    WRITE_FLOAT(byteStream, GetWorldPos().x);
-    WRITE_FLOAT(byteStream, GetWorldPos().y);
-    WRITE_FLOAT(byteStream, GetWorldPos().z);
+    writer.Write<unsigned char>(m_teamId);
+    writer.Write<unsigned char>(m_program);
+    writer.Write<float>(GetWorldPos().x);
+    writer.Write<float>(GetWorldPos().y);
+    writer.Write<float>(GetWorldPos().z);
     break;
 
   case UpdateType::Invalid:
+    // Still an assert on this side, unlike the reading one: nothing hostile can
+    // reach here. An Invalid update being serialised is this build asking to
+    // send a packet it never filled in.
     DEBUG_ASSERT(false);
   }
 
-  *_linearSize = byteStream - m_byteStream;
-  DEBUG_ASSERT(*_linearSize < NETWORKUPDATE_BYTESTREAMSIZE);
+  *_linearSize = static_cast<int>(writer.BytesWritten());
+  DEBUG_ASSERT(writer.Ok());
   return m_byteStream;
 }
 

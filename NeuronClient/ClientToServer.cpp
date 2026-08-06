@@ -40,7 +40,15 @@ namespace Neuron
   {
     if (udpdata)
     {
-      s_client->ReceiveLetter(std::make_unique<ServerToClientLetter>(udpdata->m_data, udpdata->m_length));
+      auto letter = std::make_unique<ServerToClientLetter>(udpdata->m_data, udpdata->m_length);
+      // Dropped here rather than in the inbox, because ReceiveLetter acts on a
+      // letter's sequence id before anything reads its type — it moves the
+      // client's clock and its last-valid-sequence id. A letter that did not
+      // parse has no sequence id worth believing.
+      if (letter->IsValid())
+      {
+        s_client->ReceiveLetter(std::move(letter));
+      }
       //        SET_PROFILE(m_profiler,  "#Client Receive", udpdata->getLength() );
 
       delete udpdata;

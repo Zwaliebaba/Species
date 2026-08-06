@@ -7,8 +7,8 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace NeuronCoreTests
 {
-  // WorldObjectId is network identity. The whole struct goes onto the wire
-  // through WRITE_WORLDOBJECTID, and m_index is a raw DArray slot — which is why
+  // WorldObjectId is network identity. The whole struct goes onto the wire as
+  // one object representation, and m_index is a raw DArray slot — which is why
   // replacing a DArray with a std::vector repoints every reference in the world
   // (see CODING_STANDARDS.md, Determinism). Its comparison and validity rules
   // are therefore protocol, not convenience.
@@ -77,7 +77,7 @@ namespace NeuronCoreTests
 
       TEST_METHOD(TheWireLayoutIsSixteenBytesWithTheTeamByteFirst)
       {
-        // WRITE_WORLDOBJECTID raw-copies the struct, so its size, its field
+        // The struct is copied onto the wire whole, so its size, its field
         // offsets and even the three padding bytes after m_teamId are wire
         // format. MSVC lays it out as the team byte at offset 0, three bytes
         // of padding, then the three ints. If this fails, the protocol
@@ -86,11 +86,12 @@ namespace NeuronCoreTests
         Assert::AreEqual(16, static_cast<int>(sizeof(WorldObjectId)));
 
         alignas(WorldObjectId) char buffer[sizeof(WorldObjectId) * 2] = {};
-        char* stream = buffer;
         const WorldObjectId id(3, 7, 11, 13);
-        WRITE_WORLDOBJECTID(stream, id);
 
-        Assert::AreEqual(16, static_cast<int>(stream - buffer));
+        ByteWriter writer(buffer, sizeof(buffer));
+        writer.Write<WorldObjectId>(id);
+
+        Assert::AreEqual(static_cast<size_t>(16), writer.BytesWritten());
         Assert::AreEqual(static_cast<char>(3), buffer[0]);
 
         int unitId = 0;
@@ -103,8 +104,8 @@ namespace NeuronCoreTests
         Assert::AreEqual(11, index);
         Assert::AreEqual(13, uniqueId);
 
-        char* readStream = buffer;
-        const WorldObjectId received = READ_WORLDOBJECTID(readStream);
+        ByteReader reader(buffer, sizeof(buffer));
+        const WorldObjectId received = reader.Read<WorldObjectId>();
         Assert::IsTrue(received == id);
       }
   };

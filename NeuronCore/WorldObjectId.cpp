@@ -55,16 +55,6 @@ bool WorldObjectId::operator==(WorldObjectId const& w) const
 }
 
 
-WorldObjectId const& WorldObjectId::operator=(WorldObjectId const& w)
-{
-  m_teamId = w.m_teamId;
-  m_unitId = w.m_unitId;
-  m_index = w.m_index;
-  m_uniqueId = w.m_uniqueId;
-  return *this;
-}
-
-
 void WorldObjectId::GenerateUniqueId()
 {
   ++s_nextUniqueId;

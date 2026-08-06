@@ -50,11 +50,12 @@ namespace NeuronCoreTests
         letter.SetIp(0x0100007F);
 
         int length = 0;
-        char* read = letter.GetByteStream(&length);
+        char* stream = letter.GetByteStream(&length);
+        ByteReader reader(stream, length);
 
-        const int type = READ_INT(read);
-        const int sequenceId = READ_INT(read);
-        const int ip = READ_INT(read);
+        const int type = reader.Read<int>();
+        const int sequenceId = reader.Read<int>();
+        const int ip = reader.Read<int>();
 
         Assert::AreEqual(static_cast<int>(ServerToClientLetter::LetterType::HelloClient), type);
         Assert::AreEqual(0x21436587, sequenceId);
@@ -74,13 +75,14 @@ namespace NeuronCoreTests
         letter.SetIp(0x0100007F);
 
         int length = 0;
-        char* read = letter.GetByteStream(&length);
+        char* stream = letter.GetByteStream(&length);
+        ByteReader reader(stream, length);
 
-        const int type = READ_INT(read);
-        const int sequenceId = READ_INT(read);
-        const unsigned char teamId = READ_UNSIGNED_CHAR(read);
-        const unsigned char teamType = READ_UNSIGNED_CHAR(read);
-        const int ip = READ_INT(read);
+        const int type = reader.Read<int>();
+        const int sequenceId = reader.Read<int>();
+        const unsigned char teamId = reader.Read<unsigned char>();
+        const unsigned char teamType = reader.Read<unsigned char>();
+        const int ip = reader.Read<int>();
 
         Assert::AreEqual(static_cast<int>(ServerToClientLetter::LetterType::TeamAssign), type);
         Assert::AreEqual(5, sequenceId);
@@ -104,11 +106,12 @@ namespace NeuronCoreTests
         letter.AddUpdate(&second);
 
         int length = 0;
-        char* read = letter.GetByteStream(&length);
+        char* stream = letter.GetByteStream(&length);
+        ByteReader reader(stream, length);
 
-        const int type = READ_INT(read);
-        const int sequenceId = READ_INT(read);
-        const int numUpdates = READ_INT(read);
+        const int type = reader.Read<int>();
+        const int sequenceId = reader.Read<int>();
+        const int numUpdates = reader.Read<int>();
 
         Assert::AreEqual(static_cast<int>(ServerToClientLetter::LetterType::Update), type);
         Assert::AreEqual(9, sequenceId);
@@ -226,9 +229,163 @@ namespace NeuronCoreTests
       }
 
       // Same reason as TheUpdateTypeValuesAreTheProtocol in NetworkUpdateTests:
-      // m_type goes out as WRITE_INT and comes back as READ_INT, so these five
+      // m_type goes out as four bytes and comes back as four bytes, so these five
       // numbers are what a client and a server agree on. Five enumerators is a
       // small enough set that inserting one in the middle looks harmless.
+      // ------------------------------------------------------------------
+      // What a datagram is allowed to do to the receiver.
+      //
+      // Every test below feeds this constructor bytes no correct sender would
+      // produce. Until network-transport T1 each of them read past the end of
+      // the receive buffer: the length parameter existed and was never
+      // consulted, and numUpdates was taken from the wire and used as a loop
+      // bound over updates that were not there. On a 512-byte stack buffer in
+      // NetSocketListener that is a read of whatever followed it.
+      //
+      // The bar these set is "an empty or invalid letter, never a crash". They
+      // are worth running under a sanitizer rather than only in the suite —
+      // reading past a buffer is not something an assert can catch.
+      // ------------------------------------------------------------------
+
+      TEST_METHOD(ATruncatedHeaderYieldsAnInvalidLetter)
+      {
+        // Five bytes: enough for the type, not for the sequence id.
+        const char truncated[5] = {4, 0, 0, 0, 9};
+
+        const ServerToClientLetter letter(truncated, sizeof(truncated));
+
+        Assert::IsFalse(letter.IsValid());
+        Assert::AreEqual(static_cast<int>(ServerToClientLetter::LetterType::Invalid), static_cast<int>(letter.m_type));
+      }
+
+      TEST_METHOD(ALetterCutShortAfterItsCountYieldsAnInvalidLetter)
+      {
+        // A well-formed Update letter with its updates cut off. This is the
+        // shape a datagram takes when it is fragmented, forged, or — the case
+        // that actually happens today — larger than the receiver's buffer.
+        ServerToClientLetter sent;
+        sent.SetType(ServerToClientLetter::LetterType::Update);
+        sent.SetSequenceId(31);
+
+        NetworkUpdate update = MakeSelectUnit(1, 5);
+        sent.AddUpdate(&update);
+
+        int length = 0;
+        char* stream = sent.GetByteStream(&length);
+
+        // Keep the 12-byte header, drop all but four bytes of the 21-byte update.
+        const ServerToClientLetter received(stream, 16);
+
+        Assert::IsFalse(received.IsValid());
+      }
+
+      TEST_METHOD(AnUpdateCountLargerThanTheDatagramStopsAtTheDatagram)
+      {
+        // The count is a claim, not a fact. 100,000 updates in a 12-byte
+        // datagram used to be 100,000 iterations of reading 8+ bytes each from
+        // wherever the receive buffer sat in memory.
+        char datagram[12] = {};
+        ByteWriter writer(datagram, sizeof(datagram));
+        writer.Write<int>(static_cast<int>(ServerToClientLetter::LetterType::Update));
+        writer.Write<int>(77);
+        writer.Write<int>(100000);
+
+        const ServerToClientLetter letter(datagram, sizeof(datagram));
+
+        Assert::IsFalse(letter.IsValid());
+        Assert::AreEqual(0, static_cast<int>(letter.m_updates.size()));
+      }
+
+      TEST_METHOD(ANegativeUpdateCountYieldsAnInvalidLetter)
+      {
+        // A DEBUG_ASSERT stood here, which is not a check: in Release the loop
+        // ran with a negative bound, and in Debug a hostile datagram could stop
+        // the build a developer was running.
+        char datagram[12] = {};
+        ByteWriter writer(datagram, sizeof(datagram));
+        writer.Write<int>(static_cast<int>(ServerToClientLetter::LetterType::Update));
+        writer.Write<int>(77);
+        writer.Write<int>(-1);
+
+        const ServerToClientLetter letter(datagram, sizeof(datagram));
+
+        Assert::IsFalse(letter.IsValid());
+        Assert::AreEqual(0, static_cast<int>(letter.m_updates.size()));
+      }
+
+      TEST_METHOD(ALetterTypeThisBuildDoesNotKnowIsInvalid)
+      {
+        // Nothing frames these datagrams yet, so the first four bytes of
+        // anything arriving on the port are read as a letter type. T8 adds the
+        // magic and version that let a receiver tell this protocol from the
+        // rest of the internet; until then, an unrecognised type must at least
+        // not be acted on.
+        char datagram[12] = {};
+        ByteWriter writer(datagram, sizeof(datagram));
+        writer.Write<int>(4242);
+        writer.Write<int>(1);
+        writer.Write<int>(0);
+
+        const ServerToClientLetter letter(datagram, sizeof(datagram));
+
+        Assert::IsFalse(letter.IsValid());
+      }
+
+      TEST_METHOD(AZeroLengthDatagramYieldsAnInvalidLetter)
+      {
+        char datagram[1] = {};
+
+        const ServerToClientLetter letter(datagram, 0);
+
+        Assert::IsFalse(letter.IsValid());
+      }
+
+      TEST_METHOD(TheLengthParameterBoundsTheParseRatherThanTheBuffer)
+      {
+        // The regression this pins directly: a letter serialised into a longer
+        // buffer, then handed over with a length that stops mid-update. What
+        // follows in the buffer is real, readable, correctly-formatted data —
+        // so a parse that ignored _len would succeed and report a letter that
+        // never arrived.
+        ServerToClientLetter sent;
+        sent.SetType(ServerToClientLetter::LetterType::Update);
+        sent.SetSequenceId(64);
+
+        NetworkUpdate first = MakeSelectUnit(1, 11);
+        NetworkUpdate second = MakeSelectUnit(2, 22);
+        sent.AddUpdate(&first);
+        sent.AddUpdate(&second);
+
+        int length = 0;
+        char* stream = sent.GetByteStream(&length);
+        Assert::AreEqual(12 + 21 + 21, length);
+
+        // Everything is present in the buffer; only _len says otherwise.
+        const ServerToClientLetter received(stream, 12 + 21);
+
+        Assert::IsFalse(received.IsValid());
+      }
+
+      TEST_METHOD(AnUpdateTypeThisBuildDoesNotKnowInvalidatesTheLetter)
+      {
+        // The same question one level down: the letter is well-formed and the
+        // update inside it is not. Fewer updates arriving than the count
+        // promised means the rest of the datagram cannot be located, so the
+        // letter goes rather than arriving short.
+        char datagram[20] = {};
+        ByteWriter writer(datagram, sizeof(datagram));
+        writer.Write<int>(static_cast<int>(ServerToClientLetter::LetterType::Update));
+        writer.Write<int>(5);
+        writer.Write<int>(1);
+        writer.Write<int>(999); // update type
+        writer.Write<int>(0);   // update sequence id
+
+        const ServerToClientLetter letter(datagram, sizeof(datagram));
+
+        Assert::IsFalse(letter.IsValid());
+        Assert::AreEqual(0, static_cast<int>(letter.m_updates.size()));
+      }
+
       TEST_METHOD(TheLetterTypeValuesAreTheProtocol)
       {
         Assert::AreEqual(0, static_cast<int>(ServerToClientLetter::LetterType::Invalid));

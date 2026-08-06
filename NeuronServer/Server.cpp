@@ -49,8 +49,15 @@ namespace Neuron
 
       if (s_server)
       {
-        auto letter = std::make_unique<NetworkUpdate>(udpdata->m_data);
-        s_server->ReceiveLetter(std::move(letter), IpToString(fromAddr->sin_addr));
+        // The datagram's real length, which this had never passed: the update
+        // used to be parsed out of m_data with no bound at all, so a client
+        // could walk the server off the end of the receive buffer with one
+        // short packet.
+        auto letter = std::make_unique<NetworkUpdate>(udpdata->m_data, udpdata->m_length);
+        if (letter->IsValid())
+        {
+          s_server->ReceiveLetter(std::move(letter), IpToString(fromAddr->sin_addr));
+        }
         //            SET_PROFILE(m_profiler,  "#Server Receive", (double) udpdata->getLength() );
       }
 

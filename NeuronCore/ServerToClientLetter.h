@@ -40,7 +40,10 @@ class ServerToClientLetter
   public:
     ServerToClientLetter();
     ServerToClientLetter(ServerToClientLetter& copyMe);
-    ServerToClientLetter(char* _byteStream, int _len);
+    // _len is the datagram's real length, and it is now consulted: a letter that
+    // claims more than _len holds comes back Invalid rather than reading past
+    // the receive buffer.
+    ServerToClientLetter(char const* _byteStream, int _len);
 
     void SetClientId(int _id);
     void SetType(LetterType _type);
@@ -49,10 +52,16 @@ class ServerToClientLetter
     void SetTeamType(int teamType);
     void SetIp(int ip);
 
-    int GetClientId();
-    int GetSequenceId();
+    int GetClientId() const;
+    int GetSequenceId() const;
 
     void AddUpdate(NetworkUpdate* _update);
+
+    // False for anything that did not parse: a truncated datagram, a letter type
+    // this build does not know, or an update count the datagram cannot back up.
+    // The receiving end drops those rather than acting on a half-read letter's
+    // sequence id.
+    [[nodiscard]] bool IsValid() const { return m_type != LetterType::Invalid; }
 
     // Writes all the current data into a sequential byte stream suitable to
     // be stuffed into a UDP packet. Sets linearSize to be the stream length.

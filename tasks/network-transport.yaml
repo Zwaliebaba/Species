@@ -92,7 +92,71 @@ tasks:
       - python3 tools/check_hygiene.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: >
+      THE FILES LIST WAS SHORT BY FIVE, in the way _next-batch.md keeps
+      recording: it names where the macros are DECLARED and the work is wherever
+      they are USED. Tests/NeuronCoreTests/ByteStreamTests.cpp and
+      WorldObjectIdTests.cpp both used the macro family and both had to be
+      ported for the zero-users acceptance to be true. NeuronServer/Server.cpp
+      and NeuronClient/ClientToServer.cpp are the two receive callbacks - the
+      first was constructing a NetworkUpdate from m_data with NO length at all,
+      which is the unbounded read this task exists to close, so bounding the
+      type without fixing its only production caller would have been a change
+      with no effect. NeuronCore/WorldObjectId.cpp is explained below.
+
+      FOUR DECISIONS BEYOND THE LETTER OF THE ACCEPTANCE, each because the
+      acceptance is unmeetable or meaningless without it:
+
+      1. WorldObjectId lost its hand-written operator=. It was memberwise and
+      identical to the implicit one, and its only effect was to make the type
+      not trivially copyable - so ByteWriter::Write<WorldObjectId> would not
+      compile against the static_assert that the wire only carries object
+      representations. The type's whole documented purpose is going onto the
+      wire whole; the assert now enforces that.
+
+      2. An unrecognised type is invalid, not "whatever the wire said". Both
+      parsers used to assign m_type from the wire BEFORE switching on it, so a
+      datagram carrying any integer produced an update or letter claiming to be
+      that type. They now switch on the raw value and assign only what this
+      build knows.
+
+      3. The DEBUG_ASSERTs on the RECEIVING side are gone. DEBUG_ASSERT(false)
+      on an Invalid update type and DEBUG_ASSERT(numUpdates >= 0) were both
+      reached from bytes off a socket: in Release they checked nothing, and in
+      Debug they handed anyone who can reach the port a way to stop the build a
+      developer is running. The writing-side assert on Invalid STAYS - nothing
+      hostile reaches it.
+
+      4. Both receive callbacks drop what did not parse. A letter that fails to
+      parse still has a sequence id, and ClientToServer::ReceiveLetter acts on
+      that id - it moves the client's clock and its last-valid-sequence id -
+      before anything looks at the type. Parsing safely and then acting on the
+      result anyway is not a fix.
+
+      NOT COMPILED BY MSVC AND NOT RUN AS A SUITE. Written on Linux. What was
+      run: all eight tools/ checks, and a g++ 13 harness under ASan and UBSan
+      over verbatim copies of NetworkUpdate.cpp, ServerToClientLetter.cpp and
+      TeamControls.cpp against shims for pch.h, Debug.h and the XMFLOAT3
+      storage. It carries the PRE-T1 macro serialisers alongside the new ones
+      and compares byte for byte: all twelve update types and all four letter
+      types are identical, at the same lengths the suite pins (8, 11, 24, 21,
+      30, 25, 12, 10, 22, 13). It then feeds the real parsers every truncation
+      of a 63-byte letter and a 30-byte update, 263 type values, a
+      billion-update count, a negative count and 20,000 random datagrams with
+      no sanitizer report. A negative control confirms the harness can see the
+      defect: the same five-byte datagram through the old READ_INT is a
+      heap-buffer-overflow, and UBSan reports the old WRITE_FLOAT as a
+      misaligned store while running the comparison.
+
+      WHAT THAT CANNOT SEE is a type that no longer matches its use at a call
+      site MSVC compiles and g++ never saw - the standing lesson of this
+      repository. The signature changes are the exposure: NetworkUpdate(char*)
+      became NetworkUpdate(char const*, int), ReadByteStream(char*) became
+      ReadByteStream(ByteReader&) returning bool, and
+      ServerToClientLetter(char*, int) became (char const*, int). Every caller
+      of all three was found by grep and changed; a caller that was missed is a
+      compile error rather than anything worse.
 
   - id: T2
     title: Give ServerToClientLetter value semantics and end the update leak
