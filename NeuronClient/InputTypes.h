@@ -93,13 +93,17 @@ namespace Neuron
   };
 
 
-  // Scoped. Only ever used as itself: no int typedef stands in for it and it is
-  // not a bit field, which is what separates it from InputType — see
-  // language-hygiene T9.
-  enum class InputMode
-  {
-    INPUT_MODE_NONE,     // Describes a driver not associated with a specific input mode
-    INPUT_MODE_KEYBOARD, // Describes a driver that accepts input from Keyboard or Mouse
-    INPUT_MODE_GAMEPAD   // Describes a driver that accepts input from a Gamepad
-  };
+  // THE InputMode ENUM IS GONE, and it is worth saying why the whole type went
+  // rather than just its gamepad value. It held NONE, KEYBOARD and GAMEPAD.
+  // Nothing could ever report GAMEPAD — no driver in the tree produced it — and
+  // NONE was the base driver's "I am not an input source at all", which the
+  // arbitration in InputManager::Advance then discarded. So with GAMEPAD
+  // deleted every remaining test on the mode compared a value against the only
+  // value it could hold, and the arbitration that "prefers the Gamepad" had one
+  // candidate. A two-valued mode nothing can vary is the same thing T1 deleted
+  // the unregistered Pipe driver over.
+  //
+  // If a controller returns, it returns as a new EVENT SOURCE feeding the same
+  // queue — see docs/ARCHITECTURE.md, Input — and whatever it needs to
+  // distinguish itself by is a question to answer then, with a driver in hand.
 } // namespace Neuron

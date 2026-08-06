@@ -32,7 +32,7 @@ namespace Neuron
     // m_mousePos and m_wheelRemainder are state and carry over.
     std::memset(_state.m_keyDeltas, 0, sizeof(_state.m_keyDeltas));
     std::memset(_state.m_mbDeltas, 0, sizeof(_state.m_mbDeltas));
-    _state.m_chars.clear();
+    std::memset(_state.m_mouseRelative, 0, sizeof(_state.m_mouseRelative));
 
     const int startX = _state.m_mousePos[AxisX];
     const int startY = _state.m_mousePos[AxisY];
@@ -89,7 +89,11 @@ namespace Neuron
       }
 
       case InputEventType::Char:
-        _state.m_chars.push_back(event.m_char);
+        // Consumed, and it changes no state. A character is not a control: it
+        // has no held-or-not, no edge, and nothing in the bindings reads one.
+        // It is delivered to the focused widget by the driver's side-effect
+        // walk over these same consumed events, which is what keeps it in order
+        // with the key events either side of it.
         break;
 
       case InputEventType::MouseButtonDown:
@@ -130,6 +134,15 @@ namespace Neuron
         // the start, so intermediate positions add nothing.
         _state.m_mousePos[AxisX] = event.m_x;
         _state.m_mousePos[AxisY] = event.m_y;
+        break;
+
+      case InputEventType::MouseRawMove:
+        // SUMMED, not overwritten — the opposite of MouseMove above, and for
+        // the obvious reason: two absolute positions in one frame mean the
+        // second one is where the mouse is, and two relative steps mean it
+        // travelled the total of them.
+        _state.m_mouseRelative[AxisX] += event.m_x;
+        _state.m_mouseRelative[AxisY] += event.m_y;
         break;
 
       case InputEventType::Wheel:

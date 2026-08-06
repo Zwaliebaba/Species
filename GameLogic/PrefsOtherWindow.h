@@ -10,7 +10,6 @@ namespace Species
   {
     public:
       int m_helpEnabled;
-      int m_controlHelpEnabled;
       int m_bootLoader;
       int m_christmas;
       int m_language;

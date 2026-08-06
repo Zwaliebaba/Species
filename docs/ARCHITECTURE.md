@@ -102,23 +102,12 @@ Presentation and platform services for a graphical client.
   reported through `IXAudio2EngineCallback::OnCriticalError`, which parks the
   backend silent; `SoundSystem::Advance` then rebuilds it every five seconds
   until a device comes back.
-- **Input:** the window procedure in `InputDriverWin32` **only enqueues**. Each
-  Win32 message becomes an `InputEvent` (`InputEvents.h`), and `DeriveFrameState`
-  — a free function with no Windows call in it — builds the per-frame view the
-  bindings read. Its governing rule is one edge per control per frame, with
-  anything that would need a second left in the queue, which is how a key
-  pressed and released between two frames reports both edges instead of
-  neither. Above that sits the unchanged binding stack: `InputDriverSimple`,
-  `Chord`, `Conjoin`, `Invert`, `Idle`, resolving a spec to a `ControlType`.
-  `input-native-events` T1 deleted nine drivers and filters no binding data
-  used — `Alias`, `Pipe` (never even registered), `Prefs`, `Value` and the whole
-  `InputFilter` family. T2 removed the X360 controller path; T4 the
-  `RegisterHotKey` Alt-Tab binding and the per-message `GetForegroundWindow`
-  polling, so focus arrives as `WM_ACTIVATE`; T5 deleted the `g_keys` and
-  `g_keyDeltas` globals outright. Still to come in that plan: `WM_CHAR` text,
-  Raw Input, and a consuming router the UI subscribes to.
+- **Input:** see [Input](#input) below. It is the one subsystem here whose shape
+  is worth a section of its own, because it is the only one with an ordering
+  rule that a change can break silently.
 - **UI:** the **Eclipse** toolkit (`Eclipse`, `EclWindow`, `EclButton`), which
-  every in-game window derives from.
+  every in-game window derives from. It does not poll: the input router hands it
+  clicks and characters, and it answers whether it took them.
 - **Networking:** `ClientToServer`, the client's endpoint — inbox, outbox,
   sockets and sequence ids. Moved up out of `NeuronCore` by T8.
 - **Utilities that do not belong here:** none left. `MathUtils`, `HiResTime`,
@@ -155,8 +144,9 @@ routing system, the landscape — lives here now, which is why this layer is the
 bulk of the tree.
 
 What did invert went behind `*Access` interfaces in `NeuronClient` — `Renderer`,
-`Camera`, `Script`, `UserInput`, `TaskManagerInterface`, `ControlHelp`,
-`LocationEditor`, `GameCursor` — and `App` went with them: the subsystem
+`Camera`, `Script`, `UserInput`, `TaskManagerInterface`, `LocationEditor`,
+`GameCursor`, and `ControlHelp` until `input-native-events` T14 deleted that
+subsystem outright — and `App` went with them: the subsystem
 pointers, the application state and the app-level actions are in
 `WorldPointers.h`, `AppState.h` and the `AppCommands` interface, so nothing
 below `Species` includes `App.h`.
@@ -233,14 +223,188 @@ Three more shapes, each of which cost a CI round during
   visible namespace-scope declaration to match, it gets external linkage in the
   GLOBAL namespace. `WindowManager.cpp` and `Win32EventHandler.cpp` each
   declared one inside the function that used it, and after the wrap they named
-  `::g_keys` while the definition was `Neuron::g_keys`. All four such
-  declarations in the tree are at namespace scope now.
+  `::g_keys` while the definition was `Neuron::g_keys`. Every such declaration
+  in the tree is at namespace scope now — and the two named here are gone
+  entirely: `g_keys` was deleted with the polled state, and
+  `g_win32InputDriver`, the other one, is declared in `InputDriverWin32.h`
+  beside its class, where the mistake cannot be made. **A hand-written `extern`
+  is the smell; the header declaration is the fix.**
 - **A member of a global class cannot be defined inside a namespace.**
   `TeamControls` is a NeuronCore type still at global scope and
   `GameLogic/Team.cpp` defines its `Advance()`; that definition sits outside the
   game namespace, deliberately.
 - **An elaborated type specifier declares a new type.** `void f(class Profiler*)`
   inside a namespace quietly means `Neuron::Profiler`, never defined.
+
+---
+
+## Input
+
+[`tasks/input-native-events.yaml`](../tasks/input-native-events.yaml) reshaped
+this on 2026-08-06 — thirteen nodes, twelve of them code and all landed; the
+thirteenth is an owner smoke test. It is described here at length for one
+reason: **almost everything in it is an ordering rule, and a change that breaks
+one compiles cleanly, passes the suite, and is wrong.**
+
+**None of it has been in front of a running game yet**, and the parts most worth
+looking at are listed in `AGENTS.md` under *What working looks like*.
+
+### One frame, in order
+
+`InputManager::Advance()` is the whole of it, called once per frame, and the
+sequence is the design rather than an accident:
+
+```
+1  PumpMessages()          drain Windows' queue -> a queue of InputEvents
+2  driver->Advance()       DeriveFrameState builds this frame's view
+3  g_target->Advance()     the cursor moves, from this frame's movement
+4  driver->DispatchEvents  the events go to the sinks, UI first
+5  FireSubscriptions()     handlers whose control fired are called
+```
+
+- **1 is the only message pump in the tree.** It used to run twice a frame down
+  two paths that did not know about each other — five game loops calling
+  `InputManager::PollForEvents`, and the driver pumping again inside its own
+  `Advance`. Both are deleted. It lives here rather than in the main loop
+  because three of the frame loops, `MainMenuLoop` among them, never called
+  `PollForEvents` at all.
+- **3 before 4 is load-bearing.** The UI sink asks `TargetCursor` where the
+  pointer is, because `TargetCursor` does not read the OS pointer — it
+  accumulates the movement control into its own coordinates and warps the OS
+  cursor to match. Dispatching before the cursor moves lands every click one
+  frame behind the arrow.
+- **5 after 4** so a control the UI consumed reaches no subscriber either.
+
+Everything the game then reads happens after `Advance()` returns.
+
+### The window procedure only enqueues
+
+Each Win32 message becomes an `InputEvent` (`InputEvents.h`) and nothing else —
+no state write, no Eclipse call, no window call. `DeriveFrameState`, a free
+function with no Windows call in it, builds the per-frame view the bindings read.
+
+**Its governing rule is one edge per control per frame**, with anything that
+would need a second left in the queue for the next frame — which is how a key
+pressed and released between two frames reports both edges instead of neither.
+Stopping early defers everything *behind* the deferred event too; consuming
+later events out of order would reorder edges, which is the thing the rule
+exists to prevent.
+
+Because the derivation is pure it is unit-tested without a window
+(`Tests/NeuronClientTests/InputEventTests.cpp`), which is the only reason any of
+this is testable at all.
+
+### Two mouse sources, deliberately
+
+- **Raw Input (`WM_INPUT`)** carries relative device motion and is what camera
+  aim reads. Client-position differences saturate: with the pointer against the
+  edge of the screen the position cannot change, so the camera stopped turning
+  while the hand was still moving.
+- **`WM_MOUSEMOVE`** still tracks the absolute position, and still serves aim as
+  a **fallback**. `RegisterRawInputDevices` can fail, and an absolute-reporting
+  device registers successfully and then never sends a relative packet — so the
+  guard is *has a relative packet actually arrived*, not *did registration
+  succeed*. Without it either failure leaves the game with no mouse aim at all.
+
+Raw deltas carry no Windows pointer acceleration. Because `TargetCursor` derives
+the visible cursor from the same control, **that changed how the menu cursor
+feels as well as the camera.**
+
+### Text is characters, not key codes
+
+`WM_CHAR` reaches the focused widget through `EclUpdateChar` → `EclWindow::Char`
+→ `EclButton::Char`, and `InputField` is the one override. Keypress keeps the
+editing keys — backspace, enter — because those are keys on every layout.
+
+The dispatch is **interleaved with the key events**, from the driver's walk over
+the frame's events, and it has to be: typing `ab` and pressing enter inside one
+frame must append both letters before the enter commits the field.
+
+Control codes are refused. Windows sends `WM_CHAR` for enter, escape, tab and
+backspace too, and consuming a character is what tells the driver the UI took
+the key — so accepting enter's carriage return would stop enter committing.
+
+### The router, and what "consumed" means
+
+Events are offered to sinks in order, UI first (`InputRouter.h`). A sink that
+*acts on* an event says so, and the driver then stops that control answering the
+bindings until it is released. That one rule replaced three contrivances:
+`InputManager::suppressEvent`, `EclUpdateMouse`'s reconstruction of click edges
+from polled booleans, and the poll-and-push seam in `UserInput::AdvanceMenus`.
+
+Two asymmetries are deliberate and are the first thing to check if consumption
+misbehaves:
+
+- **Keys are masked whole; mouse buttons only on their edges.** What the UI
+  consumes is a *click*, and a click is an edge — while UI code itself polls
+  `mouse left pressed` to know the button is down over it. A text field, by
+  contrast, owns the keystroke for its whole hold.
+- **A release follows its press.** Consumption is decided by what the press did,
+  not by a fresh lookup — otherwise a menu button that closes its own window
+  lets the release through into the game.
+
+The mask is over **reads**, not over the state: `m_keys`, `m_keyDeltas` and
+`m_mb` stay truthful underneath it, so nothing is left stuck when a mark clears
+and `getFirstActiveInput` — the key-rebinding window's door — is unaffected.
+
+### Subscribing, and who may not
+
+`InputManager::subscribe(ControlType, handler)` returns a move-only
+`ControlSubscription`; destroying it unsubscribes, which is what lets a window
+subscribe in its constructor and be deleted without telling anybody.
+
+**THE SIMULATION DOES NOT SUBSCRIBE.** Deterministic lockstep requires
+simulation input to reach the wire only through `TeamControls` and the 10 Hz
+`IAmAlive` letter. A handler that touches game state runs on one client at a
+frame boundary the others never saw, and the result is a desync every build
+stays green through. Subscriptions are for the UI and for discrete client-local
+actions; the camera, unit steering and `TeamControls` keep sampling through
+`controlEvent()`, which is documented in `Input.h` as the compatibility path.
+
+The firing loop assumes handlers misbehave, because the obvious subscriber is a
+window whose handler closes that window: the stored `std::function` is **copied
+out before it is called**, which subscriptions fire is decided **before any
+handler runs**, and a subscription made during a frame does not see that frame.
+
+### Above all of it, unchanged
+
+The binding stack — `InputDriverSimple`, `Chord`, `Conjoin`, `Invert`, `Idle`,
+resolving a spec to a `ControlType`, and the prefs files under
+`GameData/Input` — is the user rebinding system and was deliberately kept. What
+went was what could not run: `Alias`, `Pipe` (never even registered), `Prefs`,
+`Value` and the whole `InputFilter` family (T1); the X360 controller path and 69
+`XInput` binding lines no driver could produce (T2); the `RegisterHotKey`
+Alt-Tab machinery and the per-message `GetForegroundWindow` polling (T4); the
+`g_keys`/`g_keyDeltas` globals (T5); `EventHandler` plus `W32EventProcessor`,
+two abstractions with one implementation each whose only job was to fan one
+window procedure out to one consumer (T10); and the control-icon plumbing,
+which had neither a consumer nor a line of data left to feed it (T15).
+
+### There is no input MODE
+
+`InputMode` — `NONE`, `KEYBOARD`, `GAMEPAD` — is gone, deleted by T14 on the
+owner's direction, and the shape of the deletion is the useful part:
+
+> **Nothing could report `GAMEPAD`.** So every test against the mode compared a
+> value with the only value it could hold, and `InputManager::Advance`'s
+> arbitration — commented *"this prefers the Gamepad"* — chose between one
+> candidate.
+
+What that one dead enumerator was holding up, once it went, was **~1,400 lines**:
+the entire `ControlHelpSystem` on-screen-prompt overlay, gamepad-only by
+construction because both its `Advance` and its `Render` began by returning
+unless the mode was gamepad; the `[IFMODE]`/`[ELSE]`/`[ENDIF]` caption directive,
+whose only opener asked about the mode and which appears nowhere in `GameData`;
+a second language-phrase table and the 70 `_xin` phrases per language file that
+filled it; and a preferences dropdown enabling the overlay.
+
+**A controller returns as a new EVENT SOURCE, not as a mode.** It produces
+`InputEvent`s into the same queue as everything else, and whatever it needs to
+distinguish itself by is a question to answer with a driver in hand.
+
+The `_kbd` half of the language mechanism **stays** and is live: a key spelled
+`help_camera_movement_kbd` answers a lookup for `help_camera_movement`, which is
+how a phrase that names keys is kept distinct from one that does not.
 
 ---
 
@@ -349,4 +513,7 @@ If a type name means nothing to you — `Spirit`, `TrunkPort`, `Incubator` —
 | Building behaviour | `GameLogic/Building.cpp` |
 | Rendering entry | `Species/Renderer.cpp`, `GameLogic/LandscapeRenderer.cpp` |
 | UI toolkit | `NeuronClient/Eclipse.cpp`, `EclWindow.cpp` |
+| Input, one frame of | `NeuronClient/Input.cpp` — `InputManager::Advance` is the whole order |
+| Input, message to event | `NeuronClient/InputDriverWin32.cpp`, `InputEvents.cpp` |
+| Input, who gets it first | `NeuronClient/InputRouter.cpp` |
 | Content loading | `NeuronClient/Resource.cpp`, `GameLogic/LevelFile.cpp` |

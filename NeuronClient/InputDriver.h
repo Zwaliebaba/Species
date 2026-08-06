@@ -12,15 +12,18 @@
 //
 // It is scoped, and the casts at every InputSpec::condition boundary are the
 // point rather than an annoyance: condition_t is a driver-defined integer and
-// three drivers fill it with three unrelated things — these enumerators, the
-// anonymous {COND_TRUE, COND_FALSE} in InputDriverPrefs.cpp, and a raw
+// the drivers fill it with unrelated things — these enumerators, and a raw
 // millisecond count that IdleInputDriver::getConditionID parses out of the
 // binding string. See language-hygiene T9's notes; that is why condition_t
-// stayed an int rather than becoming this type.
+// stayed an int rather than becoming this type. There was a third — a deleted
+// driver's own two-value condition enum — until input-native-events T1; two
+// unrelated things in one integer is still two.
 
 
 namespace Neuron
 {
+  class InputRouter;
+
   enum class InputCondition : int
   {
     COND_DOWN,     // Button was just pushed down
@@ -93,9 +96,6 @@ namespace Neuron
       // type modes.
       virtual bool isIdle();
 
-      // Returns the input mode associated with the InputDriver (keyboard or gamepad or none)
-      virtual InputMode getInputMode();
-
       // Returns true if there was an "active" input event this frame. Fills spec with
       // the details of the input. Active inputs are primarily things like button presses
       // but not buttons held down or released or 2D analog events.
@@ -104,11 +104,23 @@ namespace Neuron
       // This triggers a read from the input hardware and does message polling
       virtual void Advance() = 0;
 
-      // Poll for system events that may require immediate, hard-coded action
-      // eg. Window minimise or XInput plug pulled may always be required to
-      // pause the game. Window close or kill signals should also be dealt with
-      // promptly. This should probably be called in Advance() as well as elsewhere.
-      virtual void PollForEvents();
+      // Offer this frame's events to the router, and act on what it says was
+      // consumed. Called AFTER every driver has advanced and after the cursor
+      // has been moved, because the UI sink needs the cursor where it is THIS
+      // frame — putting the dispatch inside Advance would hand Eclipse the
+      // previous frame's pointer position and land clicks one frame late.
+      //
+      // Only a driver that produces events has anything to do here. The
+      // combinators derive their answers from other drivers' state and never
+      // see a message, which is why this is not pure virtual.
+      virtual void DispatchEvents(InputRouter const& router);
+
+      // PollForEvents IS GONE, and with it the chain it sat at the bottom of.
+      // It existed so that any driver could be asked to pump the OS for
+      // messages, and only one driver ever could; the game called it from five
+      // loops AND the driver called it again from its own Advance, so the
+      // message pump ran twice a frame down two different paths. It runs once
+      // now, from InputManager::Advance.
 
       // Return a helpful error string when there's a problem
       virtual const std::string& getLastParseError(InputParserState state) = 0;

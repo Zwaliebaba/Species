@@ -308,8 +308,7 @@ namespace Species
   SpeciesWindow::SpeciesWindow(std::string_view name)
     : EclWindow(name),
       m_currentButton(0),
-      m_buttonChangedThisUpdate(false),
-      m_skipUpdate(false)
+      m_buttonChangedThisUpdate(false)
   {
     SetTitle(name);
     // Was strupr(), which uppercases a char buffer in place. m_title is a
@@ -318,6 +317,50 @@ namespace Species
       c = static_cast<char>(toupper(static_cast<unsigned char>(c)));
 
     EclSetCurrentFocus(m_name);
+
+    // Guarded because a window built during App's construction would run this
+    // before InitialiseInputManager. Nothing does today, and a menu that
+    // existed before the input system did could not have worked anyway; the
+    // guard is here so the failure would be a dead key rather than a crash.
+    if (g_inputManager)
+    {
+      m_menuActivateSubscription = g_inputManager->subscribe(ControlType::ControlMenuActivate, [this] { OnMenuActivate(); });
+      m_menuCloseSubscription = g_inputManager->subscribe(ControlType::ControlMenuClose, [this] { OnMenuClose(); });
+    }
+  }
+
+
+  // THE FOCUS TEST MOVED WITH THE HANDLER rather than being lost. Update()
+  // wrapped all four of its polls in it, and a subscriber is offered the
+  // control whether or not this window is the one in front.
+  void SpeciesWindow::OnMenuActivate()
+  {
+    if (m_name != EclGetCurrentFocus())
+      return;
+
+    // The empty-order case was already unguarded here and indexes out of range;
+    // it is checked now because moving code is a bad moment to carry a latent
+    // crash across untouched.
+    if (m_buttonOrder.empty())
+      return;
+
+    EclButton* button = m_buttonOrder[m_currentButton];
+    if (button)
+      button->MouseUp();
+  }
+
+
+  void SpeciesWindow::OnMenuClose()
+  {
+    if (m_name != EclGetCurrentFocus() || g_atMainMenu)
+      return;
+
+    // DESTROYS THIS WINDOW, AND THEREFORE THIS SUBSCRIPTION, from inside the
+    // handler. That is the case InputManager::FireSubscriptions copies the
+    // handler out for, and it is the reason this pilot is worth having: a
+    // conversion that only worked for handlers which outlive their call would
+    // not be usable by the code that most wants it.
+    EclRemoveWindow(m_name);
   }
 
   SpeciesWindow::~SpeciesWindow()
@@ -622,12 +665,18 @@ namespace Species
   void SpeciesWindow::Update()
   {
     m_buttonChangedThisUpdate = false;
-    if (m_skipUpdate)
-    {
-      m_skipUpdate = false;
-      return;
-    }
 
+    // THE m_skipUpdate EARLY RETURN THAT USED TO BE HERE IS GONE. The flag was
+    // initialised false and only ever CLEARED — nothing anywhere in the tree
+    // ever set it true — so the branch it guarded was unreachable and the
+    // member was a bool that could only hold one value. Found while converting
+    // the two controls below to subscriptions in T9, because a guard a
+    // subscription would have bypassed is worth checking before bypassing it.
+
+    // MenuActivate and MenuClose are SUBSCRIPTIONS now — see the constructor.
+    // These two stay polled because they write m_buttonChangedThisUpdate, which
+    // this function clears three lines up; see the note beside their tokens in
+    // the header.
     if (m_name == EclGetCurrentFocus())
     {
       if (g_inputManager->controlEvent(ControlType::ControlMenuDown))
@@ -641,20 +690,6 @@ namespace Species
         m_buttonChangedThisUpdate = true;
         m_currentButton--;
         m_currentButton = std::max(0, m_currentButton);
-      }
-
-      if (g_inputManager->controlEvent(ControlType::ControlMenuActivate))
-      {
-        EclButton* b = m_buttonOrder[m_currentButton];
-        if (b)
-        {
-          b->MouseUp();
-        }
-      }
-
-      if (g_inputManager->controlEvent(ControlType::ControlMenuClose) && !g_atMainMenu)
-      {
-        EclRemoveWindow(m_name);
       }
     }
   }

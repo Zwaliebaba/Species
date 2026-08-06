@@ -2,8 +2,6 @@
 
 #include <memory>
 
-#include "InputTypes.h"
-
 #include <map>
 #include <string.h> // stricmp, for the comparator below
 #include <string>
@@ -51,18 +49,22 @@ namespace Neuron
       // and the order is observable — see GetPhraseList and the note in
       // tasks/containers-replaced.yaml T24.
       std::map<std::string, std::unique_ptr<LangPhrase>, LangKeyLess> m_phrasesRaw;
-      std::unique_ptr<PhraseOffsets> m_phrasesKbd;
-      std::unique_ptr<PhraseOffsets> m_phrasesXin;
+
+      // ONE TABLE, WHERE THERE WERE TWO. m_phrasesXin was the gamepad's, built
+      // from the `_xin` half of the language files, and both went with
+      // INPUT_MODE_GAMEPAD. The `_kbd` mechanism this keeps is the live one:
+      // a key spelled `help_camera_movement_kbd` answers a lookup for
+      // `help_camera_movement`, which is how a phrase that names keys is kept
+      // separate from one that does not.
+      std::unique_ptr<PhraseOffsets> m_phrases;
       // ostrstream::str() hands back a frozen buffer the caller must delete[],
       // which is what the array deleter does.
       std::unique_ptr<char[]> m_chunk;
 
-      bool specific_key_exists(const char* _key, InputMode _mood);
-      bool RawDoesPhraseExist(char const* _key);
+      bool specific_key_exists(const char* _key);
       PhraseOffsets* GetCurrentTable();
-      PhraseOffsets* GetCurrentTable(InputMode _mood);
 
-      void RebuildTable(PhraseOffsets* _phrases, std::ostrstream& stream, InputMode _mood);
+      void RebuildTable(PhraseOffsets* _phrases, std::ostrstream& stream);
 
     public:
       LangTable(char const* _filename);
@@ -74,10 +76,10 @@ namespace Neuron
       bool DoesPhraseExist(char const* _key);
       char* LookupPhrase(char const* _key);
 
+      // Public since the mode-taking overloads went: the caption builder asks
+      // these two directly, and used to reach the MOODY* pair instead.
+      bool RawDoesPhraseExist(char const* _key);
       char* RawLookupPhrase(char const* _key);
-
-      bool RawDoesPhraseExist(char const* _key, InputMode _mood);
-      char* RawLookupPhrase(char const* _key, InputMode _mood);
 
       // Caller owns the vector but NOT the phrases in it. No caller in this
       // repository — see tasks/containers-replaced.yaml T24.
@@ -99,11 +101,10 @@ namespace Neuron
 #define ISLANGUAGEPHRASE_ANY(x) g_langTable->DoesPhraseExist(x)
 
 #define RAWLANGUAGEPHRASE(x) g_langTable->RawLookupPhrase(x)
-#define MOODYLANGUAGEPHRASE(x, y) g_langTable->RawLookupPhrase((x), (y))
-#define MOODYISLANGUAGEPHRASE(x, y) g_langTable->RawDoesPhraseExist((x), (y))
+#define RAWISLANGUAGEPHRASE(x) g_langTable->RawDoesPhraseExist(x)
 
-// Owned by App, which assigns this during startup. Declared here so the layers
-// below Species can reach the subsystem without including App.h — see
-// tasks/layering-inversion.yaml T8.
-extern LangTable* g_langTable;
+  // Owned by App, which assigns this during startup. Declared here so the layers
+  // below Species can reach the subsystem without including App.h — see
+  // tasks/layering-inversion.yaml T8.
+  extern LangTable* g_langTable;
 } // namespace Neuron

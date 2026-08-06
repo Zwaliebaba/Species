@@ -46,6 +46,15 @@ namespace NeuronClientTests
       return event;
     }
 
+    InputEvent RawMoveEvent(int _dx, int _dy)
+    {
+      InputEvent event;
+      event.m_type = InputEventType::MouseRawMove;
+      event.m_x = _dx;
+      event.m_y = _dy;
+      return event;
+    }
+
     InputEvent WheelEvent(int _rawDelta)
     {
       InputEvent event;
@@ -176,6 +185,54 @@ namespace NeuronClientTests
         Assert::AreEqual(0, state.m_mouseVel[1]);
       }
 
+      // Raw deltas SUM where absolute positions overwrite, which is the whole
+      // difference between the two and easy to get backwards: two positions in
+      // one frame mean the second is where the mouse is, two steps mean it
+      // travelled the total.
+      TEST_METHOD(RawMouseDeltasSumAcrossTheFrameAndResetOnTheNext)
+      {
+        InputFrameState state;
+        std::vector<InputEvent> queue{RawMoveEvent(3, -1), RawMoveEvent(4, -2), RawMoveEvent(-2, 0)};
+
+        Frame(queue, state);
+        Assert::AreEqual(5, state.m_mouseRelative[0], L"3 + 4 - 2");
+        Assert::AreEqual(-3, state.m_mouseRelative[1]);
+
+        DeriveFrameState(nullptr, 0, state);
+        Assert::AreEqual(0, state.m_mouseRelative[0], L"relative travel belongs to one frame");
+        Assert::AreEqual(0, state.m_mouseRelative[1]);
+      }
+
+      // THE CASE THE TASK EXISTS FOR. With the pointer pinned against the edge
+      // of the screen the client position cannot change, so the position-based
+      // velocity reads zero and the camera stops turning — while the device is
+      // still reporting travel, which is what the raw axis carries.
+      TEST_METHOD(RawTravelSurvivesAPositionThatCannotMoveAnyFurther)
+      {
+        InputFrameState state;
+        std::vector<InputEvent> queue{MoveEvent(1023, 400)};
+        Frame(queue, state);
+
+        queue.push_back(MoveEvent(1023, 400)); // pinned at the edge
+        queue.push_back(RawMoveEvent(12, 0));
+        Frame(queue, state);
+
+        Assert::AreEqual(0, state.m_mouseVel[0], L"the position-based velocity has nowhere to go");
+        Assert::AreEqual(12, state.m_mouseRelative[0], L"the device reported the travel anyway");
+      }
+
+      // A relative step edges no control, so it can never be the second edge
+      // that stops a frame — a burst of mouse motion must not hold the keys
+      // behind it back.
+      TEST_METHOD(RawMovesNeverDeferWhatIsBehindThem)
+      {
+        InputFrameState state;
+        std::vector<InputEvent> queue{RawMoveEvent(1, 1), RawMoveEvent(1, 1), KeyEvent(InputEventType::KeyDown, TestKeyA)};
+
+        Assert::AreEqual(size_t(3), Frame(queue, state));
+        Assert::AreEqual(1, static_cast<int>(state.m_keyDeltas[TestKeyA]));
+      }
+
       // A high-resolution wheel sends fractions of a detent. Dividing each
       // message on its own threw every one of them away, so such a wheel
       // scrolled nothing until a message happened to carry a whole detent.
@@ -238,18 +295,22 @@ namespace NeuronClientTests
         Assert::AreEqual(0, static_cast<int>(state.m_keys[TestKeyA]));
       }
 
-      TEST_METHOD(CharactersArriveInOrderAndAreClearedEachFrame)
+      // T5 collected characters into an m_chars vector and T6 removed it: a
+      // character has to reach the focused widget interleaved with the key
+      // events around it, so the driver dispatches it from its side-effect walk
+      // and the derivation has nothing to say about it. What the derivation
+      // still owes is that a character never DEFERS — it edges no control, so it
+      // can never be the second edge that stops a frame, and a burst of typing
+      // must not hold the keys behind it back.
+      TEST_METHOD(CharactersAreConsumedWithoutEdgingAnythingOrDeferring)
       {
         InputFrameState state;
-        std::vector<InputEvent> queue{CharEvent('h'), CharEvent('i')};
+        std::vector<InputEvent> queue{KeyEvent(InputEventType::KeyDown, TestKeyA), CharEvent('a'), CharEvent('b'),
+                                      KeyEvent(InputEventType::KeyDown, TestKeyB)};
 
-        Frame(queue, state);
-        Assert::AreEqual(size_t(2), state.m_chars.size());
-        Assert::AreEqual(static_cast<unsigned int>('h'), state.m_chars[0]);
-        Assert::AreEqual(static_cast<unsigned int>('i'), state.m_chars[1]);
-
-        Frame(queue, state);
-        Assert::IsTrue(state.m_chars.empty(), L"characters belong to the frame that received them");
+        Assert::AreEqual(size_t(4), Frame(queue, state), L"characters consume without deferring what is behind them");
+        Assert::AreEqual(1, static_cast<int>(state.m_keyDeltas[TestKeyA]));
+        Assert::AreEqual(1, static_cast<int>(state.m_keyDeltas[TestKeyB]));
       }
 
       // The key comes off wParam and the button off a message id, so neither is

@@ -1,22 +1,18 @@
 #include "pch.h"
 
-#include <iostream>
-
 #include "Win32EventHandler.h"
 
+#include "InputDriverWin32.h"
 #include "WindowManager.h"
 #include "WindowManagerWin32.h"
 #include "Debug.h"
 
 #include "AppState.h"
 
-using std::cerr;
-
 
 namespace Neuron
 {
-  typedef std::vector<W32EventProcessor*> ProcList;
-  typedef ProcList::iterator ProcIt;
+  W32EventHandler* g_eventHandler = nullptr;
 
   // The externs for the driver's g_keys and g_keyDeltas are GONE, and so are
   // the globals themselves as of T5 — the driver holds one InputFrameState and
@@ -26,12 +22,6 @@ namespace Neuron
   // produced in order with every other message. What is left here is the focus
   // flag itself.
   bool g_windowHasFocus = true;
-
-
-  W32EventHandler::W32EventHandler()
-    : w32eventprocs()
-  {
-  }
 
 
   LRESULT CALLBACK W32EventHandler::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -45,13 +35,12 @@ namespace Neuron
     case WM_ACTIVATE:
       g_windowHasFocus = LOWORD(wParam) != WA_INACTIVE;
 
-      if (!g_windowHasFocus)
+      if (!g_windowHasFocus && g_win32InputDriver)
       {
         // Everything held goes, not just ALT. Windows sends no release for
         // any of it, so whatever was down at this moment would otherwise stay
         // down forever as far as the game is concerned.
-        for (W32EventProcessor* processor : w32eventprocs)
-          processor->OnFocusLost();
+        g_win32InputDriver->OnFocusLost();
       }
 
       return -1;
@@ -93,40 +82,16 @@ namespace Neuron
       return 0;
     }
 
-    int ans = -1;
-    for (ProcIt i = w32eventprocs.begin(); i != w32eventprocs.end(); ++i)
-    {
-      ans = (*i)->WndProc(hWnd, message, wParam, lParam);
-      if (ans != -1)
-        break;
-    }
-    return ans;
+    // STRAIGHT TO THE DRIVER. This used to walk a vector of W32EventProcessors
+    // and stop at the first that claimed the message; there has only ever been
+    // one processor in it, and the abstraction it was reached through has been
+    // deleted along with the vector.
+    if (!g_win32InputDriver)
+      return -1;
+
+    return g_win32InputDriver->WndProc(hWnd, message, wParam, lParam);
   }
 
 
-  void W32EventHandler::AddEventProcessor(W32EventProcessor* _driver)
-  {
-    if (_driver)
-      w32eventprocs.push_back(_driver);
-    else
-      cerr << "AddEventProcessor: _driver is NULL\n";
-  }
-
-
-  void W32EventHandler::RemoveEventProcessor(W32EventProcessor* _driver)
-  {
-    for (ProcIt i = w32eventprocs.begin(); i != w32eventprocs.end(); ++i)
-      if (_driver == *i)
-        w32eventprocs.erase(i);
-  }
-
-
-  bool W32EventHandler::WindowHasFocus() { return g_windowHasFocus; }
-
-
-  W32EventHandler* getW32EventHandler()
-  {
-    EventHandler* handler = g_eventHandler;
-    return dynamic_cast<W32EventHandler*>(handler);
-  }
+  bool W32EventHandler::WindowHasFocus() const { return g_windowHasFocus; }
 } // namespace Neuron

@@ -21,9 +21,11 @@
   <ItemGroup>
     <ClCompile Include="BinaryReaderTests.cpp" />
     <ClCompile Include="ControlBindingsTests.cpp" />
+    <ClCompile Include="ControlSubscriptionTests.cpp" />
     <ClCompile Include="FileWriterTests.cpp" />
     <ClCompile Include="FilesysUtilsTests.cpp" />
     <ClCompile Include="InputEventTests.cpp" />
+    <ClCompile Include="InputRouterTests.cpp" />
     <ClCompile Include="ShapeMarkerTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

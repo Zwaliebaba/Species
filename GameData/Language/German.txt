@@ -155,21 +155,17 @@ control_help_armourmode                Sammel-/Ablegen-Modus
 # ================================================
 
 help_camera_movement_kbd               Zum Bewegen der Kamera die Tasten [KEYCAMERAFORWARDS], [KEYCAMERALEFT], [KEYCAMERABACKWARDS] und [KEYCAMERARIGHT] benutzen. Für die Höheneinstellung der Kamera das Mausrad oder die Tasten [KEYCAMERAUP] und [KEYCAMERADOWN] benutzen.
-help_camera_movement_xin               Bewegen der Kamera.
 help_camera_height_kbd                 Bei Mäusen mit mittlerer Taste kann diese zur Höhenverstellung verwendet werden. Oder verwende zum Höherstellen [KEYCAMERAUP] bzw. zum Tieferstellen [KEYCAMERADOWN].
 help_camera_zoom_kbd                   Bei Mäusen mit mittlerer Maustaste kann diese zum Zoomen benutzt werden. Die gleiche Funktion erfüllt die Taste [KEYCAMERAZOOM].
 help_camera_movefast_kbd               Für eine schnellere Kamerabewegung wird die [KEYCAMERASPEEDUP]  gedrückt.
 help_taskmanager_1_kbd                 Um in Darwinia Figuren oder Objekte zu erstellen, zeichnest du die Gesten im Task Manager. Festhalten von [KEYGESTURESTASKMANAGERDISPLAY] öffnet den Task Manager.
 help_taskmanager_2_kbd                 Für eine Liste der möglichen Gesten, rufst du mit [KEYGESTURESTASKMANAGERDISPLAY] den Task Manager auf und scrollst nach links, indem du die Maus nach links bewegst, oder mithilfe von [KEYMENULEFT].
 help_taskmanager_3_kbd                 Gleichzeitig können immer nur DREI Tasks ausgeführt werden. Zum Abschalten von Tasks hältst du [KEYGESTURESTASKMANAGERDISPLAY] gedrückt und springst mit der Tab-Taste von einer Task zu nächsten. Drücke dann STRG-C.
-help_taskmanager_3_xin                 Gleichzeitig können immer nur DREI Tasks gleichzeitig ausgeführt werden. Tasks können abgeschaltet werden.
 help_taskmanager_4_kbd                 Um eine bestehende Task erneut auszuwählen, rufst du mit [KEYGESTURESTASKMANAGERDISPLAY] den Task Manager auf und springst mit der Tab-Taste auf das betreffende Symbol.
 help_showchatlog_kbd                   Um alles, was ich gesagt habe, zu lesen, hältst du die Taste [KEYGESTURESCHATLOG] gedrückt.
 help_taskmanager_1_icons_kbd           Um in Darwinia Figuren oder Objekte zu erstellen, zeichnest du die Gesten im Task Manager. Festhalten von [KEYICONSTASKMANAGERDISPLAY] öffnet den Task Manager.
-help_taskmanager_1_icons_xin           Um in Darwinia Figuren oder Objekte zu erstellen, zeichnest du die Gesten im Task Manager.
 help_taskmanager_2_icons_kbd           Für eine Liste der verfügbaren Programme drückst du [KEYICONSTASKMANAGERDISPLAY]. Klicke auf eins davon, um ein neues Programm zu erstellen.
 help_taskmanager_3_icons_kbd           Gleichzeitig können immer nur DREI Tasks ausgeführt werden. Zum Abschalten der aktuellen Task drückst du [KEYICONSTASKMANAGERENDTASK] oder du klickst auf das entsprechende Löschsymbol im Task Manager.
-help_taskmanager_3_icons_xin           Gleichzeitig können immer nur DREI Tasks ausgeführt werden.
 help_taskmanager_4_icons_kbd           Um eine bestehende Task erneut auszuwählen, hältst du [KEYICONSTASKMANAGERDISPLAY] gedrückt und klickst auf das betreffende Symbol. Oder du drückst auf die entsprechenden Zahlentasten.
 help_showchatlog_icons_kbd             Um alles, was ich gesagt habe, zu lesen, hältst du die Taste [KEYICONSCHATLOG] gedrückt.
 
@@ -177,7 +173,6 @@ help_deselect_kbd                      Zum Abwählen des aktuellen Objekts drücks
 help_squad_summon_1_kbd                Um einen Trupp zu erstellen, öffnest du mit [KEYGESTURESTASKMANAGERDISPLAY] den Task Manager und zeichnest dann diese Geste.
 help_squad_summon_1_icons_kbd          Um einen Trupp zu erstellen, öffnest du mit [KEYICONSTASKMANAGERDISPLAY] den Task Manager und klickst auf das Trupp-Symbol.
 help_squad_summon_2_kbd                Klicke mit der linken Maustaste auf einen der Anfangsbereiche (derzeit markiert), um deinen Trupp in der Welt zu erstellen.
-help_squad_summon_2_xin                Wähle einen der Anfangsbereiche (derzeit markiert), um deinen Trupp in der Welt zu erstellen.
 help_squad_use_kbd                     Klicke erneut, um deinen Trupp zu bewegen. Mit einem Rechtsklick feuerst du die Laserkanonen. Drücke [KEYUNITDESELECT] zum Abwählen. Truppen können nicht ins Wasser.
 help_squad_use_1mb_kbd                 Klicke, um deinen Trupp zu bewegen. Klicke und halte die Taste gedrückt, um die Laserkanonen abzufeuern. Drücke [KEYUNITDESELECT] zum Abwählen.
 help_squad_grenade_kbd                 Du kannst eine Granate werfen, indem du mit der linken Maustaste klickst, während du Laserkanonen mit der rechten Maustaste feuerst.
@@ -186,51 +181,34 @@ help_squad_setgrenade                  Zum Wechseln zur Granate zeichnest du die
 help_squad_setrocket                   Zum Wechseln zur Rakete zeichnest du die Raketengeste.
 help_squad_setairstrike                Zum Wechseln zum Luftangriff zeichnest du die Luftangriffsgeste.
 help_squad_setgrenade_icons_kbd        Zum Wechseln zur Granate hältst du [KEYICONSTASKMANAGERDISPLAY] gedrückt und klickst auf das Granaten-Symbol neben deinem Trupp.
-help_squad_setgrenade_icons_xin        Zum Wechseln zur Granate öffnest du den Task Manager und wählst das Granaten-Symbol neben deinem Trupp.
 help_squad_setrocket_icons_kbd         Zum Wechseln zur Rakete hältst du [KEYICONSTASKMANAGERDISPLAY] gedrückt und klickst auf das Raketen-Symbol neben deinem Trupp.
-help_squad_setrocket_icons_xin         Zum Wechseln zur Rakete öffnest du den Task Manager und wählst das Raketen-Symbol neben deinem Trupp.
 help_squad_setairstrike_icons_kbd      Zum Wechseln zum Luftangriff hältst du [KEYICONSTASKMANAGERDISPLAY] gedrückt und klickst auf das Luftangriff-Symbol neben deinem Trupp.
-help_squad_setairstrike_icons_xin      Zum Wechseln zum Luftangriff öffnest du den Task Manager und wählst das Luftangriff-Symbol neben deinem Trupp.
 
 
 help_building_reprogram                Dieses Gebäude muss umprogrammiert werden, ehe es benutzt werden kann. Zu diesem Zweck musst du einen Ingenieur erstellen und ihn in Reichweite des nächsten Kontrollturms bringen.
 help_engineer_summon_kbd               Ingenieure werden zum Einsammeln toter Seelen und zum Neuprogrammieren von Gebäuden eingesetzt. Halte [KEYGESTURESTASKMANAGERDISPLAY] gedrückt und zeichne diese Geste, um einen Ingenieur auf den Plan zu rufen.
-help_engineer_summon_xin               Ingenieure werden zum Einsammeln toter Seelen und zum Neuprogrammieren von Gebäuden eingesetzt. Öffne den Task Manager und zeichne diese Geste, um einen Ingenieur auf den Plan zu rufen.
 help_engineer_summon_icons_kbd         Ingenieure werden zum Einsammeln toter Seelen und zum Neuprogrammieren von Gebäuden eingesetzt. Halte [KEYICONSTASKMANAGERDISPLAY] gedrückt und klicke auf das Ingenieur-Symbol, um einen Ingenieur auf den Plan zu rufen.
-help_engineer_summon_icons_xin         Ingenieure werden zum Einsammeln toter Seelen und zum Neuprogrammieren von Gebäuden eingesetzt. Öffne den Task Manager und wähle das Ingenieur-Symbol, um einen Ingenieur auf den Plan zu rufen.
 help_engineer_summon_2_kbd             Klicke mit der linken Maustaste auf einen der Anfangsbereiche (derzeit markiert), um einen Ingenieur zu erstellen. Oder drücke STRG-C, um das Ingenieur-Programm zu beenden.
-help_engineer_summon_2_xin             Wähle einen der Anfangsbereiche (derzeit markiert), um einen Ingenieur zu erstellen. Oder beende das Ingenieur-Programm.
 help_engineer_summon_2_icons_kbd       Klicke mit der linken Maustaste auf einen der Anfangsbereiche (derzeit markiert), um einen Ingenieur zu erstellen. Oder drücke STRG-C, um das Ingenieur-Programm zu beenden.
-help_engineer_summon_2_icons_xin       Wähle einen der Anfangsbereiche (derzeit markiert), um einen Ingenieur zu erstellen. Oder beende das Ingenieur-Programm.
 help_engineer_use_kbd                  Ingenieure erledigen automatisch alles, was in der Nähe gerade zu tun ist, etwa tote Seelen einsammeln oder Gebäude umprogrammieren. Klicke mit der linken Maustaste, um den Ingenieur zu einer Aufgabe zu bewegen.
-help_engineer_use_xin                  Ingenieure erledigen automatisch alles, was in der Nähe gerade zu tun ist, etwa tote Seelen einsammeln oder Gebäude umprogrammieren. Bewege den Ingenieur einfach zu einer Aufgabe.
 
 help_officer_create_kbd                Du kannst mit gewöhnlichen Darwinianern andere Darwinianer herumkommandieren, indem du sie zu Offizieren beförderst. Zeichne diese Geste für einen Offizier und klicke mit der linken Maustaste auf einen Darwinianer.
-help_officer_create_xin                Du kannst mit gewöhnlichen Darwinianern andere Darwinianer herumkommandieren, indem du sie zu Offizieren beförderst. Zeichne diese Geste für einen Offizier und wähle einen Darwinianer aus.
 help_officer_create_icons_kbd          Du kannst mit gewöhnlichen Darwinianern andere Darwinianer herumkommandieren, indem du sie zu Offizieren beförderst. Öffne den Task Manager und klicke auf das Offiziers-Symbol, dann auf einen Darwinianer.
-help_officer_create_icons_xin          Du kannst mit gewöhnlichen Darwinianern andere Darwinianer herumkommandieren, indem du sie zu Offizieren beförderst. Öffne den Task Manager und wähle das Offiziers-Symbol und dann einen Darwinianer.
 help_officer_create_2_kbd              Klicke auf einen Darwinianer, um ihn zu einem Offizier zu befördern. Oder drücke STRG-C, um das Offizier-Programm zu beenden.
-help_officer_create_2_xin              Wähle einen Darwinianer, um ihn zu einem Offizier zu befördern. Oder beende das Offizier-Programm.
 help_officer_create_2_icons_kbd        Klicke auf einen Darwinianer, um ihn zu einem Offizier zu befördern. Oder drücke [KEYICONSTASKMANAGERENDTASK], um das Offizier-Programm zu beenden.
-help_officer_create_2_icons_xin        Wähle einen Darwinianer, um ihn zu einem Offizier zu befördern. Oder beende das Offizier-Programm.
 help_officer_use_kbd                   Zum Bewegen eines Offiziers klickst du mit der linken Maustaste. Rechtsklick in die Landschaft aktiviert GEHEZU-Befehl, damit die übrigen Darwinianer folgen. Rechtsklick neben dem Offizier annulliert seine Befehle.
 help_officer_use_1mb_kbd               Zum Bewegen eines Offiziers kannst du klicken. Klicke in die Landschaft und halte die Taste gedrückt, um den GEHEZU-Befehl zu aktivieren, damit die übrigen Darwinianer folgen. Klicke neben dem Offizier und halte die Taste gedrückt, um seine Befehle zu annullieren.
 help_officer_toggle_kbd                Um alle verfügbaren Befehle zu durchlaufen, klickst du mit der rechten Taste in die Nähe des Offiziers.
 help_officer_toggle_1mb_kbd            Um alle verfügbaren Befehle zu durchlaufen, klickst du in die Nähe des Offiziers und hältst die Taste gedrückt.
 
 help_showobjectives_kbd                Für eine Liste der Ziele rufst du mit [KEYGESTURESTASKMANAGERDISPLAY] den Task Manager auf und scrollst nach rechts, indem du die Maus nach rechts bewegst, oder mithilfe von [KEYCAMERARIGHT].
-help_showobjectives_xin                Für eine Liste der Ziele öffnest du den Task Manager und scrollst dann nach rechts.
 help_showobjectives_icons_kbd          Für eine Liste der Ziele rufst du mit [KEYICONSTASKMANAGERDISPLAY] den Task Manager auf und scrollst nach rechts, indem du die Maus nach rechts bewegst, oder mithilfe von [KEYMENUDOWN].
-help_showobjectives_icons_xin          Für eine Liste der Ziele öffnest du den Task Manager und scrollst dann nach unten.
 help_armour_summon_kbd                 Klicke mit der linken Maustaste auf einen der Anfangsbereiche (derzeit markiert), um einen Panzer zu erstellen. Panzer können nur in der Nähe von Verbindungsportalen, die in deinem Besitz befindlich sind, erstellt werden.
-help_armour_summon_xin                 Wähle einen der Anfangsbereiche (derzeit markiert), um einen Panzer zu erstellen. Panzer können nur in der Nähe von Verbindungsportalen, die in deinem Besitz befindlich sind, erstellt werden.
 help_armour_use_kbd                    Klicke mit der linken Maustaste, um deinen Panzer zu bewegen. Klicke mit der rechten Maustatse neben den Panzerwagen, um die Darwinianer ein- oder aussteigen zu lassen. Klicke mit der rechten Maustaste auf die Landschaft, um den Panzer als Kanone einzusetzen.
 help_armour_use_1mb_kbd                Klicke mit der linken Maustaste, um deinen Panzer zu bewegen. Klicke neben dem Panzerwagen und halte die Taste gedrückt zum Ein- und Ausladen der Darwinianer. Klicke auf die Landschaft und halte die Maustaste gedrückt, um den Panzer als Kanone einzusetzen.
 
 help_radardish_1_kbd                   Dieser Radarschirm kann eingesetzt werden, um Menschen an andere Radarschirme zu strahlen. Klicke darauf, um ihn zu steuern.
-help_radardish_1_xin                   Dieser Radarschirm kann eingesetzt werden, um Menschen an andere Radarschirme zu strahlen. Wähle ihn, um ihn zu steuern.
 help_radardish_2_kbd                   Zum Anpeilen des zweiten Radarschirms klickst du mit der linken Maustaste darauf. Der Ziel-Radarschirm muss auf Dich ausgerichtet sein. Drücke [KEYUNITDESELECT] zum Abwählen des Radarschirms.
-help_radardish_2_xin                   Zum Anpeilen des zweiten Radarschirms wählst du ihn aus. Der Ziel-Radarschirm muss auf Dich ausgerichtet sein.
 help_incubator                         Dieses Gebäude ist ein Inkubator. Du kannst Ingenieure einsetzen, um Seelen hierher zu bringen, die dann als Darwinianer wiedergeboren werden.
 help_trunkport                         Dies ist ein Verbindungsportal. Er dient als Sternentor, das verschiedene Örtlichkeiten von Darwinia miteinander verbindet.
 help_refinery                          Dies ist die Hauptraffinerie. Sie produziert Energie für die Bergbauindustrie der Inseln. Um den Betrieb wieder aufzunehmen, musst du einige Darwinianer sicher an diesen Platz führen.
@@ -239,7 +217,6 @@ help_anthill                           Wääääh, wie eklig!  Dieses Gebiet ist vol
 help_controltower                      Dies ist ein Kontrollturm. Schicke einen deiner Ingenieure aus, um ihn neu zu programmieren, dann kannst du das Gebäude nutzen, mit dem er verbunden ist.
 help_researchitem                      Du hast etwas von meiner Forschungsarbeit entdeckt!  Ausgezeichnet. Erstelle ein paar Ingenieure in der Nähe, damit sie die Ergebnisse in das System laden. Hoffentlich ist es etwas Nützliches.
 help_gunturret_1_kbd                   Die Kanone kann nur von Darwinianern bedient werden. Diese werden automatisch auf alle in der Nähe befindlichen Feinde schießen. Auf Wunsch kannst du darauf klicken, um die Steuerung selbst zu übernehmen.
-help_gunturret_1_xin                   Die Kanone kann nur von Darwinianern bedient werden. Diese werden automatisch auf alle in der Nähe befindlichen Feinde schießen. Auf Wunsch kannst du sie auswählen, um die Steuerung selbst zu übernehmen.
 help_gunturret_2_kbd                   Die Kanone folgt deinem Cursor. Mit Rechtsklick Feuer geben. Drücke [KEYUNITDESELECT] zum Abwählen.
 help_gunturret_2_1mb_kbd               Die Kanone folgt deinem Cursor. Klicke und halte die Taste gedrückt, um Feuer zu geben. Drücke [KEYUNITDESELECT] zum Abwählen.
 
@@ -318,11 +295,8 @@ taskmanager_incomplete                 UNVOLLSTÄNDIG
 # ================================================
 
 task_manager_full_kbd                  Es können keine weiteren Programme ausgeführt werden. Schalte welche ab, indem du mit [KEYGESTURESTASKMANAGERDISPLAY] den Task Manager öffnest und mit Tab die alten Tasks ansteuerst und STRG-C drückst.
-task_manager_full_xin                  Es können keine weiteren Programm ausgeführt werden. Schalte welche ab.
 task_manager_full_icons_kbd            Es können keine weiteren Programme ausgeführt werden. Halte [KEYICONSTASKMANAGERDISPLAY] gedrückt und schließe einige Programme, um Kapazität freizusetzen. Klicke auf die Schließsymbole.
-task_manager_full_icons_xin            Es können keine weiteren Programme ausgeführt werden.
 task_manager_targetfirst_kbd           Es können keine weiteren Programme ausgeführt werden bist du deine bestehenden platziert hast. Klicke in einen der Anfangsbereiche, um es zu platzieren.
-task_manager_targetfirst_xin           Es können keine weiteren Programme ausgeführt werden bist du deine bestehenden platziert hast. Wähle einen der Anfangsbereiche, um es zu platzieren.
 task_manager_needsquadfirst            Du musst erst einen Trupp erstellen, ehe du den Waffentyp festlegen kannst.
 officer_notwalkable                    Leider sind die Darwinianer nicht schlau genug, um den Weg entlang dieser Route zu finden. Sie müssen sehen können, wohin sie laufen.
 armour_cantconvert                     Das Gelände dort ist zu steil - eine Kanone muss flach stehen.
@@ -337,10 +311,8 @@ objective_research_2                   Erstelle einen Ingenieur in der Nähe, dam
 
 building_captured                      Die Ingenieure haben das Gebäude umprogrammiert.
 primaryObjectivesComplete_kbd          Gute Arbeit! Sieht aus, als hättest du alle Primärziele geschafft. Drücke [KEYMENUESCAPE], um diesen Ort zu verlassen, wenn du fertig bist.
-primaryObjectivesComplete_xin          Gute Arbeit! Sieht aus, als hättest du alle Primärziele geschafft.
 primaryObjectiveComplete               Primärziel erreicht.
 primaryObjectiveFail_kbd               Sieht aus, als sei deine Mission erfolglos verlaufen. Du kannst es gerne noch mal versuchen. Drücke jetzt [KEYMENUESCAPE].
-primaryObjectiveFail_xin               Sieht aus, als sei deine Mission erfolglos verlaufen.
 
 privatedemo1                           > INTERNAL PRE-ALPHA BUILD FOR SOMEBODY
 privatedemo2                           > STRICTLY CONFIDENTIAL
@@ -393,7 +365,6 @@ research_laser_v4                      Diese Laser sind jetzt einsame Klasse. Si
 
 research_grenade                       Ich werde mir mal das Granaten-Programm anschauen. Es müsste möglich sein, die Reichweite zu verbessern.
 research_grenade_v1_kbd                Du hast meine Forschungsstudien zu den Granaten gefunden!  Das ist fantastisch. Während dein Trupp seinen Laser feuert, kannst du mit der linken Maustaste eine Granate werfen.
-research_grenade_v1_xin                Du hast meine Forschungsstudien zu den Granaten gefunden!  Das ist fantastisch. Dein Trupp kann jetzt Granaten werfen.
 research_grenade_v1_1mb_kbd            Du hast meine Forschungsstudien zu den Granaten gefunden!  Das ist fantastisch. Mit Umschalt-Klick kannst du eine Granate werfen.
 research_grenade_v2                    Ich habe die Reichweite des Granaten-Programms vergrößert.
 research_grenade_v3                    Ich habe die Wurfreichweite der Granaten noch weiter verbessert.
@@ -401,10 +372,8 @@ research_grenade_v4                    Okay, das reicht für die Granaten. Damit 
 
 research_rocket                        Ich werde mich den Raketen zuwenden. Ich denke, ich sollte die maximale Reichweite etwas verbessern können.
 research_rocket_v1_kbd                 Ausgezeichnet, du hast das Raketen-Programm wiedergefunden. Du kannst diese Waffe mit der Raketen-Geste auswählen. Während dein Trupp seinen Laser feuert, kannst du mit der linken Maustatse eine Rakete starten.
-research_rocket_v1_xin                 Ausgezeichnet, du hast das Raketen-Programm wiedergefunden. Du kannst diese Waffe mit der Raketen-Geste auswählen. Dein Trupp kann jetzt Raketen starten.
 
 research_rocket_v1_icons_kbd           Ausgezeichnet, du hast das Raketen-Programm wiedergefunden. Du kannst diese Waffe auswählen, indem du im Task Manager auf das Raketen-Symbol neben deinem Trupp klickst. Während dein Trupp seinen Laser feuert, kannst du mit der linken Maustatse eine Rakete starten.
-research_rocket_v1_icons_xin           Ausgezeichnet, du hast das Raketen-Programm wiedergefunden. Du kannst diese Waffe auswählen, indem du im Task Manager das Raketen-Symbol neben deinem Trupp wählst. Dein Trupp kann jetzt Raketen starten.
 research_rocket_v1_1mb_kbd             Ausgezeichnet, du hast das Raketen-Programm wiedergefunden. Du kannst diese Waffe mit der Raketen-Geste auswählen. Mit Umschalt-Klick kannst du eine Rakete starten.
 research_rocket_v2                     Die Reichweite der Raketen wurde verbessert.
 research_rocket_v3                     Ich hab's geschafft, die Raketenreichweite weiter zu verbessern.
@@ -413,7 +382,6 @@ research_rocket_v4                     Damit ist die max. Reichweite der Raketen
 research_airstrike                     Ich werd versuchen, den Luftangriff für Dich zu verbessern.
 research_airstrike_v1                  Ach du meine Güte, das ist ausgezeichnet. Du hast mein Luftangriffs-Programm gefunden!  Wähle Luftangriff als Waffe für deinen Trupp, indem du die Geste zeichnest, und wirf dann die Markierungsgranate, um dem Programm das Angriffsziel zu zeigen.
 research_airstrike_v1_icons_kbd        Ach du meine Güte, das ist ausgezeichnet. Du hast mein Luftangriffs-Programm gefunden!  Klicke im Task Manager auf das Luftangriffs-Symbol, um diese Waffe auszuwählen. Wirf dann die Markierungsgranate, um dem Programm das Angriffsziel zu zeigen.
-research_airstrike_v1_icons_xin        Ach du meine Güte, das ist ausgezeichnet. Du hast mein Luftangriffs-Programm gefunden!  Wähle im Task Manager das Luftangriffs-Symbol, um diese Waffe auszuwählen. Wirf dann die Markierungsgranate, um dem Programm das Angriffsziel zu zeigen.
 research_airstrike_v2                  Es ist mir gelungen, das Luftangriffs-Programm zu verbessern. Jede Markierungsgranate veranlasst zwei Invaders zum Abwerfen ihrer Bomben.
 research_airstrike_v3                  Ich habe jeder Luftangriffseinheit einen weiteren Invader hinzugefügt.
 research_airstrike_v4                  Für jede Luftangriffs-Markierung gibt es jetzt vier Invader. Ich hab alles getan, was ich konnte.
@@ -446,18 +414,14 @@ research_officer                       Ich mache mich jetzt an die Verbesserung 
 # research_officer_v1                Unused
 # research_officer_v2                Unused
 research_officer_v3_kbd                Ich habe das Offiziers-Programm so aufgerüstet, dass sie jetzt neben dem GEHEZU- auch einen FOLGEN-Befehl erteilen können. Rechtsklicke neben einem Offizier, um zwischen den Befehlen umzuschalten.
-research_officer_v3_xin                Ich habe das Offiziers-Programm so aufgerüstet, dass sie jetzt neben dem GEHEZU- auch einen FOLGEN-Befehl erteilen können.
 research_officer_v3_1mb_kbd            Ich habe das Offiziers-Programm so aufgerüstet, dass sie jetzt neben dem GEHEZU- auch einen FOLGEN-Befehl erteilen können. Klicke neben dem Offizier und halte die Taste gedrückt, um zwischen den Befehlen umzuschalten.
 research_officer_v4_kbd                Ich habe den Offizieren einen neuen Befehl einprogrammiert, ABSORBIEREN. Damit können sie alle in ihrem Umkreis befindlichen Darwinianer in einen Schild absorbieren, der sie in gefährlichen Gegenden schützt. Rechtsklicke neben einem Offizier, um zwischen den Befehlen umzuschalten.
-research_officer_v4_xin                Ich habe den Offizieren einen neuen Befehl einprogrammiert, ABSORBIEREN. Damit können sie alle in ihrem Umkreis befindlichen Darwinianer in einen Schild absorbieren, der sie in gefährlichen Gegenden schützt.
 research_officer_v4_1mb_kbd            Ich habe den Offizieren einen neuen Befehl einprogrammiert, ABSORBIEREN. Damit können sie alle in ihrem Umkreis befindlichen Darwinianer in einen Schild absorbieren, der sie in gefährlichen Gegenden schützt. Klicke neben dem Offizier und halte die Taste gedrückt, um zwischen den Befehlen umzuschalten.
 
 research_explanation_1                 Ich werde eine Weile lang an den Programmen, die du verwendest, arbeiten, d.h. am Trupp-, am Ingenieur-Programm usw.
 research_explanation_2                 Die meisten davon befinden sich noch in den frühen Phasen des Beta-Tests, weshalb ich glaube, dass sie alle noch ein ganzes Stück verbessert werden können.
 research_explanation_3_kbd             Wenn du meine Fortschritte verfolgen willst, rufst du mit [KEYGESTURESTASKMANAGERDISPLAY] den Task Manager auf und scrollst nach links, indem du die Maus nach links bewegst, oder mithilfe von [KEYCAMERALEFT].
-research_explanation_3_xin             Wenn du meine Fortschritte verfolgen willst, öffne den Task Manager und scrolle nach links.
 research_explanation_3_icons_kbd       Wenn du meine Fortschritte verfolgen willst, rufst du mit [KEYICONSTASKMANAGERDISPLAY] den Task Manager auf und scrollst nach links, indem du die Maus nach links bewegst, oder mithilfe von [KEYCAMERAFORWARDS].
-research_explanation_3_icons_xin       Wenn du meine Fortschritte verfolgen willst, öffne den Task Manager und scrolle nach oben.
 research_explanation_4                 Von hier aus kannst du mir Prioritäten setzen. Ich werde versuchen, die Dinge in Angriff zu nehmen, die Dir am wichtigsten scheinen.
 
 
@@ -477,18 +441,15 @@ tutorial_intro_9                       Wir müssen die Vireninfektion bekämpfen u
 tutorial_intro_10                      Aber beginnen wir am Anfang.
 
 tutorial_1_kbd                         Als erstes der Gebrauch der Kamera. Benutze die Tasten [KEYCAMERAFORWARDS],[KEYCAMERALEFT],[KEYCAMERABACKWARDS],[KEYCAMERARIGHT] für die Kamerabewegung.
-tutorial_1_xin                         Als erstes der Gebrauch der Kamera. Bewege die Kamera mit dem Ministick links umher.
 tutorial_2_kbd                         Um die Höheneinstellung zu verändern, scrollst du mit der mittleren Maustaste hoch oder runter. Die gleiche Funktion erfüllen die Tasten [KEYCAMERAUP] und [KEYCAMERADOWN].
 tutorial_3                             Gut so. Als erstes sollst du diese bösen roten Virii zerstören.
 tutorial_3b                            Ihren Leichen entnehmen wir dann die Seelen und verwandeln diese in frische neue Darwinianer.
 tutorial_4                             Um die Virii zu vernichten, müssen wir eine bewaffnete Angriffseinheit, einen TRUPP, erstellen.
 tutorial_4b_kbd                        Um in Darwinia Figuren oder Objekte zu erstellen, zeichnest du die Gesten im Task Manager. Festhalten von [KEYGESTURESTASKMANAGERDISPLAY] öffnet den Task Manager.
-tutorial_4b_xin                        Um in Darwinia Figuren oder Objekte zu erstellen, zeichnest du die Gesten im Task Manager.
 tutorial_5                             Öffne den Task Manager und zeichne diese Geste, um einen TRUPP zu erstellen. Du musst nicht sehr genau sein, zeichne nur schnell genug.
 tutorial_5_kbd                         Halte [KEYGESTURESTASKMANAGERDISPLAY] gedrückt, während du diese Geste zeichnest, um einen TRUPP zu erstellen. Du brauchst nicht exakt zu zeichnen, aber schnell.
 tutorial_5_error                       Halt, das ist die falsche Geste. Versuch's nochmals.
 tutorial_7_kbd                         Ausgezeichnet. Um den TRUPP in die Welt zu platzieren, klickst du im Innern des markierten Anfangsbereichs.
-tutorial_7_xin                         Ausgezeichnet. Um den TRUPP in die Welt zu platzieren, wählst du den markierten Anfangsbereich.
 tutorial_8_kbd                         Trupps müssen direkt gesteuert werden. Klicke mit der linken Maustaste, um sie in der Landschaft umher zu führen.
 tutorial_9_kbd                         Halte die rechte Maustaste gedrückt, um ihre Laser abzufeuern.
 tutorial_10_kbd                        Sie können auch Granaten werfen. Halte die rechte Maustaste gedrückt, um den Laser zu feuern, und klicke mit der linken Maustaste, um eine Granate zu werfen.
@@ -500,7 +461,6 @@ tutorial_20                            Dieses Gebäude ist ein Inkubator. Hier we
 tutorial_20b                           Leider ist derzeit in Folge der roten Vireninfektion alles lahm gelegt. Wir brauchen die Einrichtung, um Darwinianer zu erzeugen.
 tutorial_20c                           Um das Gebäude wieder in Stand zu setzen, brauchen wir einen INGENIEUR.
 tutorial_21_kbd                        Um einen INGENIEUR zu erstellen, hältst du [KEYGESTURESTASKMANAGERDISPLAY], um den Task Manager zu öffnen und diese Geste zu zeichnen.
-tutorial_21_xin                        Um einen INGENIEUR zu erstellen, öffnest du den Task Manager und zeichnest diese Geste.
 tutorial_22                            Ingenieure können auf Anfangspunkte oder in die Nähe von Trupps gesetzt werden. Platziere deinen Ingenieur und bewege ihn neben einen Inkubator.
 tutorial_23                            Als erstes wird der Ingenieur unter Verwendung des in der Nähe gelegenen Kontrollturms den Inkubator umprogrammieren und die Vireninfektion beseitigen.
 tutorial_24                            Danach wird er die zurückgebliebenen Seelen der Virii einsammeln und sie zum Inkubator bringen.
@@ -510,7 +470,6 @@ tutorial_25                            Die ersten Darwinianer sind zu neuem Lebe
 tutorial_26                            Sie waren vor der Invasion der Viren die Herren des Planeten. Ihnen werden wir helfen, die Welt zurückzuerobern.
 
 tutorial_28_kbd                        Halte [KEYGESTURESTASKMANAGERDISPLAY] gedrückt, während du diese Geste zeichnest, um einen weiteren TRUPP zu erstellen.
-tutorial_28_xin                        Öffne den Task Manager und zeichne diese Geste, um einen weiteren TRUPP zu erstellen.
 tutorial_29                            Du kannst jetzt dein Geschwader näher am Ort der Handlung ansiedeln, indem du es in die Nähe des eroberten Kontrollturms bringst.
 
 tutorial_30                            Okay, nächste Aufgabe.
@@ -520,13 +479,11 @@ tutorial_32                            Nimm deinen Trupp und greif die Viren an,
 tutorial_33                            Ausgezeichnete Arbeit. Ich bin beeindruckt.
 tutorial_33b                           Jetzt wollen wir mit einem Ingenieur diesen Inkubator umprogrammieren und die in der Nähe befindlichen Seelen einsammeln.
 tutorial_34_kbd                        Bewege den Ingenieur in die Nähe des Inkubators, damit er mit dem Umprogrammieren anfangen kann. Klicke mit der linken Maustaste, um den Ingenieur zu bewegen.
-tutorial_34_xin                        Bewege den Ingenieur in die Nähe des Inkubators, damit er mit dem Umprogrammieren anfangen kann.
 tutorial_35                            Dieser Ingenieur wird jetzt die in der Nähe befindlichen Seelen einsammeln und sie in den Inkubator legen, um weitere Darwinianer zu erzeugen.
 tutorial_35b                           Warte, ich zeige Dir, wie du die Darwinianer umherbewegst.
 tutorial_35c                           Sie können nicht direkt gesteuert werden, aber wir können ihnen über einen Offizier Befehle erteilen.
 tutorial_351                           Um einen Offizier zu erstellen, zeichnest du diese Geste.
 tutorial_36_kbd                        Klicke auf einen Darwinianer, um ihn zu einem Offizier zu befördern.
-tutorial_36_xin                        Wähle einen Darwinianer, um ihn zu einem Offizier zu befördern.
 tutorial_37                            Die sinnvollste Funktion eines Offiziers ist, dass er Darwinianer herumkommandieren kann.
 tutorial_37_kbd                        Zum Bewegen eines Offiziers klickst du mit der linken Maustaste. Ihre nützlichste Funktion besteht darin, den Darwinianern Befehle zu erteilen.
 tutorial_37b_kbd                       Du kannst irgendwo auf den Boden rechtsklicken, um alle Darwinianer an diese Stelle zu rufen.
@@ -541,7 +498,6 @@ tutorial_40                            Du hast schon einen Trupp, aber er steht 
 tutorial_40b_kbd                       Zum Auswählen deines Trupps hältst du [KEYICONSTASKMANAGERDISPLAY] fest und drückst so lange die TAB-Taste, bis der betreffende Trupp markiert ist. Oder du klickst direkt darauf.
 
 tutorial_41_kbd                        Um einen INGENIEUR zu erstellen, hältst du [KEYGESTURESTASKMANAGERDISPLAY], um den Task Manager zu öffnen und diese Geste zu zeichnen.
-tutorial_41_xin                        Um einen INGENIEUR zu erstellen, öffnest du den Task Manager und zeichnest diese Geste.
 tutorial_42                            Platziere ihn jetzt in die Nähe eines Trupps oder Kontrollturms.
 
 tutorial_43                            Du hast schon einen Ingenieur im Einsatz, aber er ist derzeit nicht ausgewählt.
@@ -551,7 +507,6 @@ tutorial_squaddeath                    Sieht aus, als sei dein TRUPP vernichtet 
 tutorial_engineerdeath                 Leider ist dein INGENIEUR umgekommen. Da müssen wir einen anderen erstellen.
 
 tutorial_skipped_kbd                   Also gut, ich lass Dich machen. Denk dran, du kannst jederzeit auf [KEYSEPULVEDAHELP] drücken. Viel Glück!
-tutorial_skipped_xin                   Also gut, ich lass Dich machen. Viel Glück!
 
 
 # ================================================
@@ -694,7 +649,6 @@ dialog_unplugged1                      Controller entfernt
 dialog_unplugged2                      Controller entfernt. Zum Fortfahren bitte wieder anschließen.
 
 dialog_skiptutorial_kbd                Drücke [KEYSKIPTUTORIAL] zum Überspringen des Tutorials.
-dialog_skiptutorial_xin                Drücke Back zum Überspringen des Tutorials
 
 dialog_skipprologue                    Prolog überspringen
 dialog_playprologue                    Prolog abspielen
@@ -839,25 +793,19 @@ launchpad_middemo_14                   Wenn nicht dieser Virus dazwischen gefunk
 
 launchpad_tutorial_1                   Klar, wir müssen den Darwinianern helfen.
 launchpad_tutorial_2_kbd               Als erstes der Gebrauch der Kamera. Benutze [KEYCAMERAFORWARDS], [KEYCAMERALEFT], [KEYCAMERABACKWARDS] und [KEYCAMERARIGHT] für die Kamerabewegung.
-launchpad_tutorial_2_xin               Als erstes der Gebrauch der Kamera. Bewege die Kamera mit dem Ministick links umher.
 launchpad_tutorial_3                   Um die Kamerahöhe zu ändern, drückst du das Steuerkreuz oben oder unten.
 launchpad_tutorial_3_kbd               Um die Höheneinstellung zu verändern, scrollst du mit der mittleren Maustaste hoch oder runter. Die gleiche Funktion erfüllen [KEYCAMERAUP] und [KEYCAMERADOWN].
 launchpad_tutorial_4_kbd               Zur Bekämpfung der Roten Gefahr müssen wir ein paar Angriffseinheiten erstellen. Festhalten von [KEYICONSTASKMANAGERDISPLAY] öffnet den Task Manager.
-launchpad_tutorial_4_xin               Zur Bekämpfung der Roten Gefahr müssen wir ein paar Angriffseinheiten erstellen. Drücke die X-Taste, um den Task Manager zu öffnen.
 launchpad_tutorial_5_kbd               Der TRUPP ist deine Hauptwaffe gegen die böse Rote Armee. Du erstellst einen TRUPP, indem du auf das Trupp-Symbol in der Mitte des Bildschirms klickst, während der Task Manager geöffnet ist.
-launchpad_tutorial_5_xin               Der TRUPP ist deine Hauptwaffe gegen die böse Rote Armee. Du erstellst einen TRUPP, indem du das Trupp-Symbol in der Mitte des Bildschirms wählst, während der Task Manager geöffnet ist, und A drückst.
 launchpad_tutorial_5_error             Halt, das ist das falsche Symbol. Versuch's nochmals.
 launchpad_tutorial_6_kbd               Um den neuen TRUPP in die Welt zu platzieren, klickst du im Innern des markierten Anfangsbereichs.
-launchpad_tutorial_6_xin               Um den neuen TRUPP in die Welt zu platzieren, bewegst du den Cursor in den markierten Startbereich bewegst und die A-Taste drückst.
 launchpad_tutorial_7_kbd               Trupps müssen direkt gesteuert werden. Klicke mit der linken Maustaste, um sie in der Landschaft umher zu führen.
-launchpad_tutorial_7_xin               Trupps müssen direkt gesteuert werden. Bewege sie mit dem Ministick links herum.
 launchpad_tutorial_8                   Mit dem Ministick rechts schießt du ihre Laser ab. Bewege den Ministick rechts in die Richtung, in die du schießen möchtest.
 launchpad_tutorial_8_kbd               Halte die rechte Maustaste gedrückt, um ihre Laser abzufeuern.
 launchpad_tutorial_9                   Jetzt kannst du mit deinem Trupp die in der Nähe befindlichen Virii auslöschen. Pass auf, dass sie Dir nicht zu nahe kommen!
 launchpad_tutorial_9_error             Sieht aus, als sei dein Trupp vernichtet worden. Keine Sorge, wir können einen anderen erstellen.
 launchpad_tutorial_10                  Das blau glühende Objekt da vorn ist ein Teil meiner Forschung. Es enthält eine Waffe, die wir gegen die Roten Virii einsetzen können.
 launchpad_tutorial_11_kbd              Um diese Forschung zu erlangen, müssen wir einen Ingenieur erstellen. Halte [KEYICONSTASKMANAGERDISPLAY] und klicke dann auf die Ingenieur-Taste.
-launchpad_tutorial_11_xin              Um diese Forschung zu erlangen, müssen wir einen Ingenieur erstellen. Öffne den Task Manager, wähle die Ingenieur-Taste und drücke die A-Taste.
 launchpad_tutorial_12                  Platziere den neuen Ingenieur neben deinen Trupp und bewege ihn zu dem Forschungsobjekt.
 launchpad_tutorial_12b                 Ingenieure sind nichts weiter als Debugging-Werkzeuge, aber sie haben verschiedene nützliche Funktionen.
 launchpad_tutorial_12c                 Hier kannst du zusehen, wie der Ingenieur das Forschungsobjekt aufnimmt.
@@ -865,7 +813,6 @@ launchpad_tutorial_12d                 Er wird es in mein System laden, und dann
 launchpad_tutorial_12e                 Möglicherweise findest du noch andere Forschungsobjekte in der Gegend herumliegen. Es wäre gut, du könntest sie für mich einsammeln.
 launchpad_tutorial_13                  Fantastisch, du hast es geschafft, die Granate zurückzuerobern.
 launchpad_tutorial_13b_kbd             Klicke auf den Trupp, um die Steuerung wieder zu übernehmen. Stattdessen kannst du auch im Task Manager darauf klicken oder 1 drücken.
-launchpad_tutorial_13b_xin             Wähle den Trupp und drücke die A-Taste, um ihm die Steuerung wieder zu übergeben. Stattdessen kannst du ihn auch im Task Manager wählen oder zwischen deinen aktiven Aufgaben wechseln, indem du den Bumper links bzw. Bumper rechts drückst.
 launchpad_tutorial_14                  Um eine Granate zu werfen, ziehst du den Schalter rechts, während du deine Laser abfeuerst. Je weiter du den Ministick rechts bewegst, desto weiter wirfst du die Granate.
 launchpad_tutorial_14_kbd              Halte die rechte Maustaste gedrückt, um den Laser zu feuern, und klicke dann mit der linken Maustaste, um eine Granate zu werfen.
 launchpad_tutorial_15                  Jetzt würde ich Dir empfehlen, mit deinem Trupp die Virii auf der anderen Seite des Hügels mit deinen neuen Waffen zu vernichten.
@@ -875,16 +822,11 @@ launchpad_tutorial_18                  Wir werden ihn benutzen, um eine neue Ver
 launchpad_tutorial_19                  Leider ist der Radarbildschirm durch den gleichen roten Virus verseucht, den du bekämpft hast.
 launchpad_tutorial_20                  Um ihn zu benutzen, müssen wir den Ingenieur dazu bringen, ihn umzuprogrammieren, um die Infektion loszuwerden.
 launchpad_tutorial_21_kbd              Klicke auf den Trupp, um die Steuerung wieder zu übernehmen. Stattdessen kannst du auch im Task Manager darauf klicken oder 1 drücken.
-launchpad_tutorial_21_xin              Wähle deinen Ingenieur aus und bewege ihn zum Radarschirm, um ihn umzuprogrammieren. Wähle sein Symbol im Task Manager oder ihn direkt.
 launchpad_tutorial_22                  Der Ingenieur kann den Radarschirm über den in der Nähe gelegenen Kontrollturm erreichen. Er programmiert ihn jetzt um, damit wir ihn verwenden können.
 launchpad_tutorial_23_kbd              OK, der Radarschirm ist jetzt unter unserer Kontrolle. Wähle deinen Ingenieur wieder ab, indem du [KEYUNITDESELECT] drückst, und klicke dann auf den Radarschirm.
-launchpad_tutorial_23_xin              OK, der Radarschirm ist jetzt unter unserer Kontrolle. Wähle deinen Ingenieur wieder ab und wähle dann den Radarschirm, indem du ihn markierst und die A-Taste drückst.
 launchpad_tutorial_24_kbd              Richte jetzt den Radarschirm aus, indem du auf den Empfänger auf der entfernten Insel klickst. Ich habe den Empfänger extra für Dich markiert. Du kannst mit der mittleren Maustaste oder mit [KEYCAMERAZOOM] die Zoomfunktion einschalten.
-launchpad_tutorial_24_xin              Richte jetzt den Radarschirm aus, indem du den Empfänger auf der entfernten Insel wählst und die A-Taste drückst. Ich habe den Empfänger extra für dich markiert. Du kannst heranzoomen, indem du den Schalter links ziehst und festhältst.
 launchpad_tutorial_25_kbd              Die Radarschirme sollten jetzt ausgerichtet sein, und wir können unseren Trupp transportieren. Wähle den Radarschirm mit [KEYUNITDESELECT] ab und wähle deinen TRUPP.
-launchpad_tutorial_25_xin              Die Radarschirme sollten jetzt ausgerichtet sein, und wir können unseren Trupp transportieren. Wähle den Radarschirm ab, indem du die B-Taste wählst, und wähle deinen TRUPP.
 launchpad_tutorial_26_kbd              Du kannst jetzt den TRUPP über den Radarschirm transportieren, indem du darauf klickst, während der Trupp ausgewählt ist.
-launchpad_tutorial_26_xin              Du kannst jetzt den TRUPP über den Radarschirm transportieren, indem du ihn einfach darauf zu bewegst.
 
 launchpad_tutorial_defend_1            Sei vorsichtig, es befinden sich noch Virii in der Nähe.
 launchpad_tutorial_defend_2            Verteidige Dich!
@@ -893,7 +835,6 @@ launchpad_tutorial_40                  Dieses Gebäude ist ein Inkubator. Das ist
 launchpad_tutorial_41                  Er dient dazu, die Seelen der Getöteten in Darwinianer zu verwandeln.
 launchpad_tutorial_42                  Aber genau wie beim Radarschirm müssen wir ihn erst umprogrammieren, um ihn von der Infektion zu befreien.
 launchpad_tutorial_43_kbd              Erstelle einen Ingenieur in der Nähe des Inkubators, um diesen umzuprogrammieren. Halte [KEYICONSTASKMANAGERDISPLAY] gedrückt und klicke auf die Ingenieur-Taste. Oder drücke [KEYICONSTASKMANAGERNEWENGINEER].
-launchpad_tutorial_43_xin              Erstelle einen Ingenieur in der Nähe des Inkubators, um diesen umzuprogrammieren. Wähle einfach den Task Manager und wähle die Ingenieur-Taste.
 launchpad_tutorial_44                  Jetzt, da der Inkubator in Betrieb ist, kannst du sehen, wie der Ingenieur Seelen sammelt.
 launchpad_tutorial_45                  Alle Geschöpfe auf dieser Welt haben eine Seele, unabhängig davon, ob es Darwinianer sind oder feindliche Viren.
 launchpad_tutorial_46                  Die Ingenieure können die Seelen der toten Kreaturen sammeln und sie im Inkubator zu neuem Leben erwecken.
@@ -914,14 +855,10 @@ launchpad_tutorial_59                  Dieser wird von diesen Solarpaneelen gene
 launchpad_tutorial_60                  Damit die Solarpaneele funktionieren, müssen sie von ein paar Darwinianern bedient werden.
 launchpad_tutorial_61                  Die Forschungsergebnisse, die du gerade gefunden hast, werden uns helfen. Wir können die Offiziere dazu bringen, die Darwinianer dorthin abzuordern.
 launchpad_tutorial_62_kbd              Halte [KEYICONSTASKMANAGERDISPLAY] und klicke auf die Taste, um einen Offizier zu erstellen. Oder klicke auf [KEYICONSTASKMANAGERNEWOFFICER].
-launchpad_tutorial_62_xin              Öffne den Task Manager und wähle die Taste, um einen Offizier zu erstellen.
 launchpad_tutorial_63_kbd              Jetzt müssen wir einen Darwinianer auswählen, den wir zum Offizier befördern können. Klicke auf einen dieser Darwinianer, um ihn zu befördern.
-launchpad_tutorial_63_xin              Jetzt müssen wir einen Darwinianer auswählen, den wir zum Offizier befördern können. Markiere einen dieser Darwinianer und drücke die A-Taste, um ihn zu befördern.
 launchpad_tutorial_64_kbd              Auf diese Weise können wir die Darwinianer um uns herum beeinflussen. Rechtsklicke auf den Offizier, um ihn in den FOLGEN-Modus zu versetzen.
-launchpad_tutorial_64_xin              Auf diese Weise könen wir die Darwinianer um uns herum beeinflusssen. Markiere den Offizier und drücke den Schalter rechts, um ihn in den FOLGEN-Modus zu versetzen.
 launchpad_tutorial_65                  Die Darwinianer folgen jetzt dem Offizier, wo immer er hingeht. In diesem Fall haben wir alle Darwinianer aus der Umgebung versammelt.
 launchpad_tutorial_66_kbd              Rechtsklicke neben den Solarpaneelen, um den Offizier in GEHEZU-Modus zu versetzen.
-launchpad_tutorial_66_xin              Bewege deinen Cursor neben die Solarpanele und ziehe den Schalter rechts, um den Offizier in GEHEZU-Modus zu versetzen.
 launchpad_tutorial_67                  Der Offizier befiehlt allen in der Nähe befindlichen Darwinianern, sich dorthin zu begeben.
 launchpad_tutorial_68                  Du kannst beliebig viele Offiziere erstellen. Setzte die Offiziere ein, um die Kontrollpulte an der Basis der drei Solarpaneele zu besetzen.
 launchpad_tutorial_69                  Ausgezeichnete Arbeit. Der erste Satz von Solarpaneelen ist in Betrieb.
@@ -935,11 +872,8 @@ launchpad_tutorial_76                  Es gibt noch zwei weitere Pumpen, die in 
 launchpad_tutorial_77                  Wahrscheinlich gehst du jetzt am besten in diese Richtung.
 
 launchpad_reprogram_1_kbd              Zum Ausrichten dieses Radarschirms wartest du, bis er neu programmiert ist, dann schaltest du deine aktuelle Aufgabe durch Drücken der [KEYUNITDESELECT] ab.
-launchpad_reprogram_1_xin              Zum Ausrichten dieses Radarschirms wartest du, bis er neu programmiert ist, dann schaltest du deine aktuelle Aufgabe ab, indem du die B-Taste drückst.
 launchpad_reprogram_2_kbd              Du kannst auf den Radarschirm klicken und ihn ausrichten, indem du auf den Ziel-Radarschirm klickst.
-launchpad_reprogram_2_xin              Du kannst dann den Radarschirm mit der A-Taste auswählen und ihn ausrichten, indem du den Ziel-Radarschirm wählst und die A-Taste drückst.
 launchpad_reprogram_3_kbd              Danach wählst du den Radarschirm ab, indem du auf [KEYUNITDESELECT] klickst.
-launchpad_reprogram_3_xin              Danach wählst du den Radarschirm ab, indem du die B-Taste drückst.
 
 launchpad_dgupgrade_1                  Du hast etwas von meiner Forschungsarbeit zu den Waffen der Darwinianer entdeckt!
 launchpad_dgupgrade_2                  Diese Ergebnisse befähigen uns, die grünen Darwinianer mit den gleichen Granaten auszustatten wie sie unsere Trupps benutzen.
@@ -1050,9 +984,7 @@ containment_incubator_4                Allerdings gibt es Wege, sie indirekt zu 
 
 containment_officer_1                  Oh super, du hast den Code für das Offiziers-Programm gefunden. Dieses clevere kleine Programm befähigt Dich, einzelne Darwinianer zu Offizieren zu befördern, die dann den Darwinianern Befehle erteilen können.
 containment_officer_2_kbd              Um einen Offizier zu erstellen, zeichne diese Geste und klick dann auf den Darwinianer, den du befördern willst.
-containment_officer_2_xin              Um einen Offizier zu erstellen, zeichne diese Geste und wähle dann den Darwinianer, den du befördern willst.
 containment_officer_2_icons_kbd        Um einen Offizier zu erstellen, öffnest du den Task Manager und klickst auf das Offiziers-Symbol. Danach klickst du auf den Darwinianer, den du befördern willst.
-containment_officer_2_icons_xin        Um einen Offizier zu erstellen, öffnest du den Task Manager und wählst das Offiziers-Symbol. Danach wählst du den Darwinianer, den du befördern willst.
 containment_officer_3                  Die Darwinianer, die du bis jetzt erzeugt hast, sind nicht außer Gefahr. Bring sie mit dem Offiziers-Programm unter den Baum in dem (markierten) Schutzbereich in Sicherheit.
 
 containment_rescuedws_1                Gute Arbeit, sieht aus, als seien einige der Darwinianer jetzt in dem sicheren Bereich angelangt. Aber das reicht noch nicht. Wenn wir Darwinia wieder in Gang setzen wollen, brauchen wir ein ganzes Stück mehr.
@@ -1099,7 +1031,6 @@ containmentend_7_kbd                   Falls du bei diesen Aufgaben Hilfe brauch
 containmentend_7_icons                 Falls du bei diesen Aufgaben Hilfe benötigst, öffnest du die Ziele-Seite.
 containmentend_7_icons_kbd             Falls du bei diesen Aufgaben Hilfe brauchst, halte [KEYICONSTASKMANAGERDISPLAY] gedrückt und zeige mit der Maus unten auf die Seite mit den Zielen.
 containmentend_7b_kbd                  Dort kannst du auf eines der angegebenen Ziele klicken, und ich werd's Dir erklären.
-containmentend_7b_xin                  ...Dort kannst du eines der angegebenen Ziele wählen, und ich werd's Dir erklären.
 containmentend_8                       Viel Glück!
 
 
@@ -1169,7 +1100,6 @@ yard_progressarmour_3                  Ich würde Dir empfehlen, den neuen Panzer
 
 yard_finished_1                        Ich habe das Panzer-Programm deiner Gestenliste hinzugefügt. Durch Zeichnen dieser Geste kannst du jetzt an jedem Ort den Panzer aufrufen.
 yard_finished_1_icons_kbd              Ich habe das Panzer-Programm deiner Liste hinzugefügt. Du kannst jetzt durch Klicken auf das Panzer-Symbol im Task Manager einen Panzer anfordern.
-yard_finished_1_icons_xin              Ich habe das Panzer-Programm deiner Liste hinzugefügt. Du kannst jetzt durch Wählen des Panzer-Symbols im Task Manager einen Panzer anfordern.
 yard_finished_2                        Der Panzer muss durch das Verbindungsportal-System passieren; deshalb kannst du den Panzer nur in der Nähe eines Verbindungsportals anfordern, der unter deiner Kontrolle steht.
 
 

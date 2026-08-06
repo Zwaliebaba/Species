@@ -22,7 +22,10 @@
 // API, no globals and no window — which is what lets InputEventTests cover the
 // rules above on a machine with no window at all.
 
-#include <vector>
+// For size_t, in the DeriveFrameState signature below. It used to arrive
+// transitively through <vector>, which T6 removed along with the character
+// collection that needed it.
+#include <cstddef>
 
 #include "KeyDefs.h"
 
@@ -32,6 +35,15 @@
 
 namespace Neuron
 {
+  // The mouse button indices carried in InputEvent::m_button. The driver has
+  // always had these as three file-scope L, R and M macros; they are named here
+  // so that a reader of an event, in another file, can say which button it is
+  // holding without redefining single letters.
+  constexpr int MouseButtonLeft = 0;
+  constexpr int MouseButtonRight = 1;
+  constexpr int MouseButtonMiddle = 2;
+
+
   enum class InputEventType
   {
     KeyDown,
@@ -40,6 +52,7 @@ namespace Neuron
     MouseButtonDown,
     MouseButtonUp,
     MouseMove,
+    MouseRawMove,
     Wheel,
     FocusLost
   };
@@ -69,10 +82,14 @@ namespace Neuron
       // is not a character on any layout but US.
       unsigned int m_char{0};
 
-      // MouseButtonDown, MouseButtonUp. An index into the NUM_MB arrays.
+      // MouseButtonDown, MouseButtonUp. An index into the NUM_MB arrays; see
+      // MouseButtonLeft and friends below.
       int m_button{0};
 
-      // MouseMove. Client-area pixels.
+      // MouseMove: client-area pixels, an absolute position.
+      // MouseRawMove: a RELATIVE step straight off the device, in whatever
+      // units it counts in. The two are different quantities in the same
+      // fields, and which one a reader is looking at is decided by m_type.
       int m_x{0};
       int m_y{0};
 
@@ -99,15 +116,35 @@ namespace Neuron
       int m_mousePos[NUM_AXES]{};
       int m_mouseVel[NUM_AXES]{};
 
+      // THIS FRAME'S RELATIVE MOUSE TRAVEL, summed from Raw Input, and the
+      // reason it is a separate pair rather than reusing m_mouseVel: they are
+      // not the same measurement.
+      //
+      // m_mouseVel[X] and [Y] are the difference between two CLIENT-AREA
+      // positions, so they stop at the edge of the screen — push the mouse
+      // right at the right-hand edge and the position cannot go any further, so
+      // the velocity reads zero and the camera stops turning while the hand is
+      // still moving. They also include Windows' pointer acceleration, and they
+      // move when the game WARPS the cursor, which is what the whole
+      // suppress-the-velocity dance existed to undo.
+      //
+      // Raw deltas have none of those properties: they are what the device
+      // reported, unclamped, unaccelerated, and silent when a warp moves the
+      // pointer without anybody touching it.
+      int m_mouseRelative[2]{};
+
       // Wheel movement too small to be a whole detent, carried between frames.
       // Dividing each message's delta on its own threw all of them away on a
       // high-resolution wheel.
       int m_wheelRemainder{0};
 
-      // Characters decoded this frame, in order. Nothing consumes this yet — T6
-      // routes it to text input — and it is here rather than in a later task
-      // because the event that fills it is produced by the same window procedure.
-      std::vector<unsigned int> m_chars;
+      // NO CHARACTERS HERE. T5 collected them into an m_chars vector as a
+      // placeholder for T6, and T6 retired it: a character has to reach the
+      // focused widget INTERLEAVED with the key events around it, because
+      // typing "ab" and then pressing enter must append both letters before the
+      // enter commits the field. A per-frame collection cannot express that
+      // ordering, so the driver dispatches Char events from its side-effect
+      // walk instead, where they sit in event order with EclUpdateKeyboard.
   };
 
 

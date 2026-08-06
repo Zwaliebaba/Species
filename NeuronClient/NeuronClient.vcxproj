@@ -36,7 +36,6 @@
     <ClCompile Include="EclButton.cpp" />
     <ClCompile Include="Eclipse.cpp" />
     <ClCompile Include="EclWindow.cpp" />
-    <ClCompile Include="EventHandler.cpp" />
     <ClCompile Include="FilesysUtils.cpp" />
     <ClCompile Include="FilePaths.cpp" />
     <ClCompile Include="FileWriter.cpp" />
@@ -49,6 +48,7 @@
     <ClCompile Include="InputDriverSimple.cpp" />
     <ClCompile Include="InputDriverWin32.cpp" />
     <ClCompile Include="InputEvents.cpp" />
+    <ClCompile Include="InputRouter.cpp" />
     <ClCompile Include="InputSpec.cpp" />
     <ClCompile Include="InputTypes.cpp" />
     <ClCompile Include="InvertMatrix.cpp" />
@@ -100,7 +100,6 @@
     <ClInclude Include="EclButton.h" />
     <ClInclude Include="Eclipse.h" />
     <ClInclude Include="EclWindow.h" />
-    <ClInclude Include="EventHandler.h" />
     <ClInclude Include="FilesysUtils.h" />
     <ClInclude Include="FilePaths.h" />
     <ClInclude Include="FileWriter.h" />
@@ -113,6 +112,7 @@
     <ClInclude Include="InputDriverSimple.h" />
     <ClInclude Include="InputDriverWin32.h" />
     <ClInclude Include="InputEvents.h" />
+    <ClInclude Include="InputRouter.h" />
     <ClInclude Include="InputSpec.h" />
     <ClInclude Include="InputSpecList.h" />
     <ClInclude Include="InputTypes.h" />
@@ -149,11 +149,9 @@
     <ClInclude Include="Transform.h" />
     <ClInclude Include="UserInfo.h" />
     <ClInclude Include="Win32EventHandler.h" />
-    <ClInclude Include="Win32EventProc.h" />
     <ClInclude Include="WindowManager.h" />
     <ClInclude Include="AppCommands.h" />
     <ClInclude Include="CameraAccess.h" />
-    <ClInclude Include="ControlHelpAccess.h" />
     <ClInclude Include="TaskManagerInterfaceAccess.h" />
     <ClInclude Include="UserInputAccess.h" />
     <ClInclude Include="SoundSource.h" />

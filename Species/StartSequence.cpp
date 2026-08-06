@@ -75,8 +75,6 @@ namespace Species
       TheCamera()->RequestMode(Camera::Mode::ModeSphereWorldIntro);
     }
 
-    g_inputManager->PollForEvents();
-
     if (!g_eventHandler->WindowHasFocus())
     {
       Sleep(1);

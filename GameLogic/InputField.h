@@ -56,7 +56,18 @@ namespace Species
 
       virtual void Render(int realX, int realY, bool highlighted, bool clicked);
       virtual void MouseUp();
+
+      // THE EDITING KEYS ONLY — backspace and enter. The letter, digit and
+      // full-stop branches this used to carry rebuilt a character out of a
+      // virtual key code and a shift flag, which is a US-layout assumption
+      // wearing a keyboard file for a disguise: the per-locale files under
+      // GameData/Input/Keyboards rebind game CONTROLS, and never made typing
+      // correct. Char below takes what Windows decoded instead.
       virtual void Keypress(int keyCode, bool shift, bool ctrl, bool alt);
+
+      // The text. Returns true if the character was taken, which is what tells
+      // the input driver the field consumed the key that produced it.
+      virtual bool Char(unsigned int character);
 
       // These functions allow you to register a piece of storage with the button, such that
       // the button's value is written back to the storage whenever the user changes the

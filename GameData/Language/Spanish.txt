@@ -155,21 +155,17 @@ control_help_armourmode                Modo Recoger/Soltar
 # ================================================
 
 help_camera_movement_kbd               Mueve la cámara de un lugar a otro utilizando las teclas [KEYCAMERAFORWARDS], [KEYCAMERALEFT], [KEYCAMERABACKWARDS] y [KEYCAMERARIGHT]. Puedes controlar la altura de la cámara haciendo girar la rueda del ratón, o utilizando las teclas [KEYCAMERAUP] y [KEYCAMERADOWN].
-help_camera_movement_xin               Mueve la cámara de un lugar a otro.
 help_camera_height_kbd                 Si dispones de un botón central en el ratón, puedes moverlo para modificar la altura de la cámara. También es posible utilizar las teclas [KEYCAMERAUP] y [KEYCAMERADOWN] para ir hacia arriba o hacia abajo.
 help_camera_zoom_kbd                   Si dispones de un botón central en el ratón, púlsalo para acercar la cámara. También es posible utilizar la tecla [KEYCAMERAZOOM].
 help_camera_movefast_kbd               Puedes conseguir que la cámara se desplace a más velocidad manteniendo pulsada la tecla [KEYCAMERASPEEDUP] mientras te estás moviendo.
 help_taskmanager_1_kbd                 Para crear cosas en Darwinia se trazan gestos en el Administrador de Tareas. Para acceder a él, mantén pulsado [KEYGESTURESTASKMANAGERDISPLAY].
 help_taskmanager_2_kbd                 Para ver una lista de los gestos que se encuentran disponibles, mantén pulsada la tecla [KEYGESTURESTASKMANAGERDISPLAY] para acceder al Administrador de Tareas y desplázate hacia la izquierda moviendo el ratón hacia esa dirección de la pantalla, o pulsando [KEYMENULEFT].
 help_taskmanager_3_kbd                 Sólo puedes ejecutar hasta TRES tareas al mismo tiempo. Es posible cerrar las tareas existentes manteniendo pulsada la tecla [KEYGESTURESTASKMANAGERDISPLAY], utilizando la tecla de tabulación hasta llegar a la tarea, y presionando CTRL-C.
-help_taskmanager_3_xin                 Sólo puedes ejecutar hasta TRES tareas al mismo tiempo. Puedes cerrar tareas existentes.
 help_taskmanager_4_kbd                 Para seleccionar de nuevo una tarea existente, mantén pulsado [KEYGESTURESTASKMANAGERDISPLAY] para así acceder al Administrador de Tareas y pulsa la tecla de tabulación hasta llegar al icono que la representa.
 help_showchatlog_kbd                   Para leer un registro de todo lo que he dicho, mantén pulsada la tecla [KEYGESTURESCHATLOG].
 help_taskmanager_1_icons_kbd           Para crear cosas en Darwinia es necesario activar el Administrador de Tareas. Para acceder a él, mantén pulsada la tecla [KEYICONSTASKMANAGERDISPLAY].
-help_taskmanager_1_icons_xin           Para crear cosas en Darwinia es necesario activar el Administrador de Tareas.
 help_taskmanager_2_icons_kbd           Puedes observar una lista de los programas disponibles manteniendo [KEYICONSTASKMANAGERDISPLAY] pulsada. Haz clic en cualquiera de ellos para crear un nuevo programa.
 help_taskmanager_3_icons_kbd           Sólo puedes ejecutar hasta TRES tareas al mismo tiempo. Es posible cerrar la tarea actual pulsando [KEYICONSTASKMANAGERENDTASK], o haciendo clic en el icono de borrar de la misma situado dentro del Administrador de Tareas.
-help_taskmanager_3_icons_xin           Sólo puedes ejecutar hasta TRES tareas al mismo tiempo.
 help_taskmanager_4_icons_kbd           Para seleccionar de nuevo una tarea existente, mantén pulsado [KEYICONSTASKMANAGERDISPLAY] y haz clic en su icono. También puedes utilizar las teclas numéricas para seleccionar tareas.
 help_showchatlog_icons_kbd             Para leer un registro de todo lo que he dicho, mantén pulsada la tecla [KEYICONSCHATLOG].
 
@@ -177,7 +173,6 @@ help_deselect_kbd                      Para dejar de seleccionar el objeto actua
 help_squad_summon_1_kbd                Para crear una Escuadra, mantén pulsado [KEYGESTURESTASKMANAGERDISPLAY] para acceder al Administrador de tareas, y a continuación traza este gesto.
 help_squad_summon_1_icons_kbd          Para crear una Escuadra, mantén pulsada [KEYICONSTASKMANAGERDISPLAY] para acceder al Administrador de tareas, y a continuación pulsa en el icono que la representa.
 help_squad_summon_2_kbd                Haz clic en una de las zonas de inicio que aparecen ahora destacadas para crear tu escuadra dentro del mundo.
-help_squad_summon_2_xin                Selecciona una de las zonas de inicio que aparecen ahora destacadas para crear tu escuadra dentro del mundo.
 help_squad_use_kbd                     Pulsa con el Botón Izquierdo para mover la escuadra. Haz clic con el Botón Derecho para que disparen con sus láseres. Pulsa [KEYUNITDESELECT] para dejar de seleccionarla. Las escuadras no pueden entrar dentro del agua.
 help_squad_use_1mb_kbd                 Haz clic para mover la escuadra. Mantén pulsado el botón para que disparen sus láseres. Pulsa [KEYUNITDESELECT] para dejar de seleccionarla.
 help_squad_grenade_kbd                 Puedes lanzar una granada pulsando el Botón Izquierdo del Ratón al mismo tiempo que disparas los láseres con el Botón Derecho.
@@ -186,51 +181,34 @@ help_squad_setgrenade                  Para cambiar el armamento a Granada, traz
 help_squad_setrocket                   Para cambiar el armamento a Misil, traza el gesto de Misil.
 help_squad_setairstrike                Para cambiar el armamento a Ataque Aéreo, traza el gesto de Ataque aéreo.
 help_squad_setgrenade_icons_kbd        Para cambiar el armamento a Granada, mantén pulsado [KEYICONSTASKMANAGERDISPLAY] y haz clic en el icono de este tipo de arma que aparece junto a tu Escuadra.
-help_squad_setgrenade_icons_xin        Para cambiar el armamento a Granada, abre el Administrador de Tareas y selecciona el icono de este tipo de arma que aparece junto a tu Escuadra.
 help_squad_setrocket_icons_kbd         Para cambiar a el armamento a Misil, mantén pulsado [KEYICONSTASKMANAGERDISPLAY] y haz clic en el icono de este tipo de arma que aparece junto a tu Escuadra.
-help_squad_setrocket_icons_xin         Para cambiar el armamento a Misil, abre el Administrador de Tareas y selecciona el icono de este tipo de arma que aparece junto a tu Escuadra.
 help_squad_setairstrike_icons_kbd      Para cambiar el armamento a Ataque Aéreo, mantén pulsado [KEYICONSTASKMANAGERDISPLAY] y haz clic en el icono de este tipo de arma que aparece junto a tu Escuadra.
-help_squad_setairstrike_icons_xin      Para cambiar el armamento a Ataque Aéreo, abre el Administrador de Tareas y selecciona el icono de este tipo de arma que aparece junto a tu Escuadra.
 
 
 help_building_reprogram                Este edificio ha de ser reprogramado antes de que pueda utilizarse. Para hacerlo, tienes que crear un Ingeniero y conducirlo hasta el interior del radio de acción de la Torre de Control cercana.
 help_engineer_summon_kbd               Los ingenieros se utilizan para recoger espíritus muertos y reprogramar edificios. Mantén pulsado [KEYGESTURESTASKMANAGERDISPLAY] y traza este gesto para convocar a un Ingeniero.
-help_engineer_summon_xin               Los ingenieros se utilizan para recoger espíritus muertos y reprogramar edificios. Abre el Administrador de Tareas y traza este gesto para convocar a un Ingeniero.
 help_engineer_summon_icons_kbd         Los ingenieros se utilizan para recoger espíritus muertos, y reprogramar edificios. Mantén pulsado [KEYICONSTASKMANAGERDISPLAY] y presiona en el icono de esta unidad para convocar a uno.
-help_engineer_summon_icons_xin         Los ingenieros se utilizan para recoger espíritus muertos y reprogramar edificios. Abre el Administrador de Tareas y selecciona el icono de esta unidad para convocar a uno.
 help_engineer_summon_2_kbd             Haz clic en una de las zonas de inicio que aparecen ahora destacadas para crear a tu Ingeniero. También puedes pulsar CTRL-C para finalizar el programa Ingeniero.
-help_engineer_summon_2_xin             Selecciona una de las zonas de inicio que aparecen ahora destacadas para crear tu Ingeniero. También puedes finalizar el programa Ingeniero.
 help_engineer_summon_2_icons_kbd       Haz clic dentro de una de las zonas de inicio que aparecen ahora destacadas para crear tu Ingeniero. También puedes pulsar CTRL-C para finalizar el programa Ingeniero.
-help_engineer_summon_2_icons_xin       Selecciona una de las zonas de inicio que aparecen ahora destacadas para crear tu Ingeniero. También puedes finalizar el programa Ingeniero.
 help_engineer_use_kbd                  Los ingenieros realizarán de forma automática todo lo que se necesite en los alrededores, como por ejemplo recoger espíritus muertos o reprogramar edificios. Pulsa con el Botón Izquierdo para conducirlos hasta las cercanías de una tarea.
-help_engineer_use_xin                  Los ingenieros realizarán de forma automática todo lo que se necesite en los alrededores, como por ejemplo recoger espíritus muertos o reprogramar edificios. Para ello condúcelos hasta las cercanías de una tarea.
 
 help_officer_create_kbd                Puedes utilizar darwinianos comunes para dar órdenes a otros darwinianos de los alrededores, si los asciendes a oficiales. Traza este gesto para Oficial y haz clic en un darwiniano.
-help_officer_create_xin                Puedes utilizar darwinianos comunes para dar órdenes a otros darwinianos de los alrededores, si los asciendes a oficiales. Traza este gesto para Oficial y selecciona a un darwiniano.
 help_officer_create_icons_kbd          Puedes utilizar darwinianos comunes para dar órdenes a otros darwinianos de los alrededores, si los asciendes a oficiales. Activa el Administrador de Tareas y pulsa en el icono de Oficial, y a continuación haz clic sobre un darwiniano.
-help_officer_create_icons_xin          Puedes utilizar darwinianos comunes para dar órdenes a otros darwinianos de los alrededores, si los asciendes a oficiales. Activa el Administrador de Tareas y selecciona el icono de Oficial, y a continuación selecciona a un darwiniano.
 help_officer_create_2_kbd              Haz clic en un darwiniano para ascenderlo a Oficial, o pulsa CTRL-C para finalizar el programa Oficial.
-help_officer_create_2_xin              Selecciona a un darwiniano para ascenderlo a Oficial, o finaliza el programa Oficial.
 help_officer_create_2_icons_kbd        Haz clic en un darwiniano para ascenderlo a Oficial, o pulsa [KEYICONSTASKMANAGERENDTASK] para finalizar el programa Oficial.
-help_officer_create_2_icons_xin        Selecciona a un darwiniano para ascenderlo a Oficial, o finaliza el programa Oficial.
 help_officer_use_kbd                   Puedes mover a un oficial pulsando con el Botón Izquierdo. Haz clic con el botón derecho en el terreno para establecer las órdenes de IR A que deben seguir otros darwinianos. Pulsa con el botón derecho cerca del Oficial para cancelar sus órdenes.
 help_officer_use_1mb_kbd               Puedes mover a un oficial haciendo clic. Mantén pulsado el botón sobre el terreno para establecer las órdenes de IR A que deben seguir otros darwinianos. Mantén pulsado el botón cerca del Oficial para cancelar sus órdenes.
 help_officer_toggle_kbd                Para pasar de una orden disponible a otra, pulsa con el Botón derecho cerca del oficial.
 help_officer_toggle_1mb_kbd            Para pasar de una orden disponible a otra, mantén pulsado el botón cerca del oficial.
 
 help_showobjectives_kbd                Para ver una lista de objetivos, mantén pulsado [KEYGESTURESTASKMANAGERDISPLAY] para acceder al Administrador de Tareas y a continuación desplázate hacia la derecha moviendo el ratón en esa dirección de la pantalla, o pulsando [KEYCAMERARIGHT].
-help_showobjectives_xin                Para ver una lista de objetivos, abre el Administrador de Tareas y a continuación desplázate hacia la derecha.
 help_showobjectives_icons_kbd          Para ver una lista de objetivos, mantén pulsado [KEYICONSTASKMANAGERDISPLAY] y a continuación desplázate hacia abajo moviendo el ratón hacia la parte inferior de la pantalla, o pulsando [KEYMENUDOWN].
-help_showobjectives_icons_xin          Para ver una lista de objetivos, abre el Administrador de Tareas y a continuación desplázate hacia abajo.
 help_armour_summon_kbd                 Haz clic en una de las zonas de inicio que aparecen ahora destacadas para crear tu Blindado. Sólo es posible crear Blindados cerca de los Puertos Troncales que controlas.
-help_armour_summon_xin                 Selecciona una de las zonas de inicio que aparecen ahora destacadas para crear tu Blindado. Sólo se pueden crear Blindados cerca de los Puertos Troncales que controlas.
 help_armour_use_kbd                    Pulsa con el Botón Izquierdo para mover tu Blindado. Haz clic cerca del blindado con el Botón Derecho para alternar entre carga y descarga de darwinianos. Pulsa con el Botón Derecho en el terreno para desplegar el blindado como un Cañón de Batalla.
 help_armour_use_1mb_kbd                Haz clic con el Botón Izquierdo para mover tu Blindado. Mantén pulsado el botón del ratón cerca del blindado para alternar entre carga y descarga de darwinianos. Mantén pulsado el botón del ratón en el terreno para desplegar el blindado como un Cañón de Batalla.
 
 help_radardish_1_kbd                   Esta Antena de Radar puede utilizarse para emitir individuos a otros Radares. Haz clic sobre ella para controlarla.
-help_radardish_1_xin                   Esta Antena de Radar puede utilizarse para emitir individuos a otros Radares. Selecciónala para controlarla.
 help_radardish_2_kbd                   Para apuntar con una Antena de Radar simplemente indica el Radar al que deseas viajar y haz clic sobre él. La Antena de Radar receptora debe estar mirando hacia ti. Pulsa [KEYUNITDESELECT] para dejar de seleccionar la Antena de Radar.
-help_radardish_2_xin                   Para apuntar con una Antena de Radar simplemente indica el Radar al que deseas viajar y selecciónalo. La Antena de Radar receptora debe estar mirando hacia ti.
 help_incubator                         Este edificio es una Incubadora. Puedes utilizar Ingenieros para traer espíritus, que posteriormente nacerán de nuevo en forma de otros darwinianos.
 help_trunkport                         Esto es un Puerto Troncal y funciona como una puerta estelar que conecta distintos lugares de Darwinia.
 help_refinery                          Ésta es la Refinería principal y suministra energía a todos los pozos de perforación de estas islas. Para conectarla a la red tendrás que escoltar a algunos darwinianos de forma lleguen hasta este punto sanos y salvos.
@@ -239,7 +217,6 @@ help_anthill                           ¡Puaj, qué asco! ¡Esta zona está infestad
 help_controltower                      Ésta es una Torre de Control. Envía a uno de tus ingenieros para reprogramarla, y podrás utilizar el edificio al que está conectada.
 help_researchitem                      ¡Has encontrado parte de mi investigación! Magnífico. Crea algunos Ingenieros en los alrededores y descargarán la investigación a mi sistema. Con un poco de suerte será algo útil.
 help_gunturret_1_kbd                   Este Cañón de Batalla necesita que haya darwinianos en los controles antes de que sea posible utilizarlo. Dispararán de forma automática a cualquier enemigo que se encuentre en las cercanías. Si lo prefieres, puedes hacer clic sobre él y controlarlo tú mismo.
-help_gunturret_1_xin                   Este Cañón de Batalla necesita que haya darwinianos en los controles antes de que sea posible utilizarlo. Dispararán de forma automática a cualquier enemigo que se encuentre en las cercanías. Si lo prefieres, puedes seleccionarlo y controlarlo tú mismo.
 help_gunturret_2_kbd                   Este Cañón de Batalla seguirá a tu cursor. Pulsa con el botón derecho para disparar. Presiona [KEYUNITDESELECT] para dejar de seleccionarlo.
 help_gunturret_2_1mb_kbd               Este Cañón de Batalla seguirá a tu cursor. Mantén pulsado el botón para disparar. Pulsa [KEYUNITDESELECT] para dejar de seleccionarlo.
 
@@ -318,11 +295,8 @@ taskmanager_incomplete                 INCOMPLETO
 # ================================================
 
 task_manager_full_kbd                  No puedes ejecutar más programas. Prueba a cerrar algunos de ellos manteniendo pulsado [KEYGESTURESTASKMANAGERDISPLAY] para acceder al Administrador de Tareas, presionando la tecla de tabulación hasta llegar a las tareas antiguas y después CTRL-C.
-task_manager_full_xin                  No puedes ejecutar más programas. Prueba a cerrar algunos.
 task_manager_full_icons_kbd            No puedes ejecutar más programas. Mantén pulsado [KEYICONSTASKMANAGERDISPLAY] y cierra algunos programas para liberar espacio. Haz clic en sus iconos de cerrar.
-task_manager_full_icons_xin            No puedes ejecutar más programas.
 task_manager_targetfirst_kbd           No puedes crear más programas hasta que hayas situado el existente. Para colocarlo haz clic en una de las zonas de inicio.
-task_manager_targetfirst_xin           No puedes crear más programas hasta que hayas situado el existente. Para colocarlo selecciona una de las zonas de inicio.
 task_manager_needsquadfirst            Tienes que crear una escuadra antes de poder configurar su tipo de armamento.
 officer_notwalkable                    Me temo que los darwinianos no son los suficientemente inteligentes para encontrar el camino por esa ruta. Es necesario que vean a dónde se dirigen.
 armour_cantconvert                     El terreno de ese lugar está demasiado inclinado... sólo es posible situar un Cañón de Batalla sobre terreno llano.
@@ -337,10 +311,8 @@ objective_research_2                   Crea un Ingeniero en las cercanías y éste
 
 building_captured                      Los Ingenieros han terminado de reprogramar un edificio
 primaryObjectivesComplete_kbd          Buen trabajo, parece que has completado todos los Objetivos Principales. Pulsa [KEYMENUESCAPE] para abandonar este lugar cuando hayas terminado.
-primaryObjectivesComplete_xin          Buen trabajo, parece que has completado todos los Objetivos Principales.
 primaryObjectiveComplete               Objetivo Principal Completado.
 primaryObjectiveFail_kbd               Parece que has fracasado en tu misión. Puedes intentarlo de nuevo si quieres. Pulsa [KEYMENUESCAPE] ahora.
-primaryObjectiveFail_xin               Parece que has fracasado en tu misión. Puedes intentarlo de nuevo si quieres.
 
 privatedemo1                           > VERSIÓN PRE-ALFA INTERNA PARA ALGUIEN
 privatedemo2                           > ESTRICTAMENTE CONFIDENCIAL
@@ -393,7 +365,6 @@ research_laser_v4                      Estos láseres son ahora increíbles. Dispo
 
 research_grenade                       Trabajaré en el programa Granada. Debería ser capaz incrementar el alcance de este tipo de arma.
 research_grenade_v1_kbd                ¡Has encontrado mi investigación en Granadas! Es fantástico. Mientras estés disparando el láser con tu escuadra, pulsa el Botón Izquierdo del ratón para lanzar una Granada.
-research_grenade_v1_xin                ¡Has encontrado mi investigación en Granadas! Es fantástico. Ahora tu escuadra podrá lanzar Granadas.
 research_grenade_v1_1mb_kbd            ¡Has encontrado mi investigación en Granadas! Es fantástico. Pulsa mayúsculas y el botón del ratón para lanzar una Granada.
 research_grenade_v2                    He aumentado el alcance del lanzamiento en el programa Granada.
 research_grenade_v3                    He conseguido otro incremento en el alcance del lanzamiento de las Granadas.
@@ -401,10 +372,8 @@ research_grenade_v4                    Ya está, ya he terminado con las granadas
 
 research_rocket                        Me pondré a trabajar en los Misiles. Con un poco de suerte podré incrementar algo el alcance máximo.
 research_rocket_v1_kbd                 Magnífico, has recuperado el programa Misil. Puedes seleccionar este tipo de arma con el gesto de Misil. Mientras estés disparando el láser con tu escuadra, pulsa el Botón Izquierdo del ratón para lanzar uno de estos misiles.
-research_rocket_v1_xin                 Magnífico, has recuperado el programa Misil. Puedes seleccionar esta Arma con el gesto de Misil. Ahora tu escuadra podrá disparar Misiles.
 
 research_rocket_v1_icons_kbd           Magnífico, has recuperado el programa Misil. Puedes seleccionar este tipo de arma pulsando en el icono de este tipo de arma que se encuentra junto a tu Escuadra en el Administrador de Tareas. Mientras estés disparando el láser con tu escuadra, pulsa el Botón Izquierdo del ratón para lanzar uno de estos misiles.
-research_rocket_v1_icons_xin           Magnífico, has recuperado el programa Misil. Selecciona el icono de este tipo de arma que se encuentra junto a tu Escuadra en el Administrador de Tareas para seleccionarla. Ahora tu escuadra podrá disparar Misiles.
 research_rocket_v1_1mb_kbd             Magnífico, has recuperado el programa Misil. Puedes seleccionar este tipo de arma con el gesto de Misil. Pulsa mayúsculas y el botón del ratón para lanzar uno de estos misiles.
 research_rocket_v2                     El alcance de los Misiles se ha incrementado.
 research_rocket_v3                     He conseguido aumentar de nuevo el alcance de los Misiles.
@@ -413,7 +382,6 @@ research_rocket_v4                     El alcance de los misiles está ahora en s
 research_airstrike                     Intentaré mejorar para ti el Ataque Aéreo.
 research_airstrike_v1                  ¡Dios mío!, esto es magnífico. ¡Has encontrado mi programa Ataque Aéreo! Selecciona Ataque Aéreo como armamento para tus escuadras trazando este gesto, y a continuación lanza una granada de señalización para mostrarle al programa en dónde debe bombardear.
 research_airstrike_v1_icons_kbd        ¡Dios mío!, esto es magnífico. ¡Has encontrado mi programa AtaqueAéreo! Haz clic en el icono de este tipo de arma dentro del Administrador de Tareas para seleccionarla, y a continuación lanza una granada de señalización para mostrarle al programa en dónde debe bombardear.
-research_airstrike_v1_icons_xin        ¡Dios mío!, esto es magnífico. ¡Has encontrado mi programa AtaqueAéreo! Selecciona el icono de Ataque Aéreo dentro del Administrador de Tareas para seleccionar esta Arma, y a continuación lanza una granada de señalización para mostrarle al programa en dónde debe bombardear.
 research_airstrike_v2                  He mejorado el programa AtaqueAéreo. Ahora cada granada de señalización atraerá a dos Invasores que soltarán sus bombas.
 research_airstrike_v3                  He añadido otro Invasor a cada unidad de Ataque Aéreo.
 research_airstrike_v4                  Ahora habrá cuatro Invasores por cada señalizador en un Ataque Aéreo. Ya he hecho todo lo que puedo hacer en este campo.
@@ -446,18 +414,14 @@ research_officer                       Me pondré a trabajar en la mejora del pro
 # research_officer_v1                Unused
 # research_officer_v2                Unused
 research_officer_v3_kbd                He mejorado el programa Oficial para que sea capaz de dar la orden de SEGUIR que se suma a la que ya existe: IR A. Pulsa con el botón derecho cerca de un oficial para pasar de una orden a otra.
-research_officer_v3_xin                He mejorado el programa Oficial para que sea capaz de dar la orden de SEGUIR que se suma a la que ya existe: IR A.
 research_officer_v3_1mb_kbd            He mejorado el programa Oficial para que sea capaz de dar la orden de SEGUIR que se suma a la que ya existe: IR A. Mantén pulsado el botón cerca de un oficial para pasar de una orden a otra.
 research_officer_v4_kbd                Les he dado a los Oficiales una nueva orden llamada ABSORBER. Esta orden absorberá a todos los darwinianos de nuestro bando que se encuentren en las cercanías formando un escudo protector que mantendrá al Oficial seguro en zonas peligrosas. Pulsa con el botón derecho cerca de un oficial para pasar de una orden a otra.
-research_officer_v4_xin                Les he dado a los Oficiales una nueva orden llamada ABSORBER. Esta orden absorberá a todos los darwinianos de nuestro bando que se encuentren en las cercanías formando un escudo protector, que mantendrá al Oficial seguro en zonas peligrosas.
 research_officer_v4_1mb_kbd            Les he dado a los Oficiales una nueva orden llamada ABSORBER. Esta orden absorberá a todos los darwinianos de nuestro bando que se encuentren en las cercanías formando un escudo protector, que mantendrá al Oficial seguro en zonas peligrosas. Mantén pulsado el botón cerca de un oficial para pasar de una orden a otra.
 
 research_explanation_1                 Voy a seguir trabajando durante un tiempo en los programas que estás utilizando... las Escuadras, los Ingenieros, etc.
 research_explanation_2                 La mayoría de ellos se encuentran todavía en etapas muy iniciales de prueba y creo que puedo mejorarlos todos con un poco de trabajo.
 research_explanation_3_kbd             Para ver el progreso, mantén pulsado el botón [KEYGESTURESTASKMANAGERDISPLAY] y así acceder al Administrador de Tareas, y después desplázate hacia la izquierda moviendo el ratón hacia esa dirección de la pantalla, o pulsando [KEYCAMERALEFT].
-research_explanation_3_xin             Para ver el progreso, abre el Administrador de Tareas y a continuación desplázate hacia la izquierda.
 research_explanation_3_icons_kbd       Para ver el progreso, mantén pulsado [KEYICONSTASKMANAGERDISPLAY], y después desplázate hacia arriba situando el ratón en la parte superior de la pantalla, o pulsando [KEYCAMERAFORWARDS].
-research_explanation_3_icons_xin       Para ver el progreso, abre el Administrador de Tareas y a continuación desplázate hacia la arriba.
 research_explanation_4                 Desde allí podrás establecer mis prioridades...y yo trataré de trabajar en la mejora de lo que tú consideras que es más importante.
 
 
@@ -477,18 +441,15 @@ tutorial_intro_9                       Vamos a tener que erradicar la Infección 
 tutorial_intro_10                      Pero vamos empezar con los conceptos básicos.
 
 tutorial_1_kbd                         En primer lugar vamos a enfrentarnos con la cámara. Utiliza las teclas [KEYCAMERAFORWARDS],[KEYCAMERALEFT],[KEYCAMERABACKWARDS],[KEYCAMERARIGHT] para mover la cámara de un lugar a otro.
-tutorial_1_xin                         En primer lugar vamos a enfrentarnos con la cámara. Utiliza el stick analógico izquierdo para mover la cámara de un lugar a otro.
 tutorial_2_kbd                         Para modificar la altura de la cámara desplaza el botón central de tu ratón arriba y abajo. También puedes pulsar [KEYCAMERAUP] y [KEYCAMERADOWN].
 tutorial_3                             Muy bien. Lo primero que quiero que hagas es destruir a esos diabólicos Virus Rojos.
 tutorial_3b                            Entonces recogeremos las Almas de sus cuerpos muertos y las convertiremos en unos nuevos y alegres darwinianos.
 tutorial_4                             Para poder destruir a esos Virus, tenemos que crear una unidad ofensiva armada llamada ESCUADRA.
 tutorial_4b_kbd                        Para crear cosas en Darwinia se trazan gestos en el Administrador de Tareas. Mantén pulsada la tecla [KEYGESTURESTASKMANAGERDISPLAY] para que éste aparezca.
-tutorial_4b_xin                        Para crear cosas en Darwinia se trazan gestos en el Administrador de Tareas.
 tutorial_5                             Con el Administrador de Tareas abierto, traza este gesto para crear una ESCUADRA. No hace falta que seas muy exacto, simplemente dibújalo rápido.
 tutorial_5_kbd                         Mientras mantienes pulsado [KEYGESTURESTASKMANAGERDISPLAY], traza este gesto para crear una ESCUADRA. No hace falta que seas muy exacto, simplemente dibújalo rápido.
 tutorial_5_error                       Vaya, ese no es el gesto correcto. Inténtalo de nuevo.
 tutorial_7_kbd                         Magnífico. Para poder situar una ESCUADRA en el mundo, pulsa en la zona de inicio que aparece destacada.
-tutorial_7_xin                         Magnífico. Para poder situar la ESCUADRA dentro del mundo, selecciona la zona de inicio que aparece destacada.
 tutorial_8_kbd                         Es necesario controlar las escuadras de forma directa. Pulsa con el Botón Izquierdo del ratón para moverlas por el terreno.
 tutorial_9_kbd                         Mantén pulsado el Botón Derecho del ratón para disparar sus láseres.
 tutorial_10_kbd                        También puede lanzar granadas. Mantén pulsado el Botón Derecho del Ratón para disparar láseres, y a continuación pulsa el Botón Izquierdo del ratón para lanzar una granada.
@@ -500,7 +461,6 @@ tutorial_20                            Este edificio es una Incubadora. Su funci
 tutorial_20b                           Desgraciadamente ahora mismo está desconectada de la red por culpa de la Infección vírica roja. Tenemos que utilizarla para comenzar a crear darwinianos.
 tutorial_20c                           Para conectar el edificio a la red tendremos que utilizar un INGENIERO.
 tutorial_21_kbd                        Para convocar a un INGENIERO, mantén pulsado [KEYGESTURESTASKMANAGERDISPLAY] para acceder al Administrador de Tareas y traza este gesto.
-tutorial_21_xin                        Para convocar a un INGENIERO, abre el Administrador de Tareas y traza este gesto.
 tutorial_22                            Los ingenieros pueden situarse en puntos de inicio, o cerca de las Escuadras. Sitúa a tu Ingeniero y muévelo hasta un punto cercano a la Incubadora.
 tutorial_23                            Lo primero que el Ingeniero hará será reprogramar la Incubadora y eliminar la Infección vírica, utilizando la Torre de Control cercana.
 tutorial_24                            El Ingeniero recogerá las Almas que los Virus muertos han dejado atrás y las llevará hasta la Incubadora.
@@ -510,7 +470,6 @@ tutorial_25                            ¡Los primeros darwinianos han vuelto a na
 tutorial_26                            Estos seres eran dueños del planeta antes de que los Virus lo invadieran. Y es a esta gente a la que vamos a ayudar a reconquistar su mundo.
 
 tutorial_28_kbd                        Mantén pulsado [KEYGESTURESTASKMANAGERDISPLAY] y traza este gesto para crear otra ESCUADRA.
-tutorial_28_xin                        Abre el Administrador de Tareas y traza este gesto para crear otra ESCUADRA.
 tutorial_29                            Ahora puedes comenzar con tu ESCUADRA más cerca de la acción, situándola en las cercanías de la Torre de Control que has capturado.
 
 tutorial_30                            Bien, siguiente tarea.
@@ -520,13 +479,11 @@ tutorial_32                            Ahora conduce a tu Escuadra para atacar l
 tutorial_33                            Un trabajo magnífico. Estoy muy impresionado.
 tutorial_33b                           Ahora tenemos que utilizar a un ingeniero para reprogramar esta Incubadora, y recoger las Almas cercanas.
 tutorial_34_kbd                        Conduce al ingeniero hasta un punto cercano a la nueva Incubadora para que pueda comenzar a Reprogramarla. Pulsa con el Botón Izquierdo para mover a un Ingeniero.
-tutorial_34_xin                        Conduce al ingeniero hasta un punto cercano a la nueva Incubadora para que pueda comenzar a Reprogramarla.
 tutorial_35                            Ese Ingeniero recogerá ahora las Almas de los alrededores y las colocará en la Incubadora, creando más darwinianos.
 tutorial_35b                           Déjame mostrarte cómo conducir a los darwinianos existentes.
 tutorial_35c                           Los darwinianos no se pueden controlar directamente, pero podemos darles órdenes utilizando a un Oficial.
 tutorial_351                           Para crear a un Oficial, traza este gesto.
 tutorial_36_kbd                        Haz clic en un darwiniano de los existentes para ascenderlo a Oficial.
-tutorial_36_xin                        Selecciona a uno de los darwinianos existentes para ascenderlo a Oficial.
 tutorial_37                            La función más útil de los Oficiales es la de poder dar órdenes a los darwinianos de los alrededores.
 tutorial_37_kbd                        Los oficiales puede moverse pulsando con el Botón Izquierdo, pero su función más útil es la de dar órdenes a los darwinianos de los alrededores.
 tutorial_37b_kbd                       Puedes pulsar con el botón derecho en algún lugar del suelo para ordenar a todos los darwinianos de los alrededores que se desplacen hasta ese punto.
@@ -541,7 +498,6 @@ tutorial_40                            Ya tienes una Escuadra ejecutándose, pero
 tutorial_40b_kbd                       Para seleccionar a tu Escuadra, mantén pulsado [KEYICONSTASKMANAGERDISPLAY] y utiliza la tecla TAB hasta que haya sido marcada. También puedes pulsar directamente en ella.
 
 tutorial_41_kbd                        Para convocar a otro INGENIERO, mantén pulsado [KEYGESTURESTASKMANAGERDISPLAY] para acceder al Administrador de Tareas y traza este gesto.
-tutorial_41_xin                        Para convocar a otro INGENIERO, abre el Administrador de Tareas y traza este gesto.
 tutorial_42                            Ahora sitúa al Ingeniero cerca de una Escuadra o una Torre de Control.
 
 tutorial_43                            Ya tienes un Ingeniero ejecutándose, pero no está seleccionado en este momento.
@@ -551,7 +507,6 @@ tutorial_squaddeath                    Parece que tu ESCUADRA ha sido destruida.
 tutorial_engineerdeath                 Desgraciadamente tu INGENIERO ha sido destruido. Tendremos que crear otro.
 
 tutorial_skipped_kbd                   Bien, te voy a dejar que sigas con esto. Recuerda que puedes pulsar la tecla [KEYSEPULVEDAHELP] en cualquier momento para pedir ayuda. ¡Buena suerte!
-tutorial_skipped_xin                   Bien, te voy a dejar que sigas con esto. ¡Buena suerte!
 
 
 # ================================================
@@ -694,7 +649,6 @@ dialog_unplugged1                      Controlador Desconectado
 dialog_unplugged2                      Tu mando de control se ha desconectado. Por favor, conéctalo de nuevo para continuar.
 
 dialog_skiptutorial_kbd                Pulsa [KEYSKIPTUTORIAL] para saltar el tutorial
-dialog_skiptutorial_xin                Pulsa Back para saltar el tutorial
 
 dialog_skipprologue                    Saltar Prólogo
 dialog_playprologue                    Jugar al Prólogo
@@ -839,25 +793,19 @@ launchpad_middemo_14                   Y si no hubiera sido por este Virus, ya e
 
 launchpad_tutorial_1                   Bueno, pues vamos a tener que ayudar a los darwinianos.
 launchpad_tutorial_2_kbd               En primer lugar vamos a enfrentarnos a la cámara. Utiliza las teclas [KEYCAMERAFORWARDS], [KEYCAMERALEFT], [KEYCAMERABACKWARDS] y [KEYCAMERARIGHT] para mover la cámara de un lugar a otro.
-launchpad_tutorial_2_xin               En primer lugar vamos a enfrentarnos con la cámara. Utiliza el stick analógico izquierdo para mover la cámara.
 launchpad_tutorial_3                   Para cambiar la altura de la cámara, presiona hacia arriba o hacia abajo en el mando de dirección.
 launchpad_tutorial_3_kbd               Para modificar la altura de la cámara desplaza el botón central de tu ratón arriba y abajo. También puedes pulsar [KEYCAMERAUP] y [KEYCAMERADOWN].
 launchpad_tutorial_4_kbd               Para combatir a la amenaza roja, vamos a tener que crear algunas unidades ofensivas. Mantén pulsada la tecla [KEYICONSTASKMANAGERDISPLAY] para que aparezca el Administrador de Tareas.
-launchpad_tutorial_4_xin               Para combatir a la amenaza roja, vamos a tener que crear algunas unidades ofensivas. Presiona X para abrir el Administrador de Tareas.
 launchpad_tutorial_5_kbd               La ESCUADRA es la principal arma de la que dispones para enfrentarte al diabólico Ejército rojo. Crea una pulsando en el icono de esta unidad situado en el centro de la pantalla cuando el Administrador de Tareas está abierto.
-launchpad_tutorial_5_xin               La ESCUADRA es la principal arma de la que dispones para enfrentarte al diabólico Ejército rojo. Crea una seleccionando el icono de esta unidad situado en el centro de la pantalla y presionando A.
 launchpad_tutorial_5_error             Ése no es el icono correcto. Inténtalo de nuevo.
 launchpad_tutorial_6_kbd               Para poder situar dentro del mundo la nueva ESCUADRA, pulsa en el interior de la zona de inicio que aparece señalada.
-launchpad_tutorial_6_xin               Para poder situar la ESCUADRA dentro del mundo, coloca el cursor en la zona de inicio que aparece señalada y presiona A.
 launchpad_tutorial_7_kbd               Es necesario controlar las escuadras de forma directa. Pulsa el Botón Izquierdo del ratón para moverlas por el terreno.
-launchpad_tutorial_7_xin               Es necesario controlar las escuadras de forma directa. Utiliza el stick analógico izquierdo para moverlas por el terreno.
 launchpad_tutorial_8                   Utiliza el stick analógico derecho para disparar sus láseres. Mueve el stick analógico derecho en la dirección en la que deseas disparar.
 launchpad_tutorial_8_kbd               Mantén pulsado el Botón Derecho del ratón para que disparen los láseres.
 launchpad_tutorial_9                   Ahora guía a la Escuadra y extermina a esos malvados Virus que se encuentran por los alrededores. ¡No dejes que se acerquen demasiado!
 launchpad_tutorial_9_error             Parece que tu Escuadra ha sido destruida. No te preocupes, podemos crear otra.
 launchpad_tutorial_10                  El objeto azul resplandeciente que aparece allí delante es una parte de mi Investigación. Contiene un arma que podemos utilizar frente a los Virus Rojos.
 launchpad_tutorial_11_kbd              Para poder capturar esta Investigación tenemos que crear un Ingeniero. Mantén pulsado [KEYICONSTASKMANAGERDISPLAY], y a continuación haz clic en el botón de esta unidad.
-launchpad_tutorial_11_xin              Para poder capturar esta Investigación tenemos que crear un Ingeniero. Abre el Administrador de tareas, selecciona el botón de esta unidad y presiona A.
 launchpad_tutorial_12                  Sitúa al nuevo Ingeniero cerca de la Escuadra y condúcelo hasta las cercanías de la Investigación.
 launchpad_tutorial_12b                 Los ingenieros son sólo unas herramientas de depuración estúpidas, pero sirven para varios propósitos.
 launchpad_tutorial_12c                 Aquí puedes observar al Ingeniero recogiendo esa parte de la investigación.
@@ -865,7 +813,6 @@ launchpad_tutorial_12d                 Una vez que haya terminado, la subirá a m
 launchpad_tutorial_12e                 Puede que encuentres más Investigación como ésta flotando por ahí y me sería de gran ayuda que la recogieras para mí.
 launchpad_tutorial_13                  Fantástico, has conseguido de nuevo las Granadas.
 launchpad_tutorial_13b_kbd             Pulsa en la escuadra existente para volver a controlarla. También, puedes hacer clic sobre ella en el Administrador de tareas, o pulsar 1.
-launchpad_tutorial_13b_xin             Selecciona la escuadra existente y presiona A para volver a controlarla. También puedes seleccionarla en el Administrador de Tareas, o pasar de una tarea activa a otra utilizando los botones superior frontal izquierdo y derecho.
 launchpad_tutorial_14                  Para lanzar una granada, presiona el disparador derecho mientras disparas el láser. Cuanto más muevas el stick analógico derecho, más lejos lanzarás la granada.
 launchpad_tutorial_14_kbd              Mientras estés pulsando el Botón Derecho del ratón para disparar los láseres, utiliza el Botón Izquierdo para lanzar una Granada.
 launchpad_tutorial_15                  Te recomendaría que guiaras a la escuadra y acabaras con esos Virus de la colina utilizando el nuevo armamento.
@@ -875,16 +822,11 @@ launchpad_tutorial_18                  Ahora vamos a utilizarla para abrir un en
 launchpad_tutorial_19                  Desgraciadamente esta Antena de Radar ha sido infectada por los mismos Virus rojos contra los que has estado luchando.
 launchpad_tutorial_20                  Para poder utilizarla, primero tenemos que conseguir que nuestro Ingeniero la reprograme limpiándola de la infección vírica.
 launchpad_tutorial_21_kbd              Selecciona de nuevo a tu Ingeniero y condúcelo hasta las cercanías de la Antena de Radar para comenzar a reprogramarla. Haz clic en este icono del Administrador de tareas para seleccionarlo de nuevo, o pulsa directamente sobre él.
-launchpad_tutorial_21_xin              Selecciona de nuevo a tu Ingeniero y condúcelo hasta las cercanías de la Antena de Radar para comenzar a reprogramarla. Selecciona su icono en el Administrador de Tareas para seleccionarlo de nuevo, o selecciónalo directamente.
 launchpad_tutorial_22                  El Ingeniero puede acceder a la Antena de Radar a través de la Torre de Control cercana. Ahora la está reprogramando para que podamos utilizarla.
 launchpad_tutorial_23_kbd              Bien, la Antena de Radar está ahora bajo nuestro control. Deja de seleccionar al Ingeniero pulsando [KEYUNITDESELECT], y a continuación marca la Antena de Radar haciendo clic sobre ella.
-launchpad_tutorial_23_xin              Bien, la Antena de Radar está ahora bajo nuestro control. Deja de seleccionar a tu Ingeniero presionando B y a continuación selecciona la Antena de Radar señalándola y presionando A.
 launchpad_tutorial_24_kbd              Ahora alinea la Antena pulsando en el receptor de la isla de la lejanía. He marcado el receptor para ti. Puedes acercar la visión utilizando el botón central del ratón o la tecla [KEYCAMERAZOOM].
-launchpad_tutorial_24_xin              Ahora alinea la Antena apuntando hacia el receptor en la isla lejana y presionando A. He señalado el receptor para ti. Puedes acercar la imagen presionando y manteniendo el disparador izquierdo.
 launchpad_tutorial_25_kbd              Ahora deberías ver que las antenas están alineadas, y que podemos enviar nuestra Escuadra a través de ellas. Deja de seleccionar de la antena pulsando [KEYUNITDESELECT], y después marca de nuevo a tu ESCUADRA.
-launchpad_tutorial_25_xin              Ahora deberías ver que las antenas están alineadas, y que podemos enviar nuestra Escuadra a través de ellas. Deja de seleccionar la antena presionando B y después selecciona de nuevo a tu ESCUADRA.
 launchpad_tutorial_26_kbd              Ahora puedes enviar tu ESCUADRA a través de la antena pulsando sobre ella mientras están seleccionados.
-launchpad_tutorial_26_xin              Ahora puedes enviar a tu ESCUADRA a través de la antena simplemente conduciéndola hacia ella.
 
 launchpad_tutorial_defend_1            Ten cuidado, hay más Virus en los alrededores.
 launchpad_tutorial_defend_2            ¡Defiéndete!
@@ -893,7 +835,6 @@ launchpad_tutorial_40                  Este edificio es una Incubadora y se trat
 launchpad_tutorial_41                  Podemos utilizarla para convertir en darwinianos las almas de aquellas criaturas que acabas de matar.
 launchpad_tutorial_42                  Pero, al igual que sucedía con la Antena de Radar, lo primero que tenemos que hacer es reprogramarla para eliminar la infección vírica.
 launchpad_tutorial_43_kbd              Crea a un Ingeniero cerca de la Incubadora para reprogramarla. Mantén pulsada la tecla [KEYICONSTASKMANAGERDISPLAY] y pulsa el botón de Ingeniero. También puedes pulsar [KEYICONSTASKMANAGERNEWENGINEER].
-launchpad_tutorial_43_xin              Crea a un Ingeniero cerca de la Incubadora para reprogramarla. Abre el Administrador de Tareas, y selecciona el botón de Ingeniero.
 launchpad_tutorial_44                  Ahora que la Incubadora está conectada a la red, verás que el Ingeniero está recogiendo almas.
 launchpad_tutorial_45                  Todas las criaturas de este mundo tienen un alma, con independencia de que se trate de darwinianos de tu bando o de un diabólico virus.
 launchpad_tutorial_46                  Los ingenieros pueden recoger las almas de las criaturas muertas y depositarlas en las Incubadoras para que nazcan de nuevo.
@@ -914,14 +855,10 @@ launchpad_tutorial_59                  Dicha energía se genera en estos Paneles 
 launchpad_tutorial_60                  Para poder hacer funcionar estos Paneles Solares tenemos que escoltar a algunos darwinianos a cada uno de ellos.
 launchpad_tutorial_61                  Y la Investigación que acabas de recoger hará exactamente eso: nos permitirá guiar a los darwinianos utilizando Oficiales.
 launchpad_tutorial_62_kbd              Mantén pulsado [KEYICONSTASKMANAGERDISPLAY] y haz clic en el botón para crear un Oficial. También puedes pulsar [KEYICONSTASKMANAGERNEWOFFICER].
-launchpad_tutorial_62_xin              Abre el Administrador de Tareas y selecciona el botón para crear un Oficial.
 launchpad_tutorial_63_kbd              Ahora tenemos que seleccionar a un darwiniano para ascenderlo, de forma que se convierta en nuestro Oficial. Pulsa en cualquiera de estos darwinianos para hacerlo.
-launchpad_tutorial_63_xin              Ahora tenemos que seleccionar a un darwiniano para ascenderlo, de forma que se convierta en nuestro Oficial. Señala a uno de los darwinianos y presiona A para ascenderlo.
 launchpad_tutorial_64_kbd              Ahora podemos influir sobre otros darwinianos que se encuentren a nuestro alrededor. Pulsa con el botón derecho en el Oficial para ponerlo en modo SEGUIR.
-launchpad_tutorial_64_xin              Ahora podemos influir sobre los demás darwinianos que se encuentren a nuestro alrededor. Señala al Oficial y presiona el disparador derecho para ponerlo en modo SEGUIR.
 launchpad_tutorial_65                  Ahora esos darwinianos seguirán al Oficial allí donde vaya. En este caso hemos reunido a todos los darwinianos de los alrededores.
 launchpad_tutorial_66_kbd              Pulsa con el botón derecho cerca de los Paneles Solares para poner al Oficial en modo IR A.
-launchpad_tutorial_66_xin              Coloca tu cursor cerca de los Paneles Solares y presiona el disparador derecho para poner al Oficial en modo IR A.
 launchpad_tutorial_67                  El Oficial está ordenando a todos los darwinianos de los alrededores que marchen hasta ese lugar.
 launchpad_tutorial_68                  Puedes tener tantos Oficiales como necesites. Ahora utiliza a los Oficiales para ocupar los tableros de control situados alrededor de la base de cada uno de los tres Paneles Solares.
 launchpad_tutorial_69                  Un trabajo magnífico. El primer grupo de Paneles Solares está en funcionamiento.
@@ -935,11 +872,8 @@ launchpad_tutorial_76                  Todavía hay dos Bombas de Combustible que
 launchpad_tutorial_77                  Probablemente deberías dirigirte en esta dirección.
 
 launchpad_reprogram_1_kbd              Para alinear esta Antena de Radar, primero espera a que haya sido reprogramada, y después deja de seleccionar la tarea actual pulsando [KEYUNITDESELECT].
-launchpad_reprogram_1_xin              Para alinear esta Antena de Radar, primero espera a que haya sido reprogramada, y después deja de seleccionar la tarea actual presionando B.
 launchpad_reprogram_2_kbd              Entonces podrás hacer clic en la Antena de Radar, y alinearla pulsando sobre la Antena receptora.
-launchpad_reprogram_2_xin              Entonces podrás seleccionar la Antena de Radar utilizando A y alinearla apuntando a la antena receptora y presionando A de nuevo.
 launchpad_reprogram_3_kbd              Cuando hayas terminado, pulsa [KEYUNITDESELECT] para dejar de seleccionar la antena.
-launchpad_reprogram_3_xin              Cuando hayas terminado, deja de seleccionar la antena presionando B.
 
 launchpad_dgupgrade_1                  ¡Has encontrado parte de la Investigación sobre el armamento darwiniano!
 launchpad_dgupgrade_2                  Esta investigación servirá para equipar a nuestros darwinianos verdes con las mismas granadas que utilizan los Soldados.
@@ -1050,9 +984,7 @@ containment_incubator_4                Pero siempre hay formas de influir sobre 
 
 containment_officer_1                  Fantástico, has encontrado mi código para el programa Oficial. Este útil programita te permitirá ascender a Oficiales a darwinianos individuales, y utilizarlos para dar órdenes a otros darwinianos.
 containment_officer_2_kbd              Para crear un Oficial, traza este gesto y después pulsa en el darwiniano que deseas Ascender.
-containment_officer_2_xin              Para crear un Oficial, traza este gesto y después selecciona el darwiniano al que deseas Ascender.
 containment_officer_2_icons_kbd        Para crear un Oficial, activa el Administrador de tareas y utiliza el icono de esta unidad. Después pulsa en el darwiniano que deseas Ascender.
-containment_officer_2_icons_xin        Para crear un Oficial, activa el Administrador de Tareas y selecciona el icono de esta unidad. Después selecciona el darwiniano al que deseas Ascender.
 containment_officer_3                  Los darwinianos que has creado hasta ahora no están seguros...Quiero que los conduzcas bajo del árbol situado en el interior del área protegida (señalado), utilizando el programa Oficial.
 
 containment_rescuedws_1                Buen trabajo, parece que algunos de los darwinianos han alcanzado el área segura. Pero no es suficiente. Si vamos a conectar Darwinia a la red, necesitaremos unos cuantos más.
@@ -1099,7 +1031,6 @@ containmentend_7_kbd                   Si necesitas ayuda con estas tareas, mant
 containmentend_7_icons                 Si necesitas ayuda con estas tareas, abre la Pantalla de Objetivos...
 containmentend_7_icons_kbd             Si necesitas ayuda con estas tareas, mantén pulsada la tecla [KEYICONSTASKMANAGERDISPLAY] y lleva el ratón a la parte inferior para ver la Pantalla de Objetivos...
 containmentend_7b_kbd                  ...Allí podrás hacer clic sobre un objetivo y yo haré todo lo que pueda para aclarártelo.
-containmentend_7b_xin                  ...Allí podrás seleccionar un objetivo y yo haré todo lo que pueda para aclarártelo.
 containmentend_8                       ¡Buena suerte!
 
 
@@ -1169,7 +1100,6 @@ yard_progressarmour_3                  Te recomendaría que utilizaras los nuevos
 
 yard_finished_1                        He añadido el programa Blindado a tu lista de gestos. Ahora puedes convocar a un Blindado a cualquier lugar trazando este gesto.
 yard_finished_1_icons_kbd              He añadido el programa Blindado a tu lista. Ahora puedes convocar a un Blindado a cualquier lugar desde el Administrador de tareas pulsando en el icono de la unidad.
-yard_finished_1_icons_xin              He añadido el programa Blindado a tu lista. Ahora puedes convocar a un Blindado a cualquier lugar desde el Administrador de tareas seleccionando el icono de esta unidad.
 yard_finished_2                        El Blindado tendrá que viajar a través del sistema de Puertos Troncales, así que sólo podrás llamar a Blindados a las cercanías de un Puerto Troncal local que controles.
 
 

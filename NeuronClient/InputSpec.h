@@ -16,12 +16,12 @@ namespace Neuron
   // signatures and members whose spelling is not this task's business; every one
   // of them now carries the real type.
   using inputtype_t = InputType;
-  // Driver-defined, and it stays an int deliberately. Three drivers put three
-  // unrelated things in InputSpec::condition: InputCondition's enumerators
-  // (the default driver), the anonymous {COND_TRUE, COND_FALSE} enum in
-  // InputDriverPrefs.cpp, and a millisecond count IdleInputDriver parses out of
-  // the binding string. Naming any one of those types here would be wrong for
-  // the other two. See language-hygiene T9's notes.
+  // Driver-defined, and it stays an int deliberately. The drivers put unrelated
+  // things in InputSpec::condition: InputCondition's enumerators (the default
+  // driver) and a millisecond count IdleInputDriver parses out of the binding
+  // string. Naming either type here would be wrong for the other. There was a
+  // third — a deleted driver's own two-value condition enum — until
+  // input-native-events T1. See language-hygiene T9's notes.
   typedef int condition_t;
   typedef int handler_id_t;
 

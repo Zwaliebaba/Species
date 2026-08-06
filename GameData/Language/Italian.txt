@@ -155,21 +155,17 @@ control_help_armourmode                Modalità Raccogli/Lascia
 # ================================================
 
 help_camera_movement_kbd               Muovi la visuale usando i tasti di direzione [KEYCAMERAFORWARDS], [KEYCAMERALEFT], [KEYCAMERABACKWARDS] e [KEYCAMERARIGHT]. Puoi controllare l'altezza della visuale usando la rotellina del mouse o i tasti di direzione [KEYCAMERAUP] e [KEYCAMERADOWN].
-help_camera_movement_xin               Muovi la visuale.
 help_camera_height_kbd                 Se possiedi un mouse con la rotellina centrale, puoi farla scorrere per cambiare l'altezza della visuale; altrimenti puoi utilizzare i tasti [KEYCAMERAUP] e [KEYCAMERADOWN] per spostarla verso l'alto o verso il basso.
 help_camera_zoom_kbd                   Se hai un mouse con la rotellina centrale, fai clic su quest'ultima per eseguire uno zoom, oppure premi il tasto [KEYCAMERAZOOM].
 help_camera_movefast_kbd               Puoi spostare la visuale più velocemente tenendo premuto il tasto [KEYCAMERASPEEDUP] mentre la muovi.
 help_taskmanager_1_kbd                 Crea oggetti in Darwinia disegnando figure nel Riquadro attività. Tieni premuto il tasto [KEYGESTURESTASKMANAGERDISPLAY] per accedere al Riquadro attività.
 help_taskmanager_2_kbd                 Per visualizzare un elenco di figure disponibili, tieni premuto [KEYGESTURESTASKMANAGERDISPLAY] per accedere al Riquadro attività e poi scorri verso sinistra con il mouse o premendo il tasto di direzione [KEYMENULEFT].
 help_taskmanager_3_kbd                 Puoi svolgere fino a TRE attività alla volta. Puoi chiudere l'attività in esecuzione nel modo seguente: tieni premuto [KEYGESTURESTASKMANAGERDISPLAY], premi il tasto TAB per selezionare l'attività e poi premi CTRL-C.
-help_taskmanager_3_xin                 Puoi svolgere fino a TRE attività alla volta. Puoi chiudere le attività in corso.
 help_taskmanager_4_kbd                 Per selezionare un'attività esistente, tieni premuto il tasto [KEYGESTURESTASKMANAGERDISPLAY] per accedere al Riquadro attività e poi col tasto TAB scorri tra le icone e seleziona quella che rappresenta l'attività desiderata.
 help_showchatlog_kbd                   Per leggere l'archivio di ciò che è stato elencato finora, tieni premuto il tasto [KEYGESTURESCHATLOG].
 help_taskmanager_1_icons_kbd           Per creare oggetti in Darwinia, devi aprire il Riquadro attività. Tieni premuto [KEYICONSTASKMANAGERDISPLAY] per accedervi.
-help_taskmanager_1_icons_xin           Per creare oggetti in Darwinia, devi aprire il Riquadro attività.
 help_taskmanager_2_icons_kbd           Puoi visualizzare un elenco di programmi disponibili tenendo premuto [KEYICONSTASKMANAGERDISPLAY]. Fai clic su uno di essi per creare un nuovo programma.
 help_taskmanager_3_icons_kbd           Puoi svolgere fino a TRE attività alla volta. Puoi chiudere l'attività in corso premendo [KEYICONSTASKMANAGERENDTASK] o facendo clic sull'icona di eliminazione nel Riquadro attività.
-help_taskmanager_3_icons_xin           Puoi svolgere fino a TRE attività alla volta.
 help_taskmanager_4_icons_kbd           Per selezionare un'attività esistente, tieni premuto il tasto [KEYICONSTASKMANAGERDISPLAY] e fai clic sull'icona corrispondente, oppure premi un tasto numerico per selezionare le attività.
 help_showchatlog_icons_kbd             Per leggere l'archivio di ciò che è stato elencato finora, tieni premuto il tasto [KEYICONSCHATLOG].
 
@@ -177,7 +173,6 @@ help_deselect_kbd                      Per deselezionare l'oggetto attuale, prem
 help_squad_summon_1_kbd                Per creare un plotone, tieni premuto [KEYGESTURESTASKMANAGERDISPLAY] per accedere al Riquadro attività, poi disegnane la figura.
 help_squad_summon_1_icons_kbd          Per creare un plotone, tieni premuto [KEYICONSTASKMANAGERDISPLAY] per accedere al Riquadro attività, poi fai clic sull'icona del plotone.
 help_squad_summon_2_kbd                Per posizionare il tuo plotone, fai clic su una delle aree iniziali, ora evidenziate.
-help_squad_summon_2_xin                Seleziona una delle aree iniziali, ora evidenziate, per creare un plotone nel mondo di gioco.
 help_squad_use_kbd                     Fai clic con il pulsante sinistro del mouse per muovere il plotone. Fai clic con il pulsante destro per usare i laser. Premi [KEYUNITDESELECT] per deselezionarlo. I plotoni non possono muoversi in acqua.
 help_squad_use_1mb_kbd                 Fai clic per spostare il plotone. Fai clic e tieni premuto per usare i laser; premi [KEYUNITDESELECT] per deselezionarlo.
 help_squad_grenade_kbd                 Puoi lanciare una granata facendo clic con il pulsante sinistro del mouse; utilizza invece il pulsante destro per usare i laser.
@@ -186,51 +181,34 @@ help_squad_setgrenade                  Per passare alle granate, disegnane la fi
 help_squad_setrocket                   Per passare ai razzi, disegnane la figura.
 help_squad_setairstrike                Per passare all'attacco aereo, disegnane la figura.
 help_squad_setgrenade_icons_kbd        Per passare alle granate, tieni premuto [KEYICONSTASKMANAGERDISPLAY] e fai clic sull'icona Granata, vicino al tuo plotone.
-help_squad_setgrenade_icons_xin        Per passare alle granate, accedi al Riquadro attività e seleziona l'icona Granata accanto al plotone.
 help_squad_setrocket_icons_kbd         Per passare ai razzi, tieni premuto [KEYICONSTASKMANAGERDISPLAY] e fai clic sull'icona Razzo, vicino al tuo plotone.
-help_squad_setrocket_icons_xin         Per passare ai razzi, accedi al Riquadro attività e seleziona l'icona Razzo accanto al plotone.
 help_squad_setairstrike_icons_kbd      Per passare all'attacco aereo, tieni premuto [KEYICONSTASKMANAGERDISPLAY] e fai clic sull'icona Attacco aereo, vicino al tuo plotone.
-help_squad_setairstrike_icons_xin      Per passare all'attacco aereo, accedi al Riquadro attività e seleziona l'icona Attacco aereo accanto al plotone.
 
 
 help_building_reprogram                Devi riprogrammare questo edificio prima di poterlo riutilizzare; per farlo, crea un ingegnere e spostalo accanto alla torre di controllo più vicina.
 help_engineer_summon_kbd               Il compito degli ingegneri è raccogliere le anime dei morti e riprogrammare edifici. Tieni premuto [KEYGESTURESTASKMANAGERDISPLAY] e disegna questa figura per convocare un ingegnere.
-help_engineer_summon_xin               Il compito degli ingegneri è raccogliere le anime dei morti e riprogrammare edifici. Per convocare un ingegnere, accedi al Riquadro attività e disegna questa figura.
 help_engineer_summon_icons_kbd         Il compito degli ingegneri è raccogliere le anime dei morti e riprogrammare edifici. Tieni premuto [KEYICONSTASKMANAGERDISPLAY] e fai clic sull'icona dell'ingegnere per convocarlo.
-help_engineer_summon_icons_xin         Il compito degli ingegneri è raccogliere le anime dei morti e riprogrammare edifici. Per convocare un ingegnere, accedi al Riquadro attività e seleziona l'icona relativa.
 help_engineer_summon_2_kbd             Per creare il tuo ingegnere, fai clic col pulsante sinistro del mouse su una delle aree iniziali, ora evidenziate, oppure premi CTRL-C se desideri terminare il programma dell'ingegnere.
-help_engineer_summon_2_xin             Seleziona una delle aree iniziali, ora evidenziate, per creare un ingegnere o per terminarne il programma.
 help_engineer_summon_2_icons_kbd       Per creare il tuo ingegnere, fai clic col pulsante sinistro del mouse su una delle aree iniziali, ora evidenziate, oppure premi CTRL-C se desideri terminare il programma dell'ingegnere.
-help_engineer_summon_2_icons_xin       Seleziona una delle aree iniziali, ora evidenziate, per creare un ingegnere o per terminarne il programma.
 help_engineer_use_kbd                  Gli ingegneri svolgeranno ogni attività necessaria nei dintorni, come raccogliere anime o riprogrammare edifici. Fai clic con il pulsante sinistro del mouse per spostarli vicino alla loro attività.
-help_engineer_use_xin                  Gli ingegneri svolgeranno ogni attività necessaria nei dintorni, come raccogliere anime o riprogrammare edifici. Spostali vicino alla loro attività.
 
 help_officer_create_kbd                I Darwiniani comuni possono impartire ordini ad altri Darwiniani, una volta promossi al grado di ufficiali. Disegna la figura dell'ufficiale e fai clic su un Darwiniano.
-help_officer_create_xin                I Darwiniani comuni possono impartire ordini ad altri Darwiniani, una volta promossi al grado di ufficiali. Disegna la figura dell'ufficiale e seleziona un Darwiniano.
 help_officer_create_icons_kbd          I Darwiniani comuni possono impartire ordini ad altri Darwiniani, una volta promossi al grado di ufficiali. Accedi al Riquadro attività, fai clic sull'icona Ufficiale e quindi sul Darwiniano.
-help_officer_create_icons_xin          I Darwiniani comuni possono impartire ordini ad altri Darwiniani, una volta promossi al grado di ufficiali. Accedi al Riquadro attività, seleziona l'icona Ufficiale e quindi il Darwiniano.
 help_officer_create_2_kbd              Fai clic su un Darwiniano per promuoverlo al grado di ufficiale, oppure premi CTRL-C per terminare il programma dell'ufficiale.
-help_officer_create_2_xin              Seleziona un Darwiniano per promuoverlo al grado di ufficiale, o per terminare il programma dell'ufficiale.
 help_officer_create_2_icons_kbd        Fai clic su un Darwiniano per promuoverlo al grado di ufficiale, oppure premi [KEYICONSTASKMANAGERENDTASK] per terminare il programma dell'ufficiale.
-help_officer_create_2_icons_xin        Seleziona un Darwiniano per promuoverlo al grado di ufficiale, o per terminare il programma dell'ufficiale.
 help_officer_use_kbd                   Puoi spostare un ufficiale facendo clic col pulsante sinistro del mouse. Fai clic col pulsante destro sul terreno per impartire ordini di MOVIMENTO agli altri Darwiniani. Fai clic con il pulsante destro del mouse vicino all'ufficiale per annullare i suoi ordini.
 help_officer_use_1mb_kbd               Puoi spostare un ufficiale facendo clic col pulsante sinistro del mouse. Tieni premuto il pulsante destro sul terreno per impartire ordini di MOVIMENTO agli altri Darwiniani. Tieni premuto il pulsante del mouse vicino all'ufficiale per annullare i suoi ordini.
 help_officer_toggle_kbd                Per scorrere tutti gli ordini disponibili, fai clic col pulsante destro del mouse vicino all'ufficiale.
 help_officer_toggle_1mb_kbd            Per scorrere tutti gli ordini disponibili, tieni premuto il pulsante del mouse vicino all'ufficiale.
 
 help_showobjectives_kbd                Per visualizzare un elenco degli obiettivi, tieni premuto [KEYGESTURESTASKMANAGERDISPLAY] per accedere al Riquadro attività, poi scorri verso destra muovendo il mouse verso il lato destro dello schermo o premendo [KEYCAMERARIGHT].
-help_showobjectives_xin                Per visualizzare un elenco degli obiettivi, accedi al Riquadro attività e scorrilo verso destra.
 help_showobjectives_icons_kbd          Per visualizzare un elenco degli obiettivi, tieni premuto [KEYICONSTASKMANAGERDISPLAY] e scorri verso il basso muovendo il mouse verso il fondo dello schermo o premendo [KEYMENUDOWN].
-help_showobjectives_icons_xin          Per visualizzare un elenco degli obiettivi, accedi al Riquadro attività e scorrilo verso il basso.
 help_armour_summon_kbd                 Fai clic su una delle aree iniziali, ora evidenziate, per creare il tuo mezzo corazzato. Un mezzo corazzato può essere creato solo vicino alle porte di passaggio che controlli.
-help_armour_summon_xin                 Seleziona una delle aree iniziali, ora evidenziate, per creare il tuo mezzo corazzato. Un mezzo corazzato può essere creato solo vicino alle porte di passaggio che controlli.
 help_armour_use_kbd                    Fai clic con il pulsante sinistro del mouse per muovere il tuo mezzo corazzato. Fai clic col destro vicino al corazzato per attivare/disattivare il caricamento e lo scaricamento dei Darwiniani. Fai clic col destro sul terreno per schierare il tuo corazzato come cannone da battaglia.
 help_armour_use_1mb_kbd                Fai clic con il pulsante sinistro del mouse per muovere il tuo mezzo corazzato. Tieni premuto il pulsante vicino al corazzato per attivare/disattivare il caricamento e lo scaricamento dei Darwiniani. Tieni premuto il pulsante sul terreno per schierare il tuo corazzato come cannone da battaglia.
 
 help_radardish_1_kbd                   Puoi usare il radar per effettuare dei trasferimenti verso altri radar. Fai clic su ciascuno di essi per controllarli.
-help_radardish_1_xin                   Puoi usare il radar per effettuare dei trasferimenti verso altri radar. Selezionalo per controllarlo.
 help_radardish_2_kbd                   Puoi direzionare il radar semplicemente facendo clic sul radar verso cui intendi spostarti. Il radar ricevente dovrà essere orientato verso di te. Premi [KEYUNITDESELECT] per deselezionare il radar.
-help_radardish_2_xin                   Puoi direzionare il radar semplicemente selezionando il radar verso cui intendi spostarti. Il radar ricevente dovrà essere orientato verso di te.
 help_incubator                         Questa struttura è un'incubatrice: puoi usare ingegneri per trasportarvi le anime, che poi rinasceranno come nuovi Darwiniani.
 help_trunkport                         Questa è una porta di passaggio: funziona come punto di trasferimento tra due differenti settori di Darwinia.
 help_refinery                          Questa è la raffineria principale; fa funzionare l'intero sistema di miniere su queste isole. Per renderla operativa, dovrai scortare alcuni Darwiniani fin qui.
@@ -239,7 +217,6 @@ help_anthill                           Disgustoso! Quest'area è infestata da for
 help_controltower                      Questa è la torre di controllo. Invia uno degli ingegneri per riprogrammarla e potrai servirti dell'edificio a cui essa è collegata.
 help_researchitem                      Hai trovato una parte dei dati della mia ricerca! Perfetto. Crea alcuni ingegneri nelle vicinanze ed essi li caricheranno nel mio sistema. Speriamo che servano a qualcosa.
 help_gunturret_1_kbd                   Dei Darwiniani devono manovrare questo cannone da battaglia per renderlo operativo. Spareranno automaticamente a ogni nemico nelle vicinanze; puoi tuttavia controllarlo personalmente facendo clic su di esso.
-help_gunturret_1_xin                   Dei Darwiniani devono manovrare questo cannone da battaglia per renderlo operativo. Spareranno automaticamente a ogni nemico nelle vicinanze; puoi tuttavia controllarlo personalmente selezionandolo.
 help_gunturret_2_kbd                   Questo cannone da battaglia segue il tuo cursore. Premi [KEYUNITDESELECT] per deselezionarlo.
 help_gunturret_2_1mb_kbd               Questo cannone da battaglia segue il tuo cursore. Tieni premuto per sparare. Premi [KEYUNITDESELECT] per deselezionarlo.
 
@@ -318,11 +295,8 @@ taskmanager_incomplete                 NON COMPLETATO
 # ================================================
 
 task_manager_full_kbd                  Non puoi eseguire altri programmi. Prova a chiuderne alcuni in questo modo: tieni premuto [KEYGESTURESTASKMANAGERDISPLAY] per accedere al Riquadro attività, poi scorri tra i vecchi programmi col tasto TAB e premi CTRL-C.
-task_manager_full_xin                  Non puoi eseguire altri programmi. Prova a chiuderne alcuni.
 task_manager_full_icons_kbd            Non puoi eseguire altri programmi. Prova a chiuderne alcuni tenendo premuto [KEYICONSTASKMANAGERDISPLAY] per liberare la memoria e poi fai clic sulle icone di chiusura.
-task_manager_full_icons_xin            Non puoi eseguire altri programmi.
 task_manager_targetfirst_kbd           Non puoi creare altri programmi finché non hai posizionato quello esistente: fai clic su un'area iniziale per posizionarlo.
-task_manager_targetfirst_xin           Non puoi creare altri programmi finché non hai posizionato quello esistente: seleziona un'area iniziale per posizionarlo.
 task_manager_needsquadfirst            Devi creare un plotone prima di scegliere le armi.
 officer_notwalkable                    Mi dispiace, i Darwiniani non sono abbastanza astuti da trovare la strada da soli; devono vedere dove stanno andando.
 armour_cantconvert                     Il pendio è troppo ripido... Puoi posizionare i cannoni da battaglia solo su un territorio pianeggiante.
@@ -337,10 +311,8 @@ objective_research_2                   Crea un ingegnere nelle vicinanze e lui s
 
 building_captured                      Gli ingegneri hanno finito di riprogrammare un edificio.
 primaryObjectivesComplete_kbd          Ottimo lavoro! A quanto pare, hai portato a termine tutti gli obiettivi principali. Premi [KEYMENUESCAPE] per lasciare questa zona, quando lo desideri.
-primaryObjectivesComplete_xin          Ottimo lavoro! A quanto pare, hai portato a termine tutti gli obiettivi principali.
 primaryObjectiveComplete               Obiettivo principale completato.
 primaryObjectiveFail_kbd               A quanto pare, non sei riuscito a completare la missione: ritenta! Premi [KEYMENUESCAPE].
-primaryObjectiveFail_xin               A quanto pare, non sei riuscito a completare la missione: ritenta!
 
 privatedemo1                           BUILD PRE-ALPHA INTERNA PER QUALCUNO
 privatedemo2                           > STRETTAMENTE CONFIDENZIALE
@@ -393,7 +365,6 @@ research_laser_v4                      Questi laser sono sorprendenti ora. Hanno
 
 research_grenade                       Lavorerò sul programma delle granate. Dovrei essere in grado di accrescerne la portata.
 research_grenade_v1_kbd                Hai trovato i miei dati di ricerca sulle granate! Fantastico! Mentre usi i laser del tuo plotone, premi il pulsante sinistro del mouse per lanciare una granata.
-research_grenade_v1_xin                Hai trovato i miei dati di ricerca sulle granate! Fantastico! Ora il tuo plotone può lanciare granate.
 research_grenade_v1_1mb_kbd            Hai trovato i miei dati di ricerca sulle granate! Fantastico! Premi Maiusc mentre fai clic per lanciare una granata.
 research_grenade_v2                    Ho aumentato la portata del programma delle granate.
 research_grenade_v3                    Ho incrementato ulteriormente la portata del programma delle granate.
@@ -401,10 +372,8 @@ research_grenade_v4                    Fatto, ho terminato con le granate. La gi
 
 research_rocket                        Lavorerò sui razzi. Spero di poterne aumentare la portata massima.
 research_rocket_v1_kbd                 Magnifico! Hai recuperato il programma dei razzi. Puoi selezionare quest'arma con la relativa figura e lanciarla facendo clic col pulsante sinistro del mouse.
-research_rocket_v1_xin                 Magnifico! Hai recuperato il programma dei razzi. Puoi selezionare quest'arma con la relativa figura. Ora il tuo plotone può lanciare razzi.
 
 research_rocket_v1_icons_kbd           Magnifico! Hai recuperato il programma dei razzi. Puoi selezionare quest'arma facendo clic sull'icona Razzo, vicino al tuo plotone, nel Riquadro attività. Mentre usi i laser del tuo plotone, fai clic col pulsante sinistro del mouse per lanciare un razzo.
-research_rocket_v1_icons_xin           Magnifico! Hai recuperato il programma dei razzi. Puoi selezionare quest'arma usando l'icona Razzo, vicino al tuo plotone, nel Riquadro attività. Ora il tuo plotone può lanciare razzi.
 research_rocket_v1_1mb_kbd             Magnifico! Hai recuperato il programma dei razzi. Puoi selezionare quest'arma con la relativa figura e lanciarla premendo Maiusc mentre fai clic.
 research_rocket_v2                     Il razzo dispone ora di una portata superiore.
 research_rocket_v3                     Ho fatto in modo di aumentare la portata del razzo.
@@ -413,7 +382,6 @@ research_rocket_v4                     La portata del razzo è al massimo ora.
 research_airstrike                     Proverò a migliorare l'attacco aereo per te.
 research_airstrike_v1                  Ma è fantastico, hai trovato il programma dell'attacco aereo! Selezionalo come arma per il tuo plotone disegnandolo, poi lancia un segnale granata per indicare al programma dove bombardare.
 research_airstrike_v1_icons_kbd        Ma è fantastico, hai trovato il programma dell'attacco aereo! Fai clic sull'icona Attacco aereo nel Riquadro attività per selezionare questa arma, poi lancia un segnale granata per indicare al programma dove bombardare.
-research_airstrike_v1_icons_xin        Ma è fantastico, hai trovato il programma dell'attacco aereo! Seleziona l'icona Attacco aereo nel Riquadro attività per scegliere questa arma, poi lancia un segnale granata per indicare al programma dove bombardare.
 research_airstrike_v2                  Ho migliorato il programma dell'attacco aereo. Ogni segnale granata ordinerà a due invasori di sganciare le bombe.
 research_airstrike_v3                  Ho aggiunto un altro invasore a ciascuna unità di attacco aereo.
 research_airstrike_v4                  Ora ci saranno quattro invasori per ogni segnale di attacco aereo.
@@ -446,18 +414,14 @@ research_officer                       Lavorerò per migliorare il programma degl
 # research_officer_v1                Unused
 # research_officer_v2                Unused
 research_officer_v3_kbd                Ho migliorato il programma degli ufficiali: ora possono impartire, oltre al comando MOVIMENTO, l'ordine SEGUI. Fai clic con il pulsante destro del mouse vicino all'ufficiale per scegliere l'ordine da impartire.
-research_officer_v3_xin                Ho migliorato il programma degli ufficiali: ora possono impartire, oltre al comando MOVIMENTO, l'ordine SEGUI.
 research_officer_v3_1mb_kbd            Ho migliorato il programma degli ufficiali: ora possono impartire, oltre al comando MOVIMENTO, l'ordine SEGUI. Tieni premuto il pulsante vicino all'ufficiale per scegliere l'ordine da impartire.
 research_officer_v4_kbd                Ho dotato gli ufficiali di un nuovo ordine: ASSORBI. Questo permetterà di assorbire i Darwiniani alleati nelle vicinanze per costituire uno scudo protettivo, qualora l'ufficiale si trovasse in una zona pericolosa. Fai con il pulsante destro del mouse vicino a un ufficiale per scegliere l'ordine da impartire.
-research_officer_v4_xin                Ho dotato gli ufficiali di un nuovo ordine: ASSORBI. Questo permetterà di assorbire i Darwiniani alleati nelle vicinanze per costituire uno scudo protettivo, qualora l'ufficiale si trovasse in una zona pericolosa.
 research_officer_v4_1mb_kbd            Ho dotato gli ufficiali di un nuovo ordine: ASSORBI. Questo permetterà di assorbire i Darwiniani alleati nelle vicinanze per costituire uno scudo protettivo, qualora l'ufficiale si trovasse in una zona pericolosa. Tieni premuto il pulsante destro del mouse vicino a un ufficiale per scegliere l'ordine da impartire.
 
 research_explanation_1                 Continuerò a lavorare sui programmi che stai utilizzando... I plotoni, gli ingegneri, ecc.
 research_explanation_2                 La maggior parte di questi programmi è ancora allo stadio beta-test: posso migliorarli con un po' di lavoro.
 research_explanation_3_kbd             Per vedere i progressi delle ricerche, tieni premuto [KEYGESTURESTASKMANAGERDISPLAY] per accedere al Riquadro attività, poi scorri la schermata verso sinistra spostando il mouse nella parte sinistra dello schermo o premendo [KEYCAMERALEFT].
-research_explanation_3_xin             Per vedere i progressi delle ricerche, accedi al Riquadro attività e scorrilo verso sinistra.
 research_explanation_3_icons_kbd       Per vedere i progressi delle ricerche, tieni premuto [KEYICONSTASKMANAGERDISPLAY], poi scorri la schermata verso l'alto spostando il mouse nella parte superiore dello schermo o premendo [KEYCAMERAFORWARDS].
-research_explanation_3_icons_xin       Per vedere i progressi delle ricerche, accedi al Riquadro attività e scorrilo verso l'alto.
 research_explanation_4                 Da questo momento in poi, puoi scegliere le mie priorità: proverò a migliorare ciò che tu pensi sia davvero importante.
 
 
@@ -477,18 +441,15 @@ tutorial_intro_9                       Dobbiamo debellare il virus e far riviver
 tutorial_intro_10                      Iniziamo dalle basi.
 
 tutorial_1_kbd                         Prima di tutto, occupiamoci della visuale: usa i tasti [KEYCAMERAFORWARDS], [KEYCAMERALEFT], [KEYCAMERABACKWARDS] e [KEYCAMERARIGHT] per spostarla.
-tutorial_1_xin                         Prima di tutto, occupiamoci della visuale. Usa la levetta sinistra per guardarti intorno.
 tutorial_2_kbd                         Puoi spostare la visuale verso l'alto o verso il basso facendo scorrere il mouse nelle rispettive direzioni o premendo i tasti [KEYCAMERAUP] e [KEYCAMERADOWN].
 tutorial_3                             Bene. Ora, per prima cosa, vorrei che tu distruggessi questi Virii rossi.
 tutorial_3b                            Poi raccoglieremo le anime dei morti e le riconvertiremo in Darwiniani nuovi.
 tutorial_4                             Per distruggere questi Virii, avremo bisogno di creare un'unità offensiva armata, chiamata PLOTONE.
 tutorial_4b_kbd                        Per creare qualsiasi cosa a Darwinia, disegnane la figura nel Riquadro attività: tieni premuto [KEYGESTURESTASKMANAGERDISPLAY] per accedervi.
-tutorial_4b_xin                        Per creare qualsiasi cosa a Darwinia, disegnane la figura nel Riquadro attività.
 tutorial_5                             Mentre il Riquadro attività è aperto, disegna questa figura per creare un PLOTONE. Non essere troppo preciso, disegnalo rapidamente.
 tutorial_5_kbd                         Mentre tieni premuto il tasto [KEYGESTURESTASKMANAGERDISPLAY], disegna questa figura per creare un plotone. Non essere troppo preciso, disegnalo rapidamente.
 tutorial_5_error                       Ops, questo è il disegno sbagliato. Ritenta.
 tutorial_7_kbd                         Perfetto. Ora, per posizionare il PLOTONE nel mondo, fai clic sull'area iniziale messa in evidenza.
-tutorial_7_xin                         Perfetto. Ora, per posizionare il PLOTONE nel mondo, seleziona l'area iniziale messa in evidenza.
 tutorial_8_kbd                         I plotoni devono essere controllati direttamente. Fai clic con il pulsante sinistro del mouse per spostarli.
 tutorial_9_kbd                         Tieni premuto il pulsante destro del mouse per sparare con i laser.
 tutorial_10_kbd                        Possono anche lanciare granate: tiene premuto il pulsante destro del mouse per sparare raggi laser e poi premi il pulsante sinistro per lanciare una granata.
@@ -500,7 +461,6 @@ tutorial_20                            Questa è un'incubatrice: converte le anim
 tutorial_20b                           Purtroppo, non funziona a causa dell'infezione virale rossa. Abbiamo bisogno di usarla per creare Darwiniani.
 tutorial_20c                           Per far funzionare nuovamente la struttura abbiamo bisogno di un INGEGNERE.
 tutorial_21_kbd                        Per convocare un INGEGNERE, tieni premuto [KEYGESTURESTASKMANAGERDISPLAY] per accedere al Riquadro attività, poi disegna questa figura.
-tutorial_21_xin                        Per convocare un INGEGNERE, accedi al Riquadro attività, poi disegna questa figura.
 tutorial_22                            Gli ingegneri possono essere posizionati vicino alle aree iniziali o ai plotoni. Piazza il tuo ingegnere e spostalo vicino all'incubatrice.
 tutorial_23                            La prima cosa che l'ingegnere dovrà fare è riprogrammare l'incubatrice e rimuovere l'infezione virale usando la vicina torre di controllo.
 tutorial_24                            L'ingegnere ora raccoglierà le anime lasciate dai Virii morti e le porterà nell'incubatrice.
@@ -510,7 +470,6 @@ tutorial_25                            I primi Darwiniani sono rinati! Questa è 
 tutorial_26                            Il pianeta apparteneva a loro prima che il virus lo invadesse. Ora dobbiamo aiutarli a riappropriarsi del loro mondo.
 
 tutorial_28_kbd                        Per creare un altro PLOTONE, tieni premuto [KEYGESTURESTASKMANAGERDISPLAY] e disegnane la figura.
-tutorial_28_xin                        Accedi al Riquadro attività e disegna questa figura per creare un altro PLOTONE.
 tutorial_29                            Ora puoi schierare il tuo PLOTONE più vicino alla prima linea, piazzandolo vicino alla torre di controllo di cui ti sei impadronito.
 
 tutorial_30                            Bene, proseguiamo.
@@ -520,13 +479,11 @@ tutorial_32                            Ora, prendi il tuo plotone e attacca l'in
 tutorial_33                            Ottimo lavoro! Sono stupefatto.
 tutorial_33b                           Ora usiamo un ingegnere per riprogrammare questa incubatrice e raccogliere le anime circostanti.
 tutorial_34_kbd                        Sposta l'ingegnere vicino all'incubatrice, così puoi iniziare a riprogrammarla; premi il pulsante sinistro del mouse per muoverlo.
-tutorial_34_xin                        Sposta l'ingegnere vicino all'incubatrice, così puoi iniziare a riprogrammarla.
 tutorial_35                            Questo ingegnere raccoglierà le anime e le porterà nell'incubatrice, creando nuovi Darwiniani.
 tutorial_35b                           Ti mostro come muovere i Darwiniani esistenti.
 tutorial_35c                           I Darwiniani non possono essere controllati direttamente, ma possiamo impartire loro ordini attraverso un ufficiale.
 tutorial_351                           Per creare un ufficiale, disegnane la figura.
 tutorial_36_kbd                        Fai clic su un Darwiniano esistente per promuoverlo al grado di ufficiale.
-tutorial_36_xin                        Seleziona un Darwiniano esistente per promuoverlo al grado di ufficiale.
 tutorial_37                            La funzione più utile degli ufficiali è il comando dei Darwiniani.
 tutorial_37_kbd                        Puoi far muovere gli ufficiali facendo clic con il pulsante sinistro del mouse; la loro funzione più utile è il comando dei Darwiniani.
 tutorial_37b_kbd                       Puoi fare clic col pulsante destro del mouse sul terreno per ordinare ai Darwiniani nelle vicinanze di recarsi in quel punto.
@@ -541,7 +498,6 @@ tutorial_40                            Hai già un plotone, ma non puoi controlla
 tutorial_40b_kbd                       Per selezionare il plotone, tieni premuto [KEYICONSTASKMANAGERDISPLAY] e premi TAB, oppure fai clic direttamente sul plotone.
 
 tutorial_41_kbd                        Per convocare un altro INGEGNERE, tieni premuto [KEYGESTURESTASKMANAGERDISPLAY] per accedere al Riquadro attività e disegna questa figura.
-tutorial_41_xin                        Per convocare un altro INGEGNERE, accedi al Riquadro attività e disegna questa figura.
 tutorial_42                            Ora posiziona l'ingegnere vicino a un plotone o a una torre di controllo.
 
 tutorial_43                            Hai già un ingegnere, ma non è selezionato.
@@ -551,7 +507,6 @@ tutorial_squaddeath                    Sembra che il tuo PLOTONE sia stato distr
 tutorial_engineerdeath                 Sfortunatamente, il tuo INGEGNERE è stato distrutto. Dobbiamo crearne un altro.
 
 tutorial_skipped_kbd                   Ora puoi cavartela da solo. Ricorda però che puoi premere il tasto [KEYSEPULVEDAHELP] per chiedere aiuto. Buona fortuna!
-tutorial_skipped_xin                   Ora puoi cavartela da solo. Buona fortuna!
 
 
 # ================================================
@@ -694,7 +649,6 @@ dialog_unplugged1                      Controller scollegato
 dialog_unplugged2                      Il controller è scollegato. Ricollegalo per continuare.
 
 dialog_skiptutorial_kbd                Premi [KEYSKIPTUTORIAL] per saltare il tutorial
-dialog_skiptutorial_xin                Premi Back per saltare il tutorial
 
 dialog_skipprologue                    Salta prologo
 dialog_playprologue                    Riproduci prologo
@@ -839,25 +793,19 @@ launchpad_middemo_14                   Se non fosse stato per il virus, avrebber
 
 launchpad_tutorial_1                   Bene, dobbiamo aiutare i Darwiniani.
 launchpad_tutorial_2_kbd               Per prima cosa, occupiamoci della visuale: usa [KEYCAMERAFORWARDS], [KEYCAMERALEFT], [KEYCAMERABACKWARDS] e [KEYCAMERARIGHT] per spostarla.
-launchpad_tutorial_2_xin               Per prima cosa, occupiamoci della visuale. Usa la levetta sinistra per guardarti intorno.
 launchpad_tutorial_3                   Prova a cambiare l'altezza della visuale premendo il tasto direzionale su o giù.
 launchpad_tutorial_3_kbd               Puoi cambiare l' altezza della visuale facendo scorrere la rotellina del mouse o usando [KEYCAMERAUP] e [KEYCAMERADOWN].
 launchpad_tutorial_4_kbd               Per sconfiggere la minaccia rossa, creeremo delle unità offensive. Tieni premuto [KEYICONSTASKMANAGERDISPLAY] per aprire il Riquadro attività.
-launchpad_tutorial_4_xin               Per sconfiggere la minaccia rossa, creeremo delle unità offensive. Premi X per accedere al Riquadro attività.
 launchpad_tutorial_5_kbd               La tua arma principale contro la minaccia rossa è il PLOTONE. Per crearlo, fai clic sulla relativa icona al centro dello schermo mentre è visualizzato il Riquadro attività.
-launchpad_tutorial_5_xin               La tua arma principale contro la minaccia rossa è il PLOTONE. Per crearlo, seleziona la relativa icona al centro dello schermo e premi A.
 launchpad_tutorial_5_error             Questa è l'icona errata. Ritenta.
 launchpad_tutorial_6_kbd               Per posizionare il nuovo PLOTONE nel mondo, fai clic all'interno dell'area iniziale messa in evidenza.
-launchpad_tutorial_6_xin               Per posizionare il nuovo PLOTONE nel mondo, sposta il cursore nell'area iniziale messa in evidenza e premi A.
 launchpad_tutorial_7_kbd               I plotoni devono essere controllati direttamente. Fai clic con il pulsante sinistro del mouse per spostarli.
-launchpad_tutorial_7_xin               I plotoni devono essere controllati direttamente. Per muoverli, usa la levetta sinistra.
 launchpad_tutorial_8                   Usa la levetta destra per sparare con i loro laser. Per muoverli, usa la levetta sinistra.
 launchpad_tutorial_8_kbd               Tieni premuto il pulsante destro per sparare con i laser.
 launchpad_tutorial_9                   Ora prendi il tuo plotone e occupati dei Virii malefici nelle vicinanze. Stai attento a non farli avvicinare troppo!
 launchpad_tutorial_9_error             Sembra che il tuo plotone sia stato distrutto. Non ti preoccupare, possiamo ricrearne uno nuovo.
 launchpad_tutorial_10                  Questo oggetto blu luminoso costituisce parte delle mie ricerche: contiene un'arma che possiamo utilizzare contro i Virii rossi.
 launchpad_tutorial_11_kbd              Per ottenere questi dati di ricerca, dovremo creare un ingegnere. Tieni premuto [KEYICONSTASKMANAGERDISPLAY], quindi fai clic sul pulsante dell'ingegnere.
-launchpad_tutorial_11_xin              Per ottenere questi dati di ricerca, dovremo creare un ingegnere. Accedi al Riquadro attività, quindi seleziona il pulsante Ingegnere e premi A.
 launchpad_tutorial_12                  Posiziona il tuo nuovo ingegnere vicino al plotone e spostalo vicino all'oggetto di ricerca.
 launchpad_tutorial_12b                 Gli ingegneri sono solamente degli strumenti di messa a punto, ma svolgono molteplici funzioni.
 launchpad_tutorial_12c                 Qui puoi vedere l'ingegnere che sta raccogliendo i dati di ricerca.
@@ -865,7 +813,6 @@ launchpad_tutorial_12d                 Una volta finito, l'ingegnere li invierà 
 launchpad_tutorial_12e                 Potresti trovare altri dati di ricerca nelle vicinanze: sarebbe utile se tu li raccogliessi.
 launchpad_tutorial_13                  Fantastico, sei riuscito a riappropriarti della granata.
 launchpad_tutorial_13b_kbd             Fai clic sul plotone esistente per controllarlo, oppure selezionalo facendo clic sull'icona corrispondente nel Riquadro attività o premendo 1.
-launchpad_tutorial_13b_xin             Seleziona il plotone esistente e premi A per controllarlo, oppure seleziona l'icona corrispondente nel Riquadro attività o scorri le attività in svolgimento usando il pulsante dorsale sinistro o destro.
 launchpad_tutorial_14                  Per lanciare una granata, usa il grilletto destro mentre spari con i laser. Più inclini la levetta destra, maggiore sarà la distanza a cui lancerai la granata.
 launchpad_tutorial_14_kbd              Puoi lanciare granate facendo clic con il pulsante sinistro del mouse, mentre tieni premuto il pulsante destro per sparare con i laser.
 launchpad_tutorial_15                  Ti consiglio di spostare il tuo plotone e di distruggere i Virii sulla collina usando le tue nuove armi.
@@ -875,16 +822,11 @@ launchpad_tutorial_18                  Ora possiamo utilizzarlo per collegarci a
 launchpad_tutorial_19                  Sfortunatamente, questo radar è stato infettato dallo stesso virus rosso contro cui stai combattendo.
 launchpad_tutorial_20                  Per usarlo, devi innanzi tutto farlo riprogrammare dal tuo ingegnere, al fine di eliminare ogni traccia dell'infezione virale.
 launchpad_tutorial_21_kbd              Seleziona il tuo ingegnere e spostalo verso il radar da riprogrammare. Fai clic sulla sua icona nel Riquadro attività o direttamente su di esso per selezionarlo.
-launchpad_tutorial_21_xin              Seleziona il tuo ingegnere e spostalo verso il radar da riprogrammare. Seleziona la sua icona nel Riquadro attività per selezionarlo, oppure selezionalo direttamente.
 launchpad_tutorial_22                  L'ingegnere può accedere al radar attraverso la torre di controllo. Ora lo sta riprogrammando, così possiamo utilizzarlo.
 launchpad_tutorial_23_kbd              OK, il radar è di nuovo sotto il nostro controllo. Deseleziona il tuo ingegnere premendo [KEYUNITDESELECT], poi seleziona il radar facendoci clic sopra.
-launchpad_tutorial_23_xin              OK, il radar è di nuovo sotto il nostro controllo. Deseleziona il tuo ingegnere premendo B, poi seleziona il radar evidenziandolo e premendo A.
 launchpad_tutorial_24_kbd              Ora allinea i radar facendo clic sul ricevitore che sta sull'altra isola. Ho evidenziato il radar per te. Puoi avvicinare la visuale con la rotellina centrale del mouse o con il tasto [KEYCAMERAZOOM].
-launchpad_tutorial_24_xin              Ora allinea i radar selezionando il ricevitore che sta sull'altra isola e premendo A. Ho evidenziato il radar per te. Per ingrandire la visuale, premi senza rilasciare il grilletto sinistro.
 launchpad_tutorial_25_kbd              Ora puoi vedere i dischi dei radar allineati: possiamo trasportare il plotone. Deseleziona il radar premendo [KEYUNITDESELECT] e poi seleziona il tuo PLOTONE.
-launchpad_tutorial_25_xin              Ora puoi vedere i dischi dei radar allineati: possiamo trasportare il plotone. Deseleziona il radar premendo B e poi seleziona il tuo PLOTONE.
 launchpad_tutorial_26_kbd              Ora puoi inviare il tuo PLOTONE attraverso il radar facendo clic su di esso mentre è selezionato.
-launchpad_tutorial_26_xin              Ora puoi inviare il tuo PLOTONE attraverso il radar spostando il plotone verso di esso.
 
 launchpad_tutorial_defend_1            Fai attenzione, ci sono altri Virii nelle vicinanze.
 launchpad_tutorial_defend_2            Difenditi!
@@ -893,7 +835,6 @@ launchpad_tutorial_40                  Queste struttura è un'incubatrice. È una 
 launchpad_tutorial_41                  Possiamo usarla per convertire le anime di queste creature che hai appena ucciso in Darwiniani.
 launchpad_tutorial_42                  Ma, come per il radar, la prima cosa che dobbiamo fare è riprogrammarla, al fine di rimuovere l'infezione virale.
 launchpad_tutorial_43_kbd              Crea un ingegnere vicino all'incubatrice per riprogrammarla. Tieni premuto [KEYICONSTASKMANAGERDISPLAY] e fai clic sul pulsante Ingegnere, oppure premi [KEYICONSTASKMANAGERNEWENGINEER].
-launchpad_tutorial_43_xin              Crea un ingegnere vicino all'incubatrice per riprogrammarla. Accedi al Riquadro attività e premi il pulsante Ingegnere.
 launchpad_tutorial_44                  Ora che l'incubatrice è attiva, vedrai gli ingegneri raccogliere le anime.
 launchpad_tutorial_45                  Tutte le creature a Darwinia hanno un'anima, siano esse Darwiniani o virus.
 launchpad_tutorial_46                  Gli ingegneri possono raccogliere le anime delle creature morte e metterle nell'incubatrice per farle rinascere.
@@ -914,14 +855,10 @@ launchpad_tutorial_59                  L'energia è generata da questi pannelli s
 launchpad_tutorial_60                  Per farli funzionare dobbiamo scortarvi alcuni Darwiniani.
 launchpad_tutorial_61                  Il programma che hai recuperato ci permetterà di guidare i Darwiniani fin là, usando gli ufficiali.
 launchpad_tutorial_62_kbd              Tieni premuto [KEYICONSTASKMANAGERDISPLAY] e fai clic su un pulsante per creare un ufficiale, oppure premi [KEYICONSTASKMANAGERNEWOFFICER].
-launchpad_tutorial_62_xin              Per creare un ufficiale, accedi al Riquadro attività e seleziona il relativo pulsante.
 launchpad_tutorial_63_kbd              Ora, dobbiamo selezionare un Darwiniano per promuoverlo al grado di ufficiale; fai clic su uno di essi per farlo.
-launchpad_tutorial_63_xin              Ora, dobbiamo selezionare un Darwiniano per promuoverlo al grado di ufficiale; per farlo, selezionane uno e premi A.
 launchpad_tutorial_64_kbd              Ora possiamo influenzare gli altri Darwiniani nelle vicinanze. Fai clic sull'ufficiale per impostare la modalità SEGUI.
-launchpad_tutorial_64_xin              Ora possiamo influenzare gli altri Darwiniani nelle vicinanze. Seleziona l'ufficiale e premi il grilletto destro per metterlo in modalità SEGUI.
 launchpad_tutorial_65                  Questi Darwiniani seguiranno l'ufficiale ovunque andrà. In questo caso, abbiamo riunito tutti i Darwiniani circostanti.
 launchpad_tutorial_66_kbd              Fai clic col pulsante destro del mouse vicino ai pannelli solari e metti l'ufficiale in modalità MOVIMENTO.
-launchpad_tutorial_66_xin              Sposta il cursore accanto ai pannelli solari e premi il grilletto destro per mettere l'ufficiale in modalità MOVIMENTO.
 launchpad_tutorial_67                  L' ufficiale sta impartendo ordini ai Darwiniani vicini per recarsi in questo posto.
 launchpad_tutorial_68                  Puoi disporre di quanti ufficiali desideri. Ora usali per occupare i pannelli di controllo intorno alla base di ciascun pannello solare.
 launchpad_tutorial_69                  Ottimo lavoro! Il primo gruppo di pannelli solari funziona.
@@ -935,11 +872,8 @@ launchpad_tutorial_76                  Ci sono ancora due pompe di carburante da
 launchpad_tutorial_77                  Probabilmente, dovresti andare da questa parte.
 
 launchpad_reprogram_1_kbd              Per allineare i radar, aspetta prima che vengano riprogrammati, poi deseleziona l'attività che stai svolgendo, premendo [KEYUNITDESELECT].
-launchpad_reprogram_1_xin              Per allineare i radar, aspetta prima che vengano riprogrammati, poi deseleziona l'attività che stai svolgendo premendo B.
 launchpad_reprogram_2_kbd              A questo punto, fai clic sul radar e allinealo facendo clic sul radar ricevente.
-launchpad_reprogram_2_xin              A questo punto, seleziona il radar con il pulsante A e allinealo selezionando il radar ricevente e premendo di nuovo A.
 launchpad_reprogram_3_kbd              Quando hai finito, deseleziona il radar premendo [KEYUNITDESELECT].
-launchpad_reprogram_3_xin              Quando hai finito, deseleziona il radar premendo B.
 
 launchpad_dgupgrade_1                  Hai scoperto alcuni dati di ricerca sulle armi Darwiniane.
 launchpad_dgupgrade_2                  Questo ci permetterà di fornire ai Darwiniani verdi le stesse granate che usano i plotoni.
@@ -1051,9 +985,7 @@ containment_incubator_4                Ma ci sono dei modi per esercitare un'inf
 
 containment_officer_1                  Fantastico! Hai trovato il mio codice per il programma dell'ufficiale. Questo pratico programma ti permetterà di promuovere Darwiniani al grado di ufficiali, al fine di impartire ordini ai restanti Darwiniani nelle vicinanze.
 containment_officer_2_kbd              Per creare un ufficiale, disegnane la figura e poi fai clic sul Darwiniano che vuoi promuovere a ufficiale.
-containment_officer_2_xin              Per creare un ufficiale, disegnane la figura e seleziona il Darwiniano che vuoi promuovere a ufficiale.
 containment_officer_2_icons_kbd        Per creare un ufficiale, apri il Riquadro attività e fai clic sull'icona Ufficiale, poi fai clic sul Darwiniano che desideri promuovere.
-containment_officer_2_icons_xin        Per creare un ufficiale, apri il Riquadro attività e seleziona l'icona Ufficiale, poi seleziona il Darwiniano che desideri promuovere.
 containment_officer_3                  I Darwiniani appena rinati non sono al sicuro... Spostali sotto l'albero all'interno dell'area protetta (messa in evidenza) usando il programma dell'ufficiale.
 
 containment_rescuedws_1                Ottimo lavoro! Sembra che i Darwiniani abbiano raggiunto l'area protetta. Ma non è ancora abbastanza se vogliamo far rivivere Darwinia.
@@ -1100,7 +1032,6 @@ containmentend_7_kbd                   Se hai bisogno di aiuto con le attività, 
 containmentend_7_icons                 Se hai bisogno di aiuto con le attività, visualizza la schermata degli obiettivi...
 containmentend_7_icons_kbd             Se hai bisogno di aiuto con le attività, tieni premuto il tasto [KEYICONSTASKMANAGERDISPLAY] e sposta il mouse verso il basso per visualizzare gli obiettivi...
 containmentend_7b_kbd                  ... Ora puoi fare clic su un obiettivo e io ti aiuterò.
-containmentend_7b_xin                  ... Ora puoi selezionare un obiettivo e io ti aiuterò.
 containmentend_8                       Buona fortuna!
 
 
@@ -1170,7 +1101,6 @@ yard_progressarmour_3                  Ti consiglio di utilizzare il nuovo coraz
 
 yard_finished_1                        Ho aggiunto il programma del corazzato alla tua lista di figure. Ora puoi reperire un corazzato in qualsiasi posto disegnando questa figura.
 yard_finished_1_icons_kbd              Ho aggiunto il programma del corazzato alla tua lista di figure. Ora puoi reperire un corazzato in qualsiasi posto facendo clic sull'icona corrispondente nel Riquadro attività.
-yard_finished_1_icons_xin              Ho aggiunto il programma del corazzato alla tua lista di figure. Ora puoi reperire un corazzato in qualsiasi posto selezionando l'icona corrispondente nel Riquadro attività.
 yard_finished_2                        Il corazzato dovrà viaggiare attraverso il sistema delle porte di passaggio, quindi potrai reperirlo solo vicino alle porte di passaggio che controlli.
 
 

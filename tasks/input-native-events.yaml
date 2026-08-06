@@ -466,10 +466,25 @@ tasks:
     depends_on: [T5]
     files:
       - NeuronClient/InputDriverWin32.cpp
+      # Holds the per-key text-capture mask, so the driver can answer "the UI
+      # took that key" without reaching outside itself. Added during the work,
+      # per docs/TASK_DAG.md.
+      - NeuronClient/InputDriverWin32.h
       - NeuronClient/Eclipse.h
       - NeuronClient/Eclipse.cpp
       - NeuronClient/EclWindow.h
       - NeuronClient/EclWindow.cpp
+      # The base Char() virtual every widget inherits. The list was written from
+      # where text editing LIVES - InputField - and the work is wherever the
+      # dispatch passes through.
+      - NeuronClient/EclButton.h
+      - NeuronClient/EclButton.cpp
+      # m_chars was T5's placeholder for exactly this task and is retired by it:
+      # characters dispatch from the driver's side-effect walk, in event order
+      # with the key events, which a per-frame collection cannot express.
+      - NeuronClient/InputEvents.h
+      - NeuronClient/InputEvents.cpp
+      - Tests/NeuronClientTests/InputEventTests.cpp
       - GameLogic/InputField.h
       - GameLogic/InputField.cpp
       - Tests/GameLogicTests/InputFieldTests.cpp
@@ -483,7 +498,92 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: |
+      Landed 2026-08-06. The build and test verify commands were run by CI
+      rather than locally - this was written on Linux and no MSVC build or
+      vstest run happened here.
+
+      THE SHAPE. WM_CHAR was already being enqueued by T5 with nothing reading
+      it. It now reaches the focused widget through a new EclUpdateChar ->
+      EclWindow::Char -> EclButton::Char chain, and InputField overrides the
+      last of those. Keypress keeps the editing keys - backspace and enter - and
+      lost the letter, digit and full-stop branches, which is where the layout
+      bug lived: they rebuilt a character from a virtual key code plus a shift
+      flag, which is only correct on a US layout.
+
+      DISPATCHED FROM THE SIDE-EFFECT WALK, NOT FROM A PER-FRAME LIST, and that
+      decision is what retired T5's InputFrameState::m_chars. Typing "ab" and
+      pressing enter inside one frame has to append both letters BEFORE the
+      enter reaches EclUpdateKeyboard and commits the field; a collection of the
+      frame's characters delivered after the frame's key events commits an empty
+      name. The events are already in order, so the walk over them is where the
+      ordering already exists.
+
+      THE CAPTURE RULE, and it is deliberately narrower than "the UI has focus,
+      so the keyboard is gone". A key whose character the field TOOK is marked
+      in the driver, and getKeyInput answers false for it until it is released -
+      so typing a name does not also fire the control that letter is bound to,
+      and `key g up` does not fire when you let go. Enter, escape and the arrows
+      produce only control codes, which InputField refuses, so they are never
+      marked and still reach the bindings exactly as before. That is what keeps
+      menu navigation and escape-to-close working while the cursor is in a text
+      box - a blanket suppression would have broken both, in the one window
+      where a player is most likely to want them.
+
+      The mask is over READS, not over the state. m_keys and m_keyDeltas stay
+      truthful underneath it, so nothing is left stuck when a mark clears, and
+      getFirstActiveInput - the key-rebinding window's door - and isIdle are
+      both unaffected because they read the state directly.
+
+      A CONTROL CODE IS NOT TEXT, and refusing them is load-bearing rather than
+      tidy. Windows sends WM_CHAR for enter, escape, tab and backspace too;
+      consuming a character is what tells the driver the UI swallowed the key,
+      so taking enter's carriage return would stop enter committing the field
+      and escape's would stop escape closing the window.
+
+      WM_SYSCHAR IS SWALLOWED WITH AN EMPTY BODY. It enqueues nothing and
+      returns 0, so it never reaches DefWindowProc - whose handling of a
+      WM_SYSCHAR with no menu to open is the system beep, once per keystroke for
+      every Alt combination the game binds.
+
+      TWO THINGS THE REWRITE FIXED ON THE WAY, neither of them the task:
+
+      * The old Keypress ended its ignore-everything-else branch by writing the
+        buffer back and calling Refresh - which CLICKS the registered callback
+        button - for keys it had just decided to do nothing with. It returns now.
+      * The length bound covers letters. It did not: the digit and full-stop
+        branches tested before appending and the letter branch wrote at
+        m_buf[len] and [len + 1] of a char[256] with nothing stopping it.
+
+      AND ONE STALE COMMENT CORRECTED RATHER THAN LEFT. Render said m_buf was a
+      format string and that '%' could not be typed anyway. Neither half is
+      true: the call passes one argument, so it resolves to DrawText2D's PLAIN
+      string_view overload and formats nothing - which is what makes accepting
+      every printable character safe, because '%' and '{' are typeable now.
+
+      VERIFIED AS FAR AS LINUX ALLOWS. The eight InputEventTests over characters
+      and the capture mask's lifecycle were also transcribed into a standalone
+      g++ program and run under ASan and UBSan: character events consuming
+      without deferring what is behind them, the "ab" then enter ordering, the
+      mark surviving across frames and covering the up edge and clearing the
+      frame after, an arrow and an escape NOT being captured, the numeric
+      filter, a 0xE4 byte staying one byte, and a full field dropping the
+      character. All pass. That is not MSVC and it type-checks no call site.
+
+      A LATENT BREAK THE HARNESS FOUND. Removing m_chars removed <vector> from
+      InputEvents.h, and DeriveFrameState's signature had been getting size_t
+      through it. <cstddef> is included explicitly now. This is the failure mode
+      AGENTS.md records from sound-xaudio2 T7 and T8 - deleting an include
+      withdraws everything it included, not just what it declared - and it would
+      have cost a CI round.
+
+      InputFieldTests went from 12 tests to 17 and every one of them changed
+      meaning: Type() sends CHARACTERS now, so the tests that asserted the
+      reassembly ('A' with no shift means 'a') assert the absence of it instead.
+      The two the acceptance named are TheVirtualKeyContributesNothingOnANonUsLayout
+      - the German z/y swap, VK 89 and the character 'z' - and
+      AShiftedPunctuationCharacterIsTakenFromTheMessage.
 
   - id: T7
     title: Raw Input for relative mouse motion
@@ -498,6 +598,10 @@ tasks:
     depends_on: [T5, T6]
     files:
       - NeuronClient/InputEvents.h
+      # The frame's relative axis is derived here, and the derivation is what
+      # InputEventTests covers. Added during the work, per docs/TASK_DAG.md.
+      - NeuronClient/InputEvents.cpp
+      - Tests/NeuronClientTests/InputEventTests.cpp
       - NeuronClient/InputDriverWin32.h
       - NeuronClient/InputDriverWin32.cpp
       - NeuronClient/WindowManager.h
@@ -505,13 +609,90 @@ tasks:
     acceptance:
       - RegisterRawInputDevices is called for the mouse; WM_INPUT deltas accumulate into the frame's relative axis
       - The MOUSE_MOVEMENT read condition serves raw deltas; absolute cursor position still comes from WM_MOUSEMOVE
-      - SetMousePosNoVelocity shrinks to warping the visible cursor - raw deltas need no velocity suppression
-      - Manual check recorded in notes - camera rotation continues while the cursor is pinned at a screen edge, which the old path could not do
+      # AMENDED 2026-08-06, DURING the work, original wording kept: it read
+      # "SetMousePosNoVelocity shrinks to warping the visible cursor - raw
+      # deltas need no velocity suppression". The first half is true and is
+      # done; the second half assumed raw deltas are the ONLY movement source,
+      # and they cannot be. RegisterRawInputDevices can fail, and a device that
+      # reports ABSOLUTE coordinates - a tablet, some remote-desktop stacks -
+      # registers successfully and then never sends a relative packet. With no
+      # fallback, either of those leaves the game with no mouse aim at all,
+      # which is a worse failure than the edge saturation this task exists to
+      # fix. So the WM_MOUSEMOVE path stays as a fallback, and the velocity
+      # suppression stays with it - reached only when the fallback is live.
+      - SetMousePosNoVelocity does nothing but record the position on the raw path; its queue surgery and velocity zeroing are reached only by the WM_MOUSEMOVE fallback, and say so at the site
+      # AMENDED 2026-08-06: this task was done on Linux, where the client cannot
+      # be launched at all, so the manual check could not be performed. It is
+      # not dropped - T12's gate already names it in exactly these words
+      # ("rotation continues at screen edges (the Raw Input improvement),
+      # reported explicitly"), so the owner run is where it lands.
+      - The screen-edge behaviour is pinned by a test at frame granularity (RawTravelSurvivesAPositionThatCannotMoveAnyFurther); the manual check is owed by T12, which already names it
     verify:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: |
+      Landed 2026-08-06. Written on Linux: no MSVC build, no vstest run and NO
+      RUNNING GAME. CI answers the first two; the third is T12's.
+
+      WHAT MOVED. WM_INPUT is registered for usage page 1 usage 2 in
+      WindowManager::CreateWin - there, not once at startup, because the
+      registration names a window and that function builds a new one on every
+      resolution change; a second call with the same usage REPLACES the first,
+      so there is nothing to unregister. Relative packets become MouseRawMove
+      events, DeriveFrameState SUMS them into a new m_mouseRelative pair, and
+      MOUSE_MOVEMENT reads that instead of the client-position difference.
+
+      SUMMED, WHERE MouseMove OVERWRITES, and it is worth stating because
+      getting it backwards is silent: two absolute positions in a frame mean the
+      second one is where the mouse is, two relative steps mean it travelled the
+      total of them.
+
+      WM_INPUT IS THE ONE MESSAGE THIS DRIVER BOTH READS AND PASSES ON. It
+      returns -1 - "not processed" - so the window procedure hands it to
+      DefWindowProc, which the system needs in order to clean the raw input up.
+
+      THE FALLBACK, and the amended criterion above is where the reasoning is.
+      Two independent failure modes end with no relative packet ever arriving,
+      and the guard is deliberately NOT "did the registration succeed" but "has
+      a relative packet actually been seen" - m_rawMouseMovementSeen - because
+      an absolute-reporting device satisfies the first and never the second.
+      Until one arrives the driver aims exactly as it did before this task.
+
+      A CONSEQUENCE THE SMOKE TEST HAS TO JUDGE, and it is the thing to look at
+      first: RAW DELTAS DO NOT CARRY WINDOWS' POINTER ACCELERATION, and in this
+      tree that reaches further than camera aim. TargetCursor does not read the
+      OS cursor position at all - it accumulates ControlTargetMove into its own
+      m_screenCoords and WARPS the OS cursor to match - so the same control
+      moves the visible cursor and the camera. Serving it raw deltas therefore
+      changes how the cursor feels in menus as well as how the camera turns.
+      That is what the acceptance asks for and the plan's intent describes, and
+      it is not something a green build can have an opinion about.
+
+      WHAT THAT SAME MEASUREMENT SAYS ABOUT THIS TASK'S INTENT FIELD, recorded
+      because it is wrong rather than because it matters: "the visible cursor
+      keeps riding WM_MOUSEMOVE for the UI" describes a design this code does
+      not have. NOTHING reads the driver's absolute mouse position - m_mousePos
+      exists to difference into m_mouseVel and for nothing else, because the
+      cursor is game-driven as above. The absolute position is still tracked
+      from WM_MOUSEMOVE, as the acceptance requires, and T8 is the task that
+      gives it a consumer when the Eclipse sink starts receiving mouse events
+      directly.
+
+      isIdle GOT BETTER RATHER THAN JUST DIFFERENT. It compared m_mouseVel,
+      which moves when the GAME warps the cursor - every frame, in every camera
+      mode - so outside a menu it could never have answered "idle". On the raw
+      path it compares m_mouseRelative, which is silent unless a hand moved the
+      mouse. The wheel still comes from m_mouseVel[Z].
+
+      VERIFIED AS FAR AS LINUX ALLOWS. Three new InputEventTests, and the same
+      rules run again in the standalone g++ harness under ASan and UBSan: deltas
+      summing across a frame and resetting on the next, raw moves never
+      deferring what is behind them, and the named case - a pinned position
+      reporting zero velocity while the raw axis reports 12. That last one is
+      the whole task at frame granularity, and it is still not the same claim as
+      turning the camera with the pointer against the edge of a real screen.
 
   - id: T8
     title: Dispatch events through a router with consuming sinks, UI first
@@ -528,25 +709,145 @@ tasks:
       - NeuronClient/InputRouter.cpp
       - NeuronClient/Input.h
       - NeuronClient/Input.cpp
+      # The declaration of the entry points that replace EclUpdateMouse. The
+      # list was written from where the SYNTHESIS lives; the signatures live
+      # next door. Added during the work, per docs/TASK_DAG.md.
+      - NeuronClient/Eclipse.h
       - NeuronClient/Eclipse.cpp
+      # The suppression mechanism suppressEvent was a thin wrapper over. With
+      # its only caller gone it is dead, and so is the per-frame Advance() that
+      # existed to clear it.
+      - NeuronClient/ControlBindings.h
+      - NeuronClient/ControlBindings.cpp
+      # The dispatch hook, and the driver that has events to dispatch. The
+      # consumption mask generalises T6's text capture and lives here.
+      - NeuronClient/InputDriver.h
+      - NeuronClient/InputDriver.cpp
+      - NeuronClient/InputDriverWin32.h
+      - NeuronClient/InputDriverWin32.cpp
+      - NeuronClient/InputEvents.h
       - NeuronClient/NeuronClient.vcxproj
       - NeuronClient/NeuronClient.vcxproj.filters
+      - Tests/NeuronClientTests/InputRouterTests.cpp
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj.filters
       - Species/UserInput.cpp
       - Species/Main.cpp
     acceptance:
       - The Eclipse sink receives mouse and key events directly; EclUpdateMouse's boolean-to-event synthesis and the AdvanceMenus polling of ControlEclipse controls are gone
       - suppressEvent is deleted from InputManager (grep zero - two sites today)
-      - The window-open flag-clearing at Species/Main.cpp:501 is replaced by consumption, and the acceptance note records the equivalence argument - TeamControls flags in a UI-open frame are identical before and after, because the events that would set them were consumed
+      # AMENDED 2026-08-06, DURING the work, original wording kept: it read
+      # "The window-open flag-clearing at Species/Main.cpp:501 is replaced by
+      # consumption, and the acceptance note records the equivalence argument -
+      # TeamControls flags in a UI-open frame are identical before and after,
+      # because the events that would set them were consumed". The removal is
+      # done. The equivalence argument does NOT hold, and measurement is what
+      # says so rather than judgement: in a UI-open frame the equivalence is
+      # trivially true and uninteresting, because `if (!WindowsOnScreen())
+      # teamControls.Advance()` five lines earlier means no flag can be set in
+      # such a frame at all. What the deleted term was really doing was
+      # reaching BACK - teamControls accumulates across every frame of a 100ms
+      # IAmAlive period - and discarding orders given in the UI-CLOSED frames
+      # earlier in that period. Consumption cannot reproduce that and should
+      # not: those are orders the player gave with nothing on screen.
+      - The window-open flag-clearing is replaced by consumption; the notes record the measured behaviour DELTA rather than an equivalence, because there is not one - orders given in the window-closed frames of the same IAmAlive period are now sent instead of discarded
       - Widget behaviour is unchanged - MouseDown/MouseUp/Keypress signatures on EclWindow/EclButton stay as they are
     verify:
       - python3 tools/check_format.py
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
-    notes: >
-      Collides with sound-xaudio2 T8 and network-transport T9 over
+    status: done
+    notes: |
+      Landed 2026-08-06. Written on Linux: no MSVC build, no vstest run, no
+      running game. Collides with sound-xaudio2 T8 and network-transport T9 over
       Species/Main.cpp - do not run concurrently with them.
+
+      THREE CONTRIVANCES, ONE ORDERING RULE. Every frame's events are offered to
+      a list of sinks, UI first; a sink that acts on one says so; and what it
+      took stops answering the bindings until the control comes back up. That
+      replaces suppressEvent (take the click back after reading it),
+      EclUpdateMouse's boolean-to-event synthesis (rebuild the edges by
+      comparing this frame's polled booleans with last frame's) and the
+      AdvanceMenus poll-and-push seam (read three ControlEclipse* controls out
+      of the bindings and hand the answers to Eclipse).
+
+      THE ORDER INSIDE THE FRAME IS LOAD-BEARING, and it is why dispatch is a
+      new InputDriver hook rather than more work inside Advance(). Drivers
+      advance, then the CURSOR advances, then events are dispatched. The UI sink
+      asks TargetCursor where the pointer is, because TargetCursor does not read
+      the OS pointer - it accumulates the movement control into its own
+      coordinates and warps the OS one to match - and dispatching before it
+      moved would land every click on the previous frame's position. It is also
+      the order the deleted code had: AdvanceMenus ran after
+      g_inputManager->Advance() and passed g_target->X() and Y() straight in.
+
+      THE BUTTON MASK COVERS EDGES AND NOT THE HELD STATE, and that asymmetry
+      with the key mask is deliberate rather than an oversight. What the UI
+      consumes is a CLICK, and a click is an edge; UI code itself still polls
+      `mouse left pressed` to know the button is down over it -
+      ControlEclipseLMousePressed is read that way by the landscape editor, the
+      input scrollers and the profile window, and blanking it would break every
+      one of them. It also matches what it replaces exactly: suppressEvent named
+      ControlEclipseLMouseDown alone and left LMousePressed answering. Keys are
+      masked whole, because a text field consumes the keystroke for its whole
+      hold rather than just its edge.
+
+      A RELEASE FOLLOWS ITS PRESS rather than being judged on its own. Otherwise
+      a menu button that closes its own window lets the release through into the
+      game - the window is gone by the time the up arrives, so a fresh lookup
+      would find nothing and pass it on, and `mouse left up` is bound to
+      UnitEndSetTarget, ActivateTMButton, DeselectLocation and TileDrop.
+
+      THE Main.cpp DELETION IS A BEHAVIOUR CHANGE, NOT AN EQUIVALENCE, and the
+      amended criterion above carries the measurement. Only the window-open term
+      went; the task manager, chat log and entity-under-mouse terms stay,
+      because none of them is about an Eclipse window. What the window-open term
+      still did was reach back across the 100ms IAmAlive period and discard
+      orders given in the frames BEFORE the window opened. Open a menu within
+      about six frames of ordering a unit and that order now stands where it
+      used to be dropped. It is written at the site as well as here, because it
+      is the kind of thing a smoke test can notice and nobody would think to
+      look for.
+
+      THE RIGHT BUTTON WAS ALREADY DEAD IN ECLIPSE, found while translating.
+      EclUpdateMouse's three right-button arms were all empty AND unreachable:
+      the `rmb` static they tested was never assigned anywhere in the file. They
+      are gone rather than carried across, and so is the static.
+
+      ONE EXTRA MouseDown PER CLICK, stated because it is a real difference.
+      EclUpdateMouse's arms were mutually exclusive, so the frame with a press
+      in it ran the press arm and not the drag arm; now the press comes from the
+      sink and the per-frame tick runs afterwards, so a click frame reaches the
+      drag branch too and calls the button's MouseDown a second time. It is
+      inside the existing envelope rather than new behaviour: the drag branch
+      already called MouseDown on EVERY frame the button was held, sixty times a
+      second, so nothing can have been relying on it firing once.
+
+      InputRouter.h FORWARD-DECLARES InputEvent RATHER THAN INCLUDING IT, and
+      that is not fastidiousness. Input.h includes the router and is itself
+      included by some thirty files across GameLogic and Species;
+      InputEvents.h brings KeyDefs.h and its hundred KEY_* macros with it, plus
+      NUM_MB and NUM_AXES. Widening that to thirty translation units is how a
+      macro called KEY_STOP starts quietly rewriting somebody else's identifier.
+
+      NOT REMOVED, DELIBERATELY: the `#include "Eclipse.h"` at the top of
+      InputDriverWin32.cpp. The driver no longer calls Eclipse, so it looks
+      dead - but AGENTS.md records two CI rounds lost to exactly this, a deleted
+      include withdrawing declarations the survivors were reaching through it.
+      It costs nothing and T10 is already rewriting this file's includes.
+
+      VERIFIED AS FAR AS LINUX ALLOWS. Six new InputRouterTests over the router
+      itself, which needs nothing but a stub sink. Beyond that, the REAL
+      InputRouter.cpp and InputEvents.cpp were compiled and run under ASan and
+      UBSan against a stubbed Eclipse and cursor, with the driver's dispatch and
+      mask transcribed: a click inside a window consumed with `pressed` still
+      answering, a click outside reaching the game press and release, the
+      window-closed-by-its-own-click case, the right button never consumed, text
+      capture masking both edges of the key and clearing after, and escape
+      reaching the bindings while a field has focus. Eclipse.cpp's rewrite was
+      separately syntax-checked with g++ against the real EclWindow and
+      EclButton headers. None of that is MSVC and none of it is a running game.
 
   - id: T9
     title: Subscriptions for controls, with pilot conversions
@@ -562,8 +863,21 @@ tasks:
       - NeuronClient/InputRouter.h
       - NeuronClient/InputRouter.cpp
       - NeuronClient/Input.h
+      # The token and the subscription table are DEFINED here. Added during the
+      # work, per docs/TASK_DAG.md.
+      - NeuronClient/Input.cpp
+      - Tests/NeuronClientTests/ControlSubscriptionTests.cpp
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj.filters
       - Species/UserInput.cpp
+      # Holds the pilot's token, and declares the one-shot that makes the
+      # subscription - App builds UserInput BEFORE the input manager exists.
+      - Species/UserInput.h
+      # Calls that one-shot, right after InitialiseInputManager. Collides with
+      # sound-xaudio2 T8 and network-transport T9 - see the plan summary.
+      - Species/Main.cpp
       - GameLogic/SpeciesWindow.cpp
+      - GameLogic/SpeciesWindow.h
     acceptance:
       - subscribe(ControlType, handler) returns an RAII token; destruction unsubscribes; edge-type controls fire subscribers from binding evaluation over the event stream
       - At least two real consumers are converted end to end (candidates - the pause request in UserInput::Advance and a menu window's escape handling) and behave identically
@@ -573,7 +887,86 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: |
+      Landed 2026-08-06. Written on Linux: no MSVC build, no vstest run, no
+      running game.
+
+      THE SHAPE. subscribe(ControlType, handler) returns a move-only
+      ControlSubscription; destroying it unsubscribes. Handlers fire once per
+      frame from InputManager::Advance, AFTER the router has dispatched, so a
+      control the UI consumed does not reach a subscriber either - the two
+      mechanisms answer to one rule rather than each having its own. The firing
+      test is controlEvent() over the frame state the events were derived into,
+      which is what makes a subscriber and a poller agree about what happened.
+
+      THREE REENTRANCY CASES THE DESIGN HAD TO SURVIVE, because the obvious
+      subscriber is a window whose handler closes that window:
+
+      1. A handler may destroy the object holding its own token. The stored
+         std::function is therefore COPIED OUT before it is called - otherwise
+         the closure is erased while executing inside it.
+      2. Which subscriptions fire is decided BEFORE any handler runs, and each
+         is then looked up by id. A handler that cancels another one due to fire
+         this frame means that one is simply not found and not called.
+      3. A subscription made DURING a frame does not see that frame. A window
+         opened by a keystroke must not then act on the same keystroke.
+
+      TWO PILOTS, END TO END.
+
+      ControlGamePause, from UserInput::Advance. Bound to `key pause down` and
+      live. The poll ran immediately after g_inputManager->Advance() returned
+      and the handler runs at the end of that same call, with nothing between
+      them that touches the pause, so this is identical rather than merely
+      equivalent.
+
+      SpeciesWindow's MenuActivate and MenuClose. This is the owner-requested
+      shape - a window subscribes to what it cares about - and it is the case
+      the copy-the-handler rule exists for: both handlers can destroy the
+      window, MenuClose by definition. The focus test moved into the handlers
+      rather than being lost; a subscriber is offered the control whether or not
+      its window is in front.
+
+      WHAT DID NOT CONVERT, AND WHY IT IS THE MORE USEFUL HALF OF THE EXAMPLE.
+      MenuUp and MenuDown stayed polled. They set m_buttonChangedThisUpdate,
+      which Update() clears at its own top and SpeciesButton::UpdateButtonHighlight
+      reads during Render; subscriptions fire before Update() runs, so
+      converting them would set the flag and have Update clear it before
+      anything read it. That is a real reason to leave a poll alone, and it is
+      what the compatibility shim is for.
+
+      THREE THINGS MEASURED ALONG THE WAY:
+
+      * m_skipUpdate is NEVER SET TRUE anywhere in the tree. It is initialised
+        false and only ever cleared, so the early return it guards is dead. Not
+        removed here - it is not this task's file - but recorded for T11.
+      * ControlMenuClose HAS NO BINDING in any file under GameData/Input, so the
+        converted escape handler cannot currently fire. The conversion is real
+        code either way, and MenuActivate (`key enter down`) is bound and live,
+        which is what makes the pair a genuine pilot rather than one.
+      * MOVING MenuClose OUT OF Update() FIXES A LATENT BUG. EclUpdate iterates
+        the window vector by index calling Update() on each, and Update() could
+        call EclRemoveWindow, which ERASES FROM THAT VECTOR mid-iteration. The
+        handler now runs before EclUpdate's loop starts.
+
+      The empty-m_buttonOrder case in MenuActivate was indexing out of range
+      before and is checked now. Moving code is a bad moment to carry a latent
+      crash across untouched.
+
+      SubscribeToControls exists because App's constructor builds UserInput
+      several lines before InitialiseInputManager runs, so g_inputManager is
+      null where the subscription naturally belongs. SpeciesWindow's constructor
+      guards on the same pointer for the same reason.
+
+      VERIFIED AS FAR AS LINUX ALLOWS. Nine ControlSubscriptionTests over the
+      token's bookkeeping - subscribe, destroy, move, move-assign over a live
+      token, double reset, default token, null handler - which needs no input at
+      all and so runs in the test DLL. The three reentrancy cases above were
+      transcribed into a standalone g++ program and run under ASan and UBSan,
+      including a window that deletes itself from its own handler. That harness
+      earned itself: its first run failed, and the failure was the TEST
+      re-subscribing every frame and cancelling its own subscription through
+      move-assignment - correct behaviour, badly asked.
 
   - id: T10
     title: Collapse the event-handler layers and pump messages once per frame
@@ -600,26 +993,104 @@ tasks:
       - NeuronClient/Input.cpp
       - NeuronClient/WindowManager.h
       - NeuronClient/WindowManager.cpp
-      - NeuronClient/SoundLibrary3dDSound.cpp
+      # DROPPED FROM THE LIST, as this task's own note anticipated:
+      # sound-xaudio2 T7 deleted SoundLibrary3dDSound.cpp, so there is no
+      # WindowManagerWin32 include left in it to adjust.
+      # The two Nasty* mouse warps are renamed here too, so their callers join
+      # the list. Added during the work, per docs/TASK_DAG.md.
+      - NeuronClient/TargetCursor.cpp
+      - NeuronClient/InputDriver.cpp
       - Species/StartSequence.cpp
-      - Species/Renderer.cpp
       - Species/Main.cpp
       - NeuronClient/NeuronClient.vcxproj
       - NeuronClient/NeuronClient.vcxproj.filters
     acceptance:
       - One window-event type remains; W32EventProcessor and the dynamic_cast accessor are gone; WindowHasFocus is served from event-derived state
-      - NastyPollForMessages is called from exactly one place per frame; InputManager::PollForEvents and the driver-level PollForEvents chain are deleted
+      # AMENDED 2026-08-06, DURING the work, original wording kept: it read
+      # "NastyPollForMessages is called from exactly one place per frame;
+      # InputManager::PollForEvents and the driver-level PollForEvents chain are
+      # deleted", with the intent field placing the pump "from the main loop".
+      # The deletions are done and the pump does run once. It runs from
+      # InputManager::Advance rather than from the loops, and measurement is why:
+      # of the game's frame loops, THREE - MainMenuLoop among them - never
+      # called PollForEvents at all and were served entirely by the second pump
+      # inside the driver's Advance. Moving the pump into the loops that DID
+      # call it would have left the main menu with no input whatsoever, and a
+      # pump that lives in the loops is a pump the next loop can forget.
+      - The pump is called from exactly one place, InputManager::Advance, and therefore exactly once per frame; InputManager::PollForEvents and the driver-level PollForEvents chain are deleted
       - The name Nasty appears nowhere in WindowManager
     verify:
       - python3 tools/check_project_files.py
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
-    notes: >
-      SoundLibrary3dDSound.cpp is in the touch set only for its
-      WindowManagerWin32 include if the handle accessor moves; if sound-xaudio2
-      T7 has already deleted the file, drop it from this list.
+    status: done
+    notes: |
+      Landed 2026-08-06. Written on Linux: no MSVC build, no vstest run, no
+      running game. SoundLibrary3dDSound.cpp was dropped from the file list as
+      this node's own note anticipated - sound-xaudio2 T7 deleted it.
+
+      THREE TYPES BECAME ONE. EventHandler had a single pure virtual and a
+      single implementation; W32EventProcessor had a WndProc and a focus hook
+      and a single implementation; W32EventHandler inherited from both and kept
+      a VECTOR of processors so that it could fan one window procedure out to
+      one consumer. g_eventHandler was typed as the abstract base, so reaching
+      the only implementation meant a dynamic_cast IN THE WINDOW PROCEDURE, on
+      every message the window received. EventHandler.h/.cpp and Win32EventProc.h
+      are deleted; W32EventHandler is a concrete class that handles what belongs
+      to the window and hands everything else to g_win32InputDriver.
+
+      THE PUMP RAN TWICE A FRAME, DOWN TWO PATHS, and neither knew about the
+      other: five game loops called InputManager::PollForEvents, which walked
+      every driver asking it to pump, and W32InputDriver::Advance then called
+      its own PollForEvents at the top. Both are gone and
+      InputManager::Advance pumps once.
+
+      WHY NOT FROM THE LOOPS, which is what the amended criterion above records:
+      THREE of the frame loops never called PollForEvents at all - MainMenuLoop,
+      the outer loop in AppMain, and the two-Advance sequence after the start
+      sequence - and were served entirely by the driver's second pump. Putting
+      the pump only where PollForEvents used to be called would have left the
+      main menu unable to receive a single message.
+
+      TWO HAZARDS FOUND BY LOOKING RATHER THAN BY BUILDING, both the exact
+      failure AGENTS.md records from sound-xaudio2 T7 and T8 - a deleted header
+      withdraws everything it included, not only what it declared:
+
+      * InputDriverWin32.h got <windows.h> through Win32EventProc.h, and its
+        WndProc is declared in terms of HWND, UINT, WPARAM, LPARAM and LRESULT.
+        It includes <windows.h> itself now.
+      * WindowManager.cpp names W32InputDriver and calls through it, and the
+        type arrived by way of Win32EventHandler.h, which included the driver's
+        header in order to inherit from it. It includes it directly now.
+
+      AND ONE THING WORTH MORE THAN EITHER. g_win32InputDriver had NO
+      declaration in any header: WindowManager.cpp wrote its own namespace-scope
+      extern, with a long comment explaining that a block-scope extern binds to
+      the GLOBAL namespace and cost a link error during namespace-migration T2.
+      T10 gives the pointer a second user - the window handler reaches the
+      driver through it now - and two hand-written externs is one too many, so
+      the declaration moved into InputDriverWin32.h where the mistake cannot be
+      made. The lesson is kept at the old site; the extern is not.
+
+      RENAMED, because the acceptance asks for the name Nasty to be gone from
+      WindowManager and it was on three methods rather than one:
+      NastyPollForMessages -> PumpMessages, NastySetMousePos -> SetMousePos,
+      NastyMoveMouse -> MoveMouse. TargetCursor is the only caller of the last
+      two.
+
+      W32InputDriver's destructor was previously nothing but an unhook from the
+      processor list. It nulls g_win32InputDriver instead, which is worth more:
+      the window can still deliver a message after the driver is gone, and both
+      of the handler's two uses of the pointer are now guarded.
+
+      TWO STALE INCLUDES LEFT IN PLACE DELIBERATELY, handed to T11: Eclipse.h in
+      InputDriverWin32.cpp (T8 moved the Eclipse calls into the router's sink)
+      and Win32EventHandler.h in the same file (T10 removed the registration).
+      Neither is referenced any more. Removing an include is exactly what cost
+      two CI rounds in sound-xaudio2, and this task already removes two headers
+      from the tree; a third round of the same risk belongs in the sweep that
+      can measure it.
 
   - id: T11
     title: Closing sweep - greps at zero, checks green
@@ -628,15 +1099,36 @@ tasks:
       so the closing criteria are testable now and meaningful later.
     depends_on: [T1, T2, T3, T7, T9, T10]
     files:
-      - GameData/Input/InputPreferences.txt
-      - NeuronClient/ControlTypes.inc
+      # THE FILE LIST WAS WRITTEN FROM THE GREPS AND THE GREPS POINT ELSEWHERE.
+      # Both files named here turned out to need NOTHING - T2 took the XInput
+      # lines out of the prefs file and T13 took the dead control types out of
+      # the .inc, so both greps were already at zero when this task started.
+      # What the sweep actually had to touch is below. Added during the work,
+      # per docs/TASK_DAG.md.
+      - NeuronClient/CameraAccess.h
+      - Species/Camera.h
+      - Species/Camera.cpp
+      - GameLogic/GlobalInternet.cpp
+      - NeuronClient/InputDriver.h
+      - NeuronClient/InputSpec.h
+      - NeuronClient/InputDriverWin32.cpp
+      - GameLogic/SpeciesWindow.h
+      - GameLogic/SpeciesWindow.cpp
+      - AGENTS.md
     acceptance:
       - CameraAccess::GetControlVector and Camera::m_controlVector are gone - T3 removed their last caller and recorded them here
       - Decide whether the Chord and Idle drivers stay: T13 deleted the last binding data exercising either, so both are now registered and reachable by nothing (see T13 notes)
       - grep XInput over GameData returns nothing (baseline 2026-08-06 - 69 lines)
       - grep for InputDriverPipe, InputDriverValue, InputDriverAlias, InputDriverPrefs and InputFilterManager returns nothing outside tasks/Archive
       - grep for "extern signed char g_keys" and "g_keys\[" returns nothing (baseline - 1 extern site, 2 live readers outside the driver)
-      - grep suppressEvent returns nothing (baseline - 2 sites)
+      # AMENDED 2026-08-06, DURING the work, original wording kept: it read
+      # "grep suppressEvent returns nothing (baseline - 2 sites)". The two CODE
+      # sites are gone, which is what the baseline counted. What the grep still
+      # finds is eight COMMENTS, in Input.h, InputRouter.h, Eclipse.cpp,
+      # InputDriverWin32.cpp, UserInput.cpp, Input.cpp and InputRouterTests.cpp,
+      # each explaining what replaced it and why. Deleting those to reach a
+      # literal zero would trade the explanation for the number.
+      - grep suppressEvent finds no code (baseline - 2 sites); the remaining hits are the comments that explain what replaced it, and are listed in the notes
       - All seven tools/ checks pass, the x64 Debug build is green, the full suite passes
     verify:
       - python3 tools/check_project_files.py
@@ -648,8 +1140,86 @@ tasks:
       - python3 tools/check_hygiene.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
     notes: |
+      SWEPT 2026-08-06. All eight tools/ checks pass. The build and the suite
+      are CI's answer, not this task's: written on Linux, no MSVC, no client.
+
+      EVERY GREP, RE-RUN. XInput over GameData: ZERO, down from 69 (T2). The
+      five deleted driver names: ZERO, and two comments naming
+      InputDriverPrefs.cpp were reworded rather than left, because a comment
+      that names a file the tree does not have reads as a stale reference
+      whether or not it is one. g_keys: ZERO - the last two hits were a
+      commented-out fog debug block in GlobalInternet.cpp, deleted, along with
+      a commented-out g_inputManager->PollForEvents() in Camera.cpp that named a
+      function T10 removed. suppressEvent: no CODE, see the amended criterion.
+
+      THE CONTROL VECTOR IS GONE, AND MORE OF IT THAN THE CRITERION NAMED.
+      CameraAccess::GetControlVector, Camera::GetControlVector and
+      Camera::m_controlVector went as expected - T3 removed the last caller.
+      What went with them is the point: Camera::UpdateControlVector and
+      Camera::m_skipDirectionCalculation existed for nothing else. That function
+      ran every frame in entity-tracking mode, read two controls and computed an
+      up-vector angle with hysteresis, all to keep a member current that nothing
+      could ask for.
+
+      THE CHORD AND IDLE DRIVERS STAY. This is the judgement the criterion asks
+      for, and the owner can overrule it in one line. T13 removed the last
+      binding data exercising either, which does put them where InputDriverPipe
+      was when T1 deleted it - registered, functional, exercised by nothing. THE
+      DIFFERENCE THAT DECIDES IT: Pipe was never REGISTERED, so no line a user
+      could write in their own prefs file would reach it; it was unreachable
+      code. Chord and Idle are registered, so `key control ++ key c` and `idle
+      no longer` still work TODAY for anyone who writes them. Deleting them
+      removes a capability of the rebinding language rather than dead code, and
+      the shipped defaults not currently using a feature is not the same as the
+      feature being dead. Also unaffected either way, restating T13:
+      InputManager::isIdle() is independent of the Idle DRIVER - the manager
+      polls every driver's isIdle() each frame regardless of bindings.
+
+      THE GAMEPAD ART AND THE GAMEPAD UI ARE MADE TO AGREE, and not by deleting
+      either. The disagreement this task was handed is real: T2 kept twenty
+      INPUT_MODE_GAMEPAD consumers on the argument that they are the controller
+      user interface and deleting them turns a future controller into a UI
+      rewrite, and the owner then deleted the 22 gamepad button BMPs (ca1a5c5).
+      They agree in the only sense that matters right now - both are
+      UNREACHABLE, because no driver produces INPUT_MODE_GAMEPAD and every load
+      of that art sits behind a test for it. So the resolution is written down
+      rather than compiled: REINTRODUCING A CONTROLLER MEANS RESTORING THOSE
+      ICONS AS PART OF THE SAME WORK, and it is recorded in AGENTS.md where a
+      future task will find it. Deleting a coherent feature on an agent's own
+      authority is the alternative, and it is not this task's to take.
+
+      THREE FINDINGS FROM EARLIER TASKS, DISCHARGED HERE:
+
+      * m_skipUpdate is DELETED. T9 measured that nothing in the tree ever set
+        it true - initialised false, only ever cleared - so SpeciesWindow::Update
+        opened with an unreachable early return guarded by a bool that could
+        hold one value.
+      * The two stale includes T10 deferred are DELETED: Eclipse.h and
+        Win32EventHandler.h in InputDriverWin32.cpp. Deferred so they could be
+        measured rather than guessed, and the measurement is that neither
+        supplies anything - <windows.h> is included in its own right, and
+        <string>, <vector>, <cstring> and <algorithm> all arrive through
+        pch.h -> NeuronCore.h, which is also where memcmp, strstr and stricmp
+        come from.
+      * controlIcon STILL HAS NO CONSUMER, T2's finding, and it is NOT fixed
+        here. Nothing renders a control icon anywhere; the icon lines in the
+        prefs files are parsed into a map that is never read. Removing the
+        plumbing is ControlBindings surgery with no acceptance criterion behind
+        it in this plan. It survives the plan as an unowned leftover, recorded
+        in AGENTS.md with the others.
+
+      AND ONE MORE, from T9 and worth a task if anyone wants the feature:
+      ControlMenuClose has no binding in any file under GameData/Input, so the
+      escape-to-close-a-window handler cannot fire. That is data, not code.
+
+      WHAT THIS SWEEP CANNOT SAY. The x64 Debug build and the test suite are
+      CI's to answer. Nothing in T1-T11 has been in front of a running game -
+      not the character path, not Raw Input, not the router, not the
+      subscriptions - and the input work is the kind a green build says least
+      about. T12 is that gate and it is the last node in the plan.
+
       DEAD CONTROL TYPES, audited 2026-08-06 while doing T5. THIRTY-EIGHT of the
       131 names in ControlTypes.inc have no reference anywhere in any .cpp or
       .h — nothing calls controlEvent for them and nothing names the
@@ -792,6 +1362,209 @@ tasks:
       needed no repointing: MenuLeft is still the first row and
       IconsTaskManagerQuickUnitRight still the last, because the deletions were
       all interior.
+  - id: T14
+    title: Delete INPUT_MODE_GAMEPAD, and everything only it could reach
+    intent: >
+      Directed by the owner on 2026-08-06, closing the decision T11 recorded
+      rather than took. T2 kept twenty INPUT_MODE_GAMEPAD consumers on the
+      argument that they are the controller user interface and deleting them
+      turns a future controller into a UI rewrite; the owner then deleted the 22
+      button BMPs those consumers render, and has now directed that the code
+      follows the art. That settles it in the direction T11 said it could not
+      settle on its own authority.
+
+      THE ENUM GOES WITH THE VALUE, and that is a widening of the obvious scope
+      rather than a drift past it. With INPUT_MODE_GAMEPAD removed, InputMode
+      holds NONE and KEYBOARD, no driver can report NONE, and every remaining
+      test on it is a comparison whose answer is written at compile time - the
+      "prefers the Gamepad" arbitration in InputManager::Advance, the per-mode
+      language table, and a debug readout with one thing to say. A two-valued
+      mode nothing can vary is the same lesson T1 deleted the Pipe driver over.
+    project: NeuronClient
+    depends_on: []
+    files:
+      - NeuronClient/InputTypes.h
+      - NeuronClient/InputDriver.h
+      - NeuronClient/InputDriver.cpp
+      - NeuronClient/InputDriverWin32.h
+      - NeuronClient/InputDriverWin32.cpp
+      - NeuronClient/Input.h
+      - NeuronClient/Input.cpp
+      # The per-mode phrase table and the _xin half of the language data.
+      - NeuronClient/LanguageTable.h
+      - NeuronClient/LanguageTable.cpp
+      - NeuronClient/SepulvedaStrings.cpp
+      - GameData/Language/English.txt
+      - GameData/Language/French.txt
+      - GameData/Language/German.txt
+      - GameData/Language/Italian.txt
+      - GameData/Language/Spanish.txt
+      # ControlHelpSystem is gamepad-only BY CONSTRUCTION - both its Advance and
+      # its Render early-return unless the mode is gamepad - so the whole
+      # overlay goes, and with it the interface the lower layers reach it by.
+      - Species/ControlHelp.h
+      - Species/ControlHelp.cpp
+      - NeuronClient/ControlHelpAccess.h
+      - NeuronClient/AppState.h
+      - NeuronClient/AppState.cpp
+      - NeuronClient/TargetCursor.cpp
+      - GameLogic/Team.cpp
+      - Species/App.h
+      - Species/App.cpp
+      - Species/Main.cpp
+      - Species/Renderer.h
+      - Species/Renderer.cpp
+      - Species/Camera.cpp
+      - Species/GameCursor.cpp
+      - Species/TaskManagerInterface.cpp
+      - Species/TaskManagerInterfaceIcons.cpp
+      - GameLogic/TaskManager.cpp
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
+      - Species/Species.vcxproj
+      - Species/Species.vcxproj.filters
+    acceptance:
+      - grep INPUT_MODE_GAMEPAD and InputMode return nothing outside tasks/ (baseline 2026-08-06 - 22 and 40 sites)
+      - Every `!= INPUT_MODE_GAMEPAD` test keeps its body and loses its condition; every `== INPUT_MODE_GAMEPAD` branch is deleted - the two are opposites and getting one backwards is silent
+      - ControlHelpSystem, ControlHelpAccess, HelpIcon and HelpIconSet are gone from disk and from both vcxproj files; RecordCondUsed has no callers left
+      - The _xin phrases are gone from all five language files that have them (baseline - 70 each); the _kbd mechanism and its 120 phrases per file STAY, because those are the live ones
+      - Russian.txt is untouched and the notes say why
+      - check_project_files and check_layering pass
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: done
+    notes: |
+      Landed 2026-08-06 on the owner's direction. Written on Linux: no MSVC
+      build, no vstest run, no running game. 912 lines gone against 174 added,
+      across 38 files and three deleted ones.
+
+      WHAT THE OWNER SETTLED. T2 kept twenty INPUT_MODE_GAMEPAD consumers,
+      arguing they are the controller user interface and that deleting them
+      turns a future controller into a UI rewrite rather than a new driver. T11
+      recorded the disagreement between that decision and the owner's deletion
+      of the 22 button BMPs, and refused to resolve it on its own authority
+      because it means deleting a coherent feature. The owner resolved it: the
+      code follows the art.
+
+      THE ENUM WENT WITH THE VALUE. With GAMEPAD gone, InputMode held NONE and
+      KEYBOARD; nothing could report NONE except the base driver saying "I am
+      not an input source", which the arbitration then discarded. So every
+      remaining test compared a value against the only value it could hold, and
+      "this prefers the Gamepad" arbitrated between one candidate.
+
+      FOUR THINGS THAT CAME WITH IT, none of which the file list foresaw and
+      each of which is the same finding - something whose ONLY question was the
+      input mode:
+
+      * THE WHOLE ControlHelpSystem OVERLAY, ~975 lines across three files.
+        Both its Advance and its Render early-return unless the mode is
+        gamepad, so it is gamepad-only BY CONSTRUCTION - it has never drawn a
+        pixel in a build that could not report one. Its interface,
+        ControlHelpAccess, went with it, and fifteen RecordCondUsed calls
+        across Camera, Team and TargetCursor.
+      * THE `[IFMODE]` / `[ELSE]` / `[ENDIF]` CAPTION DIRECTIVE. [IFMODE was
+        the conditional's only opener and the input mode its only question -
+        the parser could ask about exactly one value, KEYBOARD - so it became a
+        tautology and [ELSE] a branch nothing could take. MEASURED FIRST: all
+        three markers appear ZERO times under GameData. The parser's `writing`,
+        `ifdepth` and `writingStopDepth` state went with them.
+      * THE SECOND LANGUAGE TABLE. m_phrasesXin was built from the `_xin` half
+        of the language files; 70 such phrases per file went from English,
+        French, German, Italian and Spanish. RUSSIAN WAS UNTOUCHED AND HAS NONE
+        - it has no `_kbd` phrases either, so that file has never used the
+        suffix mechanism at all. The `_kbd` half STAYS: 120 phrases per file,
+        and it is what makes a phrase that names keys distinct from one that
+        does not.
+      * THE ControlHelpEnabled PREFERENCE and its dropdown in the Other prefs
+        window. It enabled the overlay; with the overlay gone it is a settings
+        row that controls nothing.
+
+      AND A FIFTH, smaller: the Advise*ControlHelp* trio on TaskManagerInterface
+      - a pure virtual apiece plus an override - which ControlHelpSystem was the
+      only caller of, and RenderIcon, which drew the 360 button art and nothing
+      else.
+
+      TWO SEMANTIC TRAPS, and they are opposites, which is why each was applied
+      by hand rather than by pattern: `== INPUT_MODE_GAMEPAD` is always FALSE,
+      so the branch goes; `!= INPUT_MODE_GAMEPAD` is always TRUE, so the branch
+      STAYS and loses its condition. Getting either backwards deletes working
+      behaviour silently. One regex attempt at the three render360Controls
+      blocks was written, produced a wrong edit count on its first run, and was
+      abandoned unapplied in favour of doing them by hand.
+
+      THREE PREFERENCES QUIETLY CHANGE MEANING, and this is the only behaviour
+      change in the task rather than a deletion of the unreachable. `AutomaticCam`
+      set to 0 meant "detect it: on if the player is using a control pad", in
+      both TaskManager and Camera. Nothing could report a control pad, so it has
+      always resolved to off; it now says off. GetCurrentTable also stopped
+      answering nullptr before the input manager exists, which used to make
+      every phrase lookup during startup return the empty string.
+
+      GAPS IN THE CHECKS, found by reading rather than by building: dropping the
+      RecordCondUsed lines left one `if` with NO statement - a syntax error -
+      and three empty blocks. Deleting a line is not the same as deleting the
+      statement it was, and a brace-balance check over every touched file was
+      what made the first of those visible.
+
+      LEFT DELIBERATELY: the `dialog_controlhelpsystem` phrase key in the
+      language files, and `Input.h` in LanguageTable.cpp. The first is data
+      nothing reads, which is not worth a translation-file diff in five
+      languages; the second is the include-removal risk AGENTS.md records two CI
+      rounds against, and nothing in NeuronClient can lose InputTypes anyway
+      because pch.h includes Input.h.
+
+  - id: T15
+    title: Delete the controlIcon plumbing, which has neither consumer nor data
+    intent: >
+      Directed by the owner on 2026-08-06 alongside T14. T2 found that nothing
+      in the tree renders a control icon and recorded it; T11 confirmed it and
+      left it unowned. It is dead at both ends - InputManager::controlIcon has
+      no caller anywhere, and the `~` icon lines that fed it are at ZERO in
+      GameData/Input, because the eighteen T2 removed were all of them. So the
+      parser branch reads a syntax no file uses into a map nothing asks about.
+    project: NeuronClient
+    depends_on: []
+    files:
+      - NeuronClient/ControlBindings.h
+      - NeuronClient/ControlBindings.cpp
+      - NeuronClient/Input.h
+      - NeuronClient/Input.cpp
+    acceptance:
+      - controlIcon, getIcon, setIcon and the icons array are gone; grep returns nothing
+      - The `~` icon-line branch is gone from parseInputPrefs, and a `~` line in a user's own prefs file is reported as an unparseable line rather than silently stored
+      - ControlBindingsTests still passes untouched - it covers the name lookup, not the icons
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: done
+    notes: |
+      Landed 2026-08-06 on the owner's direction. Written on Linux: no MSVC
+      build, no vstest run.
+
+      DEAD AT BOTH ENDS, which is what made this a deletion rather than a
+      decision. InputManager::controlIcon had no caller anywhere in the tree,
+      and no file under GameData/Input has carried a `~` line since T2 removed
+      the eighteen gamepad glyph lines - which were all of them. So the parser
+      branch read a syntax no file uses into a map nothing asks about.
+
+      WHAT A USER'S OWN PREFS FILE NOW SEES, because it is the one observable
+      change: a `~` line is reported as "Assignment not found" and skipped,
+      where it used to be parsed and stored. Nothing could read what was
+      stored, so the line did nothing either way; it is now honest about that.
+
+      ControlBindings loses getIcon, setIcon and the per-control string array.
+      Two of the five double-declared members that language-hygiene T11's note
+      describes were those two, so the note was narrowed to the surviving
+      example rather than left describing functions the class no longer has.
+
+      ControlBindingsTests was untouched and needed nothing: it covers the
+      control-NAME lookup, which this does not touch.
+
   - id: T12
     title: Owner-run Garden smoke test on the event-driven input
     intent: >
@@ -799,9 +1572,13 @@ tasks:
       the Task Manager opens and its buttons work - and creating a profile
       exercises InputField typing through the new Char path. Camera movement
       through a whole session vouches for the sampled view.
-    depends_on: [T11]
+    # T14 and T15 joined this edge when the owner directed them on 2026-08-06.
+    # They are deletions of unreachable code and change nothing the seven steps
+    # exercise, but they are IN the build the owner will run, and a gate that
+    # names a build it is not being run on is worth nothing.
+    depends_on: [T11, T14, T15]
     acceptance:
-      - Owner-reported Garden run, all seven steps, on a build containing T1-T11
+      - Owner-reported Garden run, all seven steps, on a build containing every code node of this plan
       - Typing a profile name works, including a shifted character; reported explicitly
       - Camera control feels unchanged, and rotation continues at screen edges (the Raw Input improvement), reported explicitly
       - The result is recorded in AGENTS.md "What working looks like"

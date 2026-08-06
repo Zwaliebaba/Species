@@ -72,7 +72,9 @@ namespace Neuron
   } // namespace
 
 
-  ControlBindings::ControlBindings() { memset(suppressed, 0, sizeof(suppressed)); }
+  // Nothing to initialise since T8 took the suppression array out; the
+  // bindings and icons are std::vector and std::string and do their own.
+  ControlBindings::ControlBindings() = default;
 
 
   std::optional<ControlType> ControlBindings::getControlID(std::string const& name)
@@ -122,24 +124,6 @@ namespace Neuron
   }
 
 
-  const std::string& ControlBindings::getIcon(ControlType id) const
-  {
-    if (isRealControlType(id))
-      return icons[Neuron::I(id)];
-    else
-      throw "Invalid control type.";
-  }
-
-
-  void ControlBindings::setIcon(ControlType id, std::string const& iconfile)
-  {
-    if (isRealControlType(id))
-      icons[Neuron::I(id)] = iconfile;
-    else
-      throw "Invalid control type.";
-  }
-
-
   bool ControlBindings::bind(ControlType type, InputSpec const& spec, bool replace)
   {
     if (isAcceptibleInputType(type, spec.type))
@@ -173,18 +157,9 @@ namespace Neuron
   // }
 
 
-  void ControlBindings::Advance() { memset(suppressed, 0, sizeof(suppressed)); }
-
-
   void ControlBindings::Clear()
   {
     for (ControlType const type : RangeControlType())
       bindings[Neuron::I(type)].clear();
   }
-
-
-  void ControlBindings::suppress(ControlType id) { suppressed[Neuron::I(id)] = 1; }
-
-
-  bool ControlBindings::isActive(ControlType id) const { return (suppressed[Neuron::I(id)] == 0); }
 } // namespace Neuron

@@ -2,7 +2,6 @@
 #include "App.h"
 #include "Camera.h"
 #include "ClientToServer.h"
-#include "ControlHelp.h"
 #include "FilesysUtils.h"
 #include "GameCursor.h"
 #include "GameMenu.h"
@@ -160,8 +159,6 @@ App::App()
 #ifdef ATTRACTMODE_ENABLED
   m_attractMode = std::make_unique<AttractMode>();
 #endif
-  m_controlHelpSystem = std::make_unique<ControlHelpSystem>();
-  g_controlHelpSystem = m_controlHelpSystem.get();
 
   ReplaceTaskManagerInterface();
 
@@ -234,8 +231,6 @@ App::~App()
   m_taskManagerInterface.reset();
   g_taskManagerInterface = nullptr;
 
-  m_controlHelpSystem.reset();
-  g_controlHelpSystem = nullptr;
 
 #ifdef ATTRACTMODE_ENABLED
   m_attractMode.reset();

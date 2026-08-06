@@ -56,8 +56,15 @@ preference all deleted. Two remain open:
 
 | Plan | What it does | State |
 |---|---|---|
-| [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse | 5 of 12 |
+| [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse; the gamepad mode and the control-icon plumbing deleted | **14 of 15 — all code done, T12 is the owner's Garden run** |
 | [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | 0 of 12 |
+
+**`input-native-events` has one node left and it is not code.** T12 is a
+seven-step Garden run on a build carrying every other node, and **nothing in that plan has
+ever been in front of a running game** — see *What working looks like*. It is
+the kind of change a green build says least about: it changes what happens on a
+keystroke, on a click over a menu, on focus loss and on every frame of camera
+aim, and no test in the tree renders a menu or turns a camera.
 
 `python3 tools/check_task_dag.py --next tasks/<plan>.yaml` is the authority on
 what can be started; read it rather than this table, which will go stale.
@@ -77,9 +84,10 @@ today:
   candidate — it is a design prompt, not a plan, and it has not been run.
 - **In scope, and unowned:** the leftovers the closed plans recorded rather than
   fixed. They are listed where they were found — the three raw-ownership
-  survivors under *Ownership*, the unswept LCG sites and the untested entity and
-  building behaviour under *Known issues*. **None has a task.** Picking one up
-  means writing a plan for it first; see *How work is broken down*.
+  survivors under *Ownership*, and under *Known issues* the unswept LCG sites,
+  the untested entity and building behaviour, and the two `input-native-events`
+  left. **None has a task.** Picking one up means writing a plan for it first;
+  see *How work is broken down*.
 - **Still true:** fixing things that are outright broken, when you encounter
   them in code you are already changing.
 - **Still the rule that governs all of it:** anything larger than a single-file
@@ -139,7 +147,7 @@ NeuronCore/       ~4.8k   Foundation: sockets, threads, byte streams, the wire
                           Vector2/3, Matrix33/34 and Plane were deleted, and
                           storage is DirectXMath's own. Static library.
                           PARTLY in namespace Neuron — see Namespaces below.
-NeuronClient/     ~22k    Presentation: OpenGL renderer, sound, input drivers,
+NeuronClient/     ~23k    Presentation: OpenGL renderer, sound, input drivers,
                           the Eclipse UI toolkit, resource loading. Static
                           library, all of it in namespace Neuron.
 NeuronServer/     ~0.6k   Authoritative simulation host: Server, ServerToClient,
@@ -151,15 +159,18 @@ GameLogic/        ~65k    Entities, buildings, teams, unit behaviour, in-game
                           layering-inversion moved down out of the executable.
                           The bulk of the inherited code. Static library, all of
                           it in namespace Species.
-Species/          ~16k    Client executable: app and main loop, camera, renderer
+Species/          ~15k    Client executable: app and main loop, camera, renderer
                           entry, task manager interface, location editor. NOT
                           the world model any more. In namespace Species except
                           WinMain.
 Server/           ~0.1k   Headless server executable. Links NeuronCore and
                           NeuronServer only; ticks the host at 10 Hz.
 
-Tests/            ~0.4k   One <Name>Tests project per library, on the Microsoft
-                          Native Unit Test Framework. Built and run by CI.
+Tests/            ~4.7k   One <Name>Tests project per library, on the Microsoft
+                          Native Unit Test Framework. 235 tests, built and run
+                          by CI. This figure said ~0.4k until 2026-08-06 and was
+                          wrong by an order of magnitude; measure it, do not
+                          copy it.
 tools/                    The checks CI runs. Run them locally too.
 tasks/                    Task DAGs. See docs/TASK_DAG.md. EVERY plan is
                           finished and in tasks/Archive/; what is left here
@@ -291,7 +302,7 @@ Resource::ListResources
   switch. **Only the resolution change is left**: the gamepad switch was
   `SwitchTaskManagerForX360Controller`, and `input-native-events` T2 deleted
   it, because no driver in the tree can report the mode it waited for, so it
-  never actually executed. Taking `unique_ptr` ownership without touching those would
+  never actually executed. T14 has since deleted that mode as well. Taking `unique_ptr` ownership without touching those would
   have left App holding a freed pointer. Replacement now routes through
   `AppCommands`, whose factories install what they build. **Before converting
   a member, grep for who else deletes or reassigns it, not just who reads
@@ -443,9 +454,27 @@ launch a Windows client, say so instead of implying you checked.
 `ffc5105`, which carries all of `sound-xaudio2` and `input-native-events` T1-T2:
 it compiles, links, passes the suite on x64 Debug, and the headless server
 reaches sequence 20 at the right rate. Every task since `d858b6b` has gone green
-first round. `input-native-events` T3 and T5 are pushed behind it and awaiting
-their own CI answer — T5 is the largest single change in that plan, so treat
-this line as covering `ffc5105` and not the branch head until it is updated. **THE UNCOMPILED BLOCK THIS ENTRY USED TO WARN ABOUT IS GONE**:
+first round.
+
+**THERE IS AN UNCOMPILED BLOCK AGAIN, AND IT IS THE WHOLE OF
+`input-native-events` T3 AND T5–T11.** Nine tasks are pushed behind `ffc5105`
+and awaiting their own CI answer: the event stream, `WM_CHAR` text input, Raw
+Input, the router and its consuming sinks, the subscription API, the collapse of
+the event-handler layers, and the closing sweep. **Treat the green above as
+covering `ffc5105` and not the branch head.** All nine were written on Linux
+against the eight Python checks, a `g++`/ASan/UBSan harness for the parts that
+are pure logic, and reading — no MSVC build and no client launch happened at
+any point.
+
+**What that combination can and cannot catch is the standing lesson of this
+repository, and it applied twice in this block.** A Python check cannot see a
+type that no longer matches its use; a sanitizer harness type-checks no call
+site. What it did catch, both times by asking what a deleted `#include` had been
+*supplying* rather than what it declared: `InputEvents.h` was getting `size_t`
+through the `<vector>` that T6 removed, and `InputDriverWin32.h` was getting
+`<windows.h>` through the `Win32EventProc.h` that T10 deleted while declaring a
+`WndProc` in terms of `HWND` and `LRESULT`. Both would have been a CI round
+each. **The earlier uncompiled block this entry used to warn about is gone**:
 `strings-modernised` T12, T11, T13, T17 and T9 were the largest ever recorded
 here, and CI has since built all of them.
 
@@ -471,9 +500,29 @@ that closes that, and it is a full seven-step Garden run rather than a listen.
 
 Nothing else from 2026-08-06 has been in front of a running game — not the input
 changes, and no seven-step Garden run on any of it — so the baseline below is
-unchanged at `acf283b`. The input work is the kind a green build says least
-about: it changes what happens on focus loss and on a wheel message, neither of
-which any test exercises.
+unchanged at `acf283b`.
+
+**`input-native-events` T12 IS THE GATE THAT CLOSES THIS, and it is worth
+knowing what to look at rather than only that a run is owed.** Twelve of the
+plan's thirteen nodes are code and all of them have landed; the run is the
+thirteenth. Four things changed that no test in this tree can have an opinion
+about, listed in the order they are most likely to be noticed:
+
+- **Camera and cursor FEEL.** Aim comes from Raw Input now, which carries no
+  Windows pointer acceleration — and because `TargetCursor` derives the visible
+  cursor from the same control, the menu cursor changed with it. The intended
+  gain is the other half of that trade: rotation continues while the pointer is
+  pinned at a screen edge, which the old path could not do at all.
+- **Typing.** Text comes from `WM_CHAR` rather than from a virtual key code and
+  a shift flag, so a profile name should now be correct on any keyboard layout —
+  and a shifted character is the quickest thing to check.
+- **Clicking a menu.** A click the UI handles is consumed and no longer reaches
+  the game bindings. One deliberate behaviour change rides with it: an order
+  given in the frames just before a menu opens is now sent to the server instead
+  of being discarded.
+- **Escape and enter in menus.** Two of `SpeciesWindow`'s controls are
+  subscriptions rather than polls, and the handler for one of them destroys the
+  window from inside itself.
 
 The `strings-modernised` block is worth remembering for what it taught rather
 than for its size, which is why the description stays here now. It was 127
@@ -726,25 +775,31 @@ day at 20 of 20. T13 narrowed the read-only name parameters to `string_view`,
 T17 replaced `FileWriter::printf` with `std::format` templates, and T9 swept
 the `strcpy`/`sprintf` family to a tree-wide zero and deleted `NewStr` with it.
 
-**Ready tasks exist again**, in the three plans under *Current priority* —
-`--next` will name them. This paragraph used to say there were none, when
-`tasks/` held only the reading orders, the template and the archive. Work
-outside those three plans still needs a plan written for it before code is
-written — see *How work is broken down* below and
+**Ready tasks exist**, and `--next` will name them — but as of 2026-08-06 they
+are all in ONE plan. `input-native-events` has no ready node left: twelve of its
+thirteen are done and the thirteenth is an owner Garden run, so `--next` reports
+nothing for it. Everything schedulable is in `network-transport`, which has not
+started. Work outside the open plans still needs a plan written for it before
+code is written — see *How work is broken down* below and
 [`docs/TASK_DAG.md`](docs/TASK_DAG.md). What the closed plans left behind, each
-recorded and still unowned, is unchanged by them: the three raw-ownership
-survivors above, the unswept LCG sites below, entity and building behaviour
-having no tests, and `GlobalWorld` not being constructible in a test DLL.
+recorded and still unowned: the three raw-ownership survivors above, the unswept
+LCG sites below, entity and building behaviour having no tests, `GlobalWorld`
+not being constructible in a test DLL, and the four `input-native-events`
+leftovers under *Known issues*.
 
 The tree is namespaced; that is its own section, [above](#namespaces).
 
 **Migration stage 5 is finished**, and the scheduling problem the batch files
-exist to solve went with the last of those plans. It came back on 2026-08-06:
-three plans are open, 22 of their 35 tasks are not done, and
-`check_task_dag.py --next` answers what to schedule rather than any of the batch
-files, which describe the eleven that closed. `sound-xaudio2` T11 IS gated on
-the owner — it is a Garden run — so the "nothing is gated" this paragraph used
-to open with is no longer true either.
+exist to solve went with the last of those plans. It came back on 2026-08-06 and
+has largely gone again: of the three plans opened that day, `sound-xaudio2`
+closed at 11 of 11, `input-native-events` is at 12 of 13 with only its owner gate
+left, and `network-transport` has 12 tasks none of which has started. So there is
+no collision to schedule around today — one plan is open for work and nothing
+else is touching those files. `check_task_dag.py --next` answers what to
+schedule rather than any of the batch files, which describe the eleven that
+closed. **Two nodes are gated on the owner rather than on code**, and both are
+Garden runs: `sound-xaudio2` T11 is discharged, `input-native-events` T12 is
+not.
 
 **`ownership` T6 is still the one to be sceptical about.** Its acceptance asked
 for the game to reach the main menu after each of its four commits, and that
@@ -835,7 +890,7 @@ Real, currently true, and worth knowing before you trip over them:
   (2026-08-05), and it is also the most recent with an explicit
   all-seven-steps breakdown — see *What working looks like*. CI builds and runs
   the unit suite; it does not launch the client, and neither does any agent
-  working on Linux. A change that compiles and passes 198 tests can still break
+  working on Linux. A change that compiles and passes 235 tests can still break
   the game on the first frame.
   - Batch 5 is the standing example in both directions. Four tasks went in on
     CI evidence alone; CI then caught two real compile errors a name-keyed
@@ -898,6 +953,38 @@ Real, currently true, and worth knowing before you trip over them:
   - **Nobody has swept the remaining LCG sites.** 186 of them were classified
     far enough to find the six; a site-by-site record of which feed simulation
     state does not exist and has no owning task.
+- **THERE IS NO GAMEPAD SUPPORT, AND NO GAMEPAD-SHAPED HOLE EITHER.** The owner
+  directed its removal on 2026-08-06 and `input-native-events` T14 carried it
+  out: `INPUT_MODE_GAMEPAD`, the whole `InputMode` enum, the `ControlHelpSystem`
+  on-screen-prompt overlay (~975 lines, and gamepad-only *by construction* — its
+  `Advance` and `Render` both early-returned unless the mode was gamepad), the
+  `[IFMODE]`/`[ELSE]`/`[ENDIF]` caption directive, the second language table and
+  its 70 `_xin` phrases per file, and the `ControlHelpEnabled` preference. The
+  22 button BMPs had already gone (`ca1a5c5`).
+  - **If a controller is ever wanted, it comes back as a new EVENT SOURCE**
+    feeding the queue described in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#input),
+    not as a mode to switch into. Whatever it needs to distinguish itself by is
+    a question to answer with a driver in hand; the enum that used to answer it
+    could hold only one value anyone could produce.
+  - This closes what T2 and T11 both declined to decide. T2 kept those consumers
+    arguing they were the controller *user interface*; T11 recorded the
+    disagreement with the deleted art and refused to resolve it on an agent's
+    own authority. The owner resolved it.
+- **`input-native-events` LEFT TWO THINGS RECORDED AND UNOWNED.** Neither has a
+  task; each is a decision rather than a defect.
+  - **`ControlMenuClose` has no binding** in any file under `GameData/Input`, so
+    the escape-to-close-a-window handler cannot fire. That is data, not code —
+    a one-line addition if the feature is wanted.
+  - **The `Chord` and `Idle` drivers have no data exercising them.** T13 deleted
+    the last `++` and `idle` lines in the tree. T11 decided they STAY, and the
+    reasoning is worth knowing before anyone revisits it: unlike `InputDriverPipe`,
+    which T1 deleted because it was never *registered* and so unreachable by any
+    line a user could write, these two are registered and still work today for
+    anyone who writes such a binding. Deleting them removes a capability of the
+    rebinding language, not dead code.
+  - A third, `controlIcon`, was on this list until the owner directed it out
+    with the gamepad on 2026-08-06 (T15). It was dead at both ends — no caller,
+    and no `~` icon line left in any prefs file.
 - **Mixed-architecture play is NOT SUPPORTED.** Not "unproven" — decided. The
   simulation computes on DirectXMath, which dispatches to SSE on x64 and to
   ARM-NEON on ARM64, and the owner decided on 2026-08-03 to accept that rather
@@ -937,19 +1024,22 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, **198** tests as of
-  `strings-modernised` T9 (2026-08-05). The seven newest are the five in
-  `BinaryReaderTests` — the filename extension parse, including the empty
-  answer for a name with no dot and a 400-character name that the char[256]
-  behind it could not have held — and the two `FileWriterTests` gained for
-  behaviour T17 created: a percent sign in argument-free text is now a percent
-  sign, and text longer than the old 10240-byte stack buffer is written whole.
+- **The test suite is thin.** Four projects, **235** tests as of
+  `input-native-events` T11 (2026-08-06) — 117 `NeuronCoreTests`, 74
+  `NeuronClientTests`, 39 `GameLogicTests`, 5 `NeuronServerTests`. **24 of them
+  have never been compiled by anything**: `input-native-events` T6–T11 were
+  written on Linux, and `git grep -c TEST_METHOD` is what counted them.
+  The newest are the three lifts that made input testable at all —
+  `InputEventTests` over `DeriveFrameState`, `InputRouterTests` over the
+  router's ordering rule, and `ControlSubscriptionTests` over the subscription
+  token's lifetime — described in [`docs/TESTING.md`](docs/TESTING.md), which is
+  where the per-project split belongs and where the count should be read from.
   Before them, `ControlBindingsTests` characterise the control-name lookup —
   including the edge where the EMPTY STRING matches and returns a real,
-  bindable `ControlNull`. Before them the count was 184, one FEWER than the run
-  before that, which is rare here and worth spelling out: `ownership` T7 deleted
-  the transitional `SlotMap::EmptyAndDelete` helper and the single test
-  characterising it went too. The rest
+  bindable `ControlNull`. The count has gone DOWN once, which is rare here and
+  worth spelling out: `ownership` T7 deleted the transitional
+  `SlotMap::EmptyAndDelete` helper and the single test characterising it went
+  too. The rest
   cover IP conversion,
   the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
   format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
@@ -959,7 +1049,7 @@ Real, currently true, and worth knowing before you trip over them:
   emits for every format the level and profile writers use, `LevelFile`'s
   constructors, the native-math conversions and
   geometry routines, the entity grid, the routing system's waypoints, the slice
-  walker, `InputField`'s keystroke write-back, `ShapeMarker`'s parse of a marker
+  walker, `InputField`'s text handling, `ShapeMarker`'s parse of a marker
   block, and the two `Matrix33` rotation
   mappings — each with a negative control asserting that the intuitive reading
   is measurably wrong. That is the encoding, identity

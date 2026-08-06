@@ -12,8 +12,35 @@ namespace Neuron
 {
   void EclInitialise(int screenW, int screenH);
 
-  void EclUpdateMouse(int mouseX, int mouseY, bool lmb, bool rmb);
+  // THREE ENTRY POINTS WHERE EclUpdateMouse WAS ONE. It took the polled button
+  // booleans and reconstructed the edges by comparing them with the pair it had
+  // kept from last frame — which is a second re-derivation of information the
+  // OS had already given away, and it could not represent a press and a release
+  // that happened between two frames at all. The edges are events now.
+  //
+  // EclMouseDown returns TRUE if the click landed in a window, which is the
+  // answer the router turns into "the UI took that click". EclMouseUp needs no
+  // answer: Eclipse keys a release off the position the PRESS was made at, and
+  // the router keys consumption off what that press did, so both already agree
+  // without asking twice.
+  bool EclMouseDown(int mouseX, int mouseY, bool rightButton);
+  void EclMouseUp(int mouseX, int mouseY, bool rightButton);
+
+  // Where the cursor is, called once per FRAME rather than per event, and
+  // deliberately: hover highlighting, the one-second tooltip delay and window
+  // dragging are all things that have to keep happening while the mouse is
+  // perfectly still, and a still mouse produces no events whatsoever.
+  void EclMouseMove(int mouseX, int mouseY);
+
   void EclUpdateKeyboard(int keyCode, bool shift, bool ctrl, bool alt);
+
+  // One decoded character, offered to whatever the focused window has in text
+  // edit. Returns TRUE if a widget took it — the caller uses that to stop the
+  // key that produced it from also firing a game binding, which is the capture
+  // rule the router formalises in T8. A character Windows decoded is not a
+  // virtual key code: it is already correct for the user's keyboard layout,
+  // which is the whole reason this exists alongside EclUpdateKeyboard.
+  bool EclUpdateChar(unsigned int character);
   void EclRender();
   void EclUpdate();
 

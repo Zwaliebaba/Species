@@ -94,9 +94,6 @@ namespace Species
       virtual void Render();
 
       bool ControlEvent(TMControl _type);
-      bool AdviseCreateControlHelpBlue();
-      bool AdviseCreateControlHelpGreen();
-      bool AdviseCloseControlHelp();
       bool AdviseOverSelectableZone();
   };
 

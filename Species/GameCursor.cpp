@@ -518,7 +518,7 @@ namespace Species
       }
     }
 
-    if (!cursorRendered && g_inputManager->getInputMode() != InputMode::INPUT_MODE_GAMEPAD)
+    if (!cursorRendered)
     {
       // Nobody has drawn a cursor yet
       // So give us the default

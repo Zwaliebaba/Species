@@ -4,7 +4,6 @@
 #include "App.h"
 #include "Camera.h"
 #include "ClientToServer.h"
-#include "ControlHelp.h"
 #include "Debug.h"
 #include "DebugMenu.h"
 #include "Eclipse.h"
@@ -370,12 +369,10 @@ void LocationGameLoop()
     {
       if (TheRenderer()->IsFadeComplete())
       {
-        TheControlHelp()->Shutdown();
         break;
       }
     }
 
-    g_inputManager->PollForEvents();
     if (g_inputManager->controlEvent(ControlType::ControlMenuEscape) && TheRenderer()->IsFadeComplete())
     {
       if (g_script && TheScript()->IsRunningScript())
@@ -440,11 +437,10 @@ void LocationGameLoop()
           if (teamControls.m_unitMove)
             checkMouse = true;
 
-          bool orderGiven = false;
-          if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_KEYBOARD && teamControls.m_primaryFireTarget)
-            orderGiven = true;
-          if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD && teamControls.m_secondaryFireDirected)
-            orderGiven = true;
+          // The second test was the gamepad's, on m_secondaryFireDirected, and
+          // it went with INPUT_MODE_GAMEPAD; the first was the keyboard's, and
+          // the keyboard is now the only way in.
+          bool orderGiven = teamControls.m_primaryFireTarget;
 
           if (team->GetMyEntity() && team->GetMyEntity()->m_type == Entity::TypeOfficer && orderGiven)
             checkMouse = true;
@@ -473,7 +469,27 @@ void LocationGameLoop()
           }
         }
 
-        if (TheTaskManagerInterface()->m_visible || EclGetWindows()->size() != 0 || chatLog || entityUnderMouse)
+        // THE WINDOW-OPEN TERM IS GONE, replaced by consumption. A click over
+        // an Eclipse window is taken by the UI sink before the bindings ever
+        // see it, so it cannot set a flag in the first place; and the guard at
+        // `if (!WindowsOnScreen()) teamControls.Advance()` above already stops
+        // any flag being set at all while a window is up.
+        //
+        // WHAT THAT TERM STILL DID, measured rather than assumed, because this
+        // is simulation input and the difference is a real one: teamControls
+        // accumulates across every frame of a 100ms IAmAlive period and is
+        // cleared only when the letter is sent. So the term was reaching back
+        // and discarding orders given in the WINDOW-CLOSED frames earlier in
+        // the same period, before the window opened. Those are genuine orders
+        // the player gave with nothing on screen, and they are now sent.
+        // Deliberate, and named here for the smoke test rather than left to be
+        // discovered: open a menu within ~6 frames of ordering a unit and the
+        // order now stands where it used to be dropped.
+        //
+        // The other three terms stay. The task manager is not an Eclipse window
+        // and has no sink, and neither chatLog nor entityUnderMouse is about
+        // the UI at all.
+        if (TheTaskManagerInterface()->m_visible || chatLog || entityUnderMouse)
           teamControls.ClearFlags();
 
         g_app->m_clientToServer->SendIAmAlive(g_globalWorld->m_myTeamId, teamControls);
@@ -560,7 +576,6 @@ void LocationGameLoop()
       TheScript()->Advance();
       g_explosionManager.Advance();
       g_soundSystem->Advance();
-      TheControlHelp()->Advance();
 
 #ifdef ATTRACTMODE_ENABLED
       if (g_app->m_attractMode->m_running)
@@ -618,8 +633,6 @@ void LocationEditorLoop()
 {
   while (!g_inputManager->controlEvent(ControlType::ControlMenuEscape))
   {
-    g_inputManager->PollForEvents();
-
     if (HandleCommonConditions())
       continue;
 
@@ -663,8 +676,6 @@ void GlobalWorldGameLoop()
   {
     if (g_atMainMenu)
       break;
-
-    g_inputManager->PollForEvents();
 
     if (g_inputManager->controlEvent(ControlType::ControlMenuEscape) && TheRenderer()->IsFadeComplete())
     {
@@ -723,8 +734,6 @@ void GlobalWorldEditorLoop()
 
   while (g_requestedLocationId == -1 && !g_requestToggleEditing)
   {
-    g_inputManager->PollForEvents();
-
     if (g_inputManager->controlEvent(ControlType::ControlMenuEscape))
     {
       g_editing = false;
@@ -811,6 +820,11 @@ void Initialise()
   g_app = new App();
 
   InitialiseInputManager();
+
+  // AFTER the manager exists, and it has to be: App's constructor built
+  // UserInput several lines ago, when g_inputManager was still null, so the
+  // subscription cannot be made where the object is.
+  TheUserInput()->SubscribeToControls();
 
   g_target = new TargetCursor();
   EntityBlueprint::Initialise();

@@ -15,7 +15,6 @@ namespace Neuron
   bool g_atMainMenu = false;
   bool g_requestToggleEditing = false;
   Server* g_server = nullptr;
-  ControlHelpAccess* g_controlHelpSystem = nullptr;
   std::string g_userProfileName;
   std::string g_requestedMission;
   std::string g_requestedMap;

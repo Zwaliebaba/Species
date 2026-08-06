@@ -57,4 +57,6 @@ namespace Neuron
   void EclButton::MouseMove() {}
 
   void EclButton::Keypress(int keyCode, bool shift, bool ctrl, bool alt) {}
+
+  bool EclButton::Char(unsigned int character) { return false; }
 } // namespace Neuron

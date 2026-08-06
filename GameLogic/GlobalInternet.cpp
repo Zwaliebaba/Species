@@ -192,14 +192,6 @@ void GlobalInternet::Render()
   float fogCol[] = {fog, fog, fog, fog};
 
   /*static*/ int fogVal = 5810000;
-  //    if( g_keys[KEY_P] )
-  //    {
-  //        fogVal += 100000;
-  //    }
-  //    if( g_keys[KEY_O] )
-  //    {
-  //        fogVal -= 100000;
-  //    }
 
   glFogf(GL_FOG_DENSITY, 1.0f);
   glFogf(GL_FOG_START, 0.0f);

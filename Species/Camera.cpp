@@ -34,7 +34,6 @@
 #include "UserInput.h"
 #include "Script.h"
 #include "GameCursor.h"
-#include "ControlHelp.h"
 
 #include "Teleport.h"
 #include "InsertionSquad.h"
@@ -646,8 +645,6 @@ void Camera::AdvanceFreeMovementMode()
       {
         targetPos = DirectX::XMVectorSubtract(targetPos, DirectX::XMVectorScale(accelRight, g_advanceTime * details.x * 10.0f));
         targetPos = DirectX::XMVectorSubtract(targetPos, DirectX::XMVectorScale(accelForward, g_advanceTime * details.y * 10.0f));
-
-        TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondMoveCameraOrUnit);
       }
     }
 
@@ -772,7 +769,6 @@ void Camera::AdvanceFreeMovementMode()
     int intMouseDeltaY = floorf(mouseDeltaY);
     mouseDeltaX -= intMouseDeltaX;
     mouseDeltaY -= intMouseDeltaY;
-    // g_inputManager->PollForEvents();
     newMouseX = g_target->X() + intMouseDeltaX;
     newMouseY = g_target->Y() + intMouseDeltaY;
 
@@ -971,31 +967,16 @@ void Camera::AdvanceAutomaticTracking()
 
   // Finally face the unit
   RotateTowardsEntity(m_trackingEntity);
-  UpdateControlVector();
-}
 
-void Camera::UpdateControlVector()
-{
-  constexpr float angleThreshold = 0.98f;
-
-  bool recalc = false;
-  if (g_inputManager->controlEvent(ControlType::ControlUnitMoveDirectionChange))
-  {
-    m_skipDirectionCalculation = false;
-    recalc = true;
-  }
-
-  // operator* between two Vector3s was the DOT product, not a scale. Taking
-  // cosf of a dot is what the original did and is kept exactly.
-  DirectX::XMFLOAT3 const upStore = GetUp();
-  float angle = cosf(DirectX::XMVectorGetX(DirectX::XMVector3Dot(DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&upStore))));
-  if ((fabs(angle) < angleThreshold && !m_skipDirectionCalculation) || !g_inputManager->controlEvent(ControlType::ControlUnitMove) || recalc)
-  {
-    m_controlVector = GetRight();
-    m_skipDirectionCalculation = false;
-  }
-  else if (fabs(angle) >= angleThreshold)
-    m_skipDirectionCalculation = true;
+  // THE UpdateControlVector CALL THAT USED TO CLOSE THIS FUNCTION IS GONE, and
+  // so is the function. Everything it computed existed to keep
+  // Camera::m_controlVector current, which existed to be returned by
+  // GetControlVector, whose last caller T3 removed: Team.cpp read it while
+  // building the 10Hz IAmAlive payload, feeding a per-machine camera value into
+  // a simulation input, and the result was thrown away unserialised. The
+  // hysteresis this ran - two control reads and an up-vector angle test, every
+  // frame in entity-tracking mode - was maintaining a value nobody could ask
+  // for.
 }
 
 bool Camera::AdvanceManualRotateCamera(DirectX::XMFLOAT3& cameraTarget)
@@ -1054,16 +1035,12 @@ bool Camera::AdvanceManualCameraHeight(DirectX::XMFLOAT3& cameraTarget)
     if (g_inputManager->controlEvent(ControlType::ControlCameraUp))
     {
       m_heightMultiplier += heightScale;
-      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraUp);
-      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraDown);
     }
 
     if (g_inputManager->controlEvent(ControlType::ControlCameraDown))
     {
       m_heightMultiplier -= heightScale;
       camDown = true;
-      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraUp);
-      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraDown);
     }
 
     m_heightMultiplier = std::min(2.0f, m_heightMultiplier);
@@ -1776,8 +1753,7 @@ Camera::Camera()
     m_objectId(),
     m_anim(nullptr),
     m_cameraShake(0.0f),
-    m_entityTrack(false),
-    m_skipDirectionCalculation(false)
+    m_entityTrack(false)
 {
   m_cosFov = cos(m_fov / 180.0f * M_PI);
   m_pos = DirectX::XMFLOAT3(1000.0f,          // g_location->m_landscape.GetWorldSizeX() / 2.0f,
@@ -1796,7 +1772,6 @@ Camera::Camera()
   // the result overwrites it two lines later.
   DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::g_XMIdentityR1, front));
   DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(front, right)));
-  DirectX::XMStoreFloat3(&m_controlVector, right);
 }
 
 void Camera::CreateCameraShake(float _intensity) { m_cameraShake = std::max(m_cameraShake, _intensity); }
@@ -2001,11 +1976,6 @@ void Camera::AdvanceComponentMouseWheelHeight()
       delta += g_advanceTime * 7.0f;
     if (keyDown)
       delta -= g_advanceTime * 7.0f;
-    if (keyUp || keyDown)
-    {
-      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraUp);
-      TheControlHelp()->RecordCondUsed(ControlHelpSystem::CondCameraDown);
-    }
   }
 
   if (g_location)
@@ -2521,19 +2491,13 @@ void Camera::RestoreCameraPosition(bool _cut)
 
 void Camera::SwitchEntityTracking(bool _onOrOff) { m_entityTrack = _onOrOff; }
 
-DirectX::XMFLOAT3 Camera::GetControlVector() { return m_controlVector; }
-
 void Camera::UpdateEntityTrackingMode()
 {
   if (g_prefsManager && g_inputManager)
   {
+    // Same as TaskManager's: the automatic option detected a control pad, and
+    // no driver could report one, so `automatic` has always resolved to off.
     int camTracking = g_prefsManager->GetInt(OTHER_AUTOMATICCAM, 0);
-    if (camTracking != 1 && camTracking != 2)
-    {
-      // do automatic option detection
-      if (g_inputManager->getInputMode() == InputMode::INPUT_MODE_GAMEPAD)
-        camTracking = 2;
-    }
     SwitchEntityTracking(camTracking == 2);
   }
 }

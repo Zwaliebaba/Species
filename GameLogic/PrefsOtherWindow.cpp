@@ -26,7 +26,6 @@ namespace Species
 
         g_prefsManager->SetInt(OTHER_HELPENABLED, parent->m_helpEnabled);
 
-        g_prefsManager->SetInt(OTHER_CONTROLHELPENABLED, parent->m_controlHelpEnabled);
 
         if (g_locationId == -1)
         {
@@ -114,7 +113,6 @@ namespace Species
     SetPosition(g_renderer->ScreenW() / 2 - m_w / 2, g_renderer->ScreenH() / 2 - m_h / 2);
 
     m_helpEnabled = g_prefsManager->GetInt(OTHER_HELPENABLED, 1);
-    m_controlHelpEnabled = g_prefsManager->GetInt(OTHER_CONTROLHELPENABLED, 1);
 
     char const* bootloader = g_prefsManager->GetString(OTHER_BOOTLOADER, "random");
     if (stricmp(bootloader, "none") == 0)
@@ -207,15 +205,6 @@ namespace Species
     helpEnabled->m_fontSize = fontSize;
     RegisterButton(helpEnabled);
     m_buttonOrder.push_back(helpEnabled);
-
-    DropDownMenu* controlHelpEnabled = new DropDownMenu();
-    controlHelpEnabled->SetShortProperties(LANGUAGEPHRASE("dialog_controlhelpsystem"), x, y += h, buttonW, buttonH);
-    controlHelpEnabled->AddOption(LANGUAGEPHRASE("dialog_enabled"), 1);
-    controlHelpEnabled->AddOption(LANGUAGEPHRASE("dialog_disabled"), 0);
-    controlHelpEnabled->RegisterInt(&m_controlHelpEnabled);
-    controlHelpEnabled->m_fontSize = fontSize;
-    RegisterButton(controlHelpEnabled);
-    m_buttonOrder.push_back(controlHelpEnabled);
 
     DropDownMenu* bootLoader = new DropDownMenu();
     bootLoader->SetShortProperties(LANGUAGEPHRASE("dialog_bootloaders"), x, y += h, buttonW, buttonH);

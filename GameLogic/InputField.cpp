@@ -115,12 +115,12 @@ namespace Species
     }
     SpeciesWindow* parent = (SpeciesWindow*)m_parent;
     fieldX = realX + m_w - parent->GetMenuSize(m_inputBoxWidth);
-    // m_buf is the format string, not an argument, exactly as it was before the
-    // conversion — so a '%' reaching it is read as a specifier. It cannot be
-    // typed (Keypress accepts only A-Z, 0-9 and '.') but it can arrive in a name
-    // loaded from a level file. Left alone deliberately: T12 owns this API and
-    // its notes say a call site that stops compiling under std::format is a
-    // latent bug being surfaced. This is one of them.
+    // ONE ARGUMENT, so this is DrawText2D's PLAIN overload and m_buf is text
+    // rather than a format string — the formatting template needs an argument
+    // after the format and there is none. That is worth stating here because
+    // the comment this replaces said the opposite, and because it is what makes
+    // the change above safe: Char accepts every printable character, so '%' and
+    // '{' are typeable into a name now, and neither is a specifier on this path.
     g_editorFont.DrawText2D(fieldX + 2, realY + 10, parent->GetMenuSize(DEF_FONT_SIZE), m_buf.c_str());
   }
 
@@ -133,10 +133,9 @@ namespace Species
     if (m_parent->m_currentTextEdit == "None")
       return;
 
-    size_t len = m_buf.size();
     if (keyCode == KEY_BACKSPACE)
     {
-      if (len > 0)
+      if (!m_buf.empty())
         m_buf.pop_back();
       if (m_type == TypeString)
       {
@@ -168,55 +167,64 @@ namespace Species
       ClampToBounds();
       Refresh();
     }
-    else if (keyCode == KEY_STOP)
-    {
-      if (len < MAX_EDIT_LENGTH)
-      {
-        m_buf += '.';
-      }
-
-      if (m_type == TypeString)
-      {
-        *m_string = m_buf;
-        Refresh();
-      }
-    }
-    else if (keyCode >= KEY_0 && keyCode <= KEY_9)
-    {
-      if (len < MAX_EDIT_LENGTH)
-      {
-        m_buf += static_cast<char>(keyCode & 0xff);
-      }
-
-      if (m_type == TypeString)
-      {
-        *m_string = m_buf;
-        Refresh();
-      }
-    }
     else
     {
-      if (m_type == TypeString && keyCode >= KEY_A && keyCode <= KEY_Z)
-      {
-        unsigned char ascii = keyCode & 0xff;
-        if (!shift)
-          ascii -= ('A' - 'a');
-        // No length test here, and there was none before: the letter branch
-        // wrote at m_buf[strlen(m_buf)] and [+1] with nothing stopping it, so a
-        // field already full ran off the end of the array. Appending is what
-        // that meant to do. The two branches above DID test, and keep testing,
-        // because dropping the key at the limit is behaviour rather than damage.
-        m_buf += static_cast<char>(ascii);
-      }
-
-      if (m_type == TypeString)
-      {
-        *m_string = m_buf;
-        Refresh();
-      }
+      // EVERY OTHER KEY IS SOMEBODY ELSE'S. Text arrives through Char; the
+      // arrows, escape, delete and the rest are key events this widget has
+      // never handled and still does not. Returning here matters rather than
+      // falling through harmlessly: the branch that used to end this function
+      // wrote the buffer back and called Refresh — and Refresh clicks the
+      // registered callback button — for keys it had just decided to ignore.
+      return;
     }
 
     m_inputBoxWidth = static_cast<int>(m_buf.size()) * PIXELS_PER_CHAR + 7;
+  }
+
+
+  bool InputField::Char(unsigned int _character)
+  {
+    // The window only offers a character to the widget it has in text edit, so
+    // this is belt and braces for a direct caller — and for the frame in which
+    // enter has just committed, where the WM_CHAR for the enter itself is still
+    // behind it in the queue.
+    if (m_parent->m_currentTextEdit != m_name)
+      return false;
+
+    // CONTROL CODES ARE NOT TEXT. Windows sends WM_CHAR for enter, escape, tab
+    // and backspace as well, and those reach this widget as KEY events through
+    // Keypress. Taking them here would be worse than useless: consuming a
+    // character is what tells the driver the UI swallowed the key, so accepting
+    // enter's carriage return would stop enter from committing the field.
+    //
+    // The upper bound is the window's, not a choice. The class is registered
+    // with RegisterClassA, so WM_CHAR carries one byte in the active code page
+    // — which is also what m_buf and the 8-bit font downstream of it hold.
+    if (_character < 32 || _character == 127 || _character > 255)
+      return false;
+
+    const char character = static_cast<char>(_character);
+
+    // A numeric field takes exactly what the virtual-key path took: digits and
+    // the decimal point. Letters were only ever appended for a string field.
+    if (m_type != TypeString && !(character >= '0' && character <= '9') && character != '.')
+      return false;
+
+    // The length test now covers letters too. It did not before, and that was
+    // the defect rather than the design: the digit and full-stop branches
+    // checked before appending, and the letter branch wrote at m_buf[len] and
+    // [len + 1] of a char[256] with nothing stopping it.
+    if (m_buf.size() < MAX_EDIT_LENGTH)
+      m_buf += character;
+
+    if (m_type == TypeString)
+    {
+      *m_string = m_buf;
+      Refresh();
+    }
+
+    m_inputBoxWidth = static_cast<int>(m_buf.size()) * PIXELS_PER_CHAR + 7;
+    return true;
   }
 
 

@@ -703,8 +703,6 @@ void TeamControls::Advance()
     // tidiness: this runs while building the 10Hz IAmAlive payload, and a
     // camera read there is a per-machine value feeding a simulation input.
     m_directUnitMove = true;
-
-    g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondMoveCameraOrUnit);
   }
 
   if (g_inputManager->controlEvent(ControlType::ControlUnitPrimaryFireDirected, details) &&
@@ -714,14 +712,5 @@ void TeamControls::Advance()
     // that NOTHING read, on either side of the wire. Pure dead stores; the flag
     // is the whole payload.
     m_primaryFireDirected = true;
-
-    g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondSquaddieFire);
-  }
-
-  if (m_secondaryFireDirected)
-  {
-    g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondFireAirstrike);
-    g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondFireGrenades);
-    g_controlHelpSystem->RecordCondUsed(ControlHelpAccess::CondFireRocket);
   }
 }

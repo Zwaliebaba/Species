@@ -132,6 +132,12 @@ namespace Neuron
       currentTextEdit->Keypress(keyCode, shift, ctrl, alt);
   }
 
+  bool EclWindow::Char(unsigned int _character)
+  {
+    EclButton* currentTextEdit = GetButton(m_currentTextEdit);
+    return currentTextEdit && currentTextEdit->Char(_character);
+  }
+
   void EclWindow::MouseEvent(bool lmb, bool rmb, bool up, bool down) {}
 
   void EclWindow::Render(bool hasFocus)

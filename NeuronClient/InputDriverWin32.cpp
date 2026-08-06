@@ -1,14 +1,21 @@
 #include "pch.h"
 
+#include <algorithm>
 #include <windows.h>
 #include <string>
 
-#include "Eclipse.h"
-
+// Eclipse.h AND Win32EventHandler.h ARE GONE FROM THIS LIST, and their removal
+// was deliberately deferred from T8 and T10 to here so it could be measured
+// rather than guessed. T8 moved every Eclipse call into the router's sink and
+// T10 deleted the event-processor registration, so this file names nothing
+// from either. What the two were still SUPPLYING is what matters, and it is
+// nothing: <windows.h> is included above in its own right, and <string>,
+// <vector>, <cstring> and <algorithm> all arrive through pch.h -> NeuronCore.h,
+// which is where memcmp, strstr and stricmp come from too.
 #include "InputTypes.h"
 #include "ControlBindings.h"
-#include "Win32EventHandler.h"
 #include "InputDriverWin32.h"
+#include "InputRouter.h"
 #include "KeyNames.h"
 
 #include "WindowManager.h"
@@ -59,13 +66,21 @@ namespace Neuron
     // memset. m_events starts empty.
     m_events.reserve(64);
 
-    getW32EventHandler()->AddEventProcessor(this);
-
+    // THE REGISTRATION IS GONE WITH THE PROCESSOR LIST. W32EventHandler reaches
+    // this driver through g_win32InputDriver now, because there was never more
+    // than one of them to reach.
     g_win32InputDriver = this;
   }
 
 
-  W32InputDriver::~W32InputDriver() { getW32EventHandler()->RemoveEventProcessor(this); }
+  // Nulls the pointer the window procedure reaches this driver through, rather
+  // than unhooking from a list. It matters more than the removal it replaces:
+  // the window can still deliver a message after the driver is gone.
+  W32InputDriver::~W32InputDriver()
+  {
+    if (g_win32InputDriver == this)
+      g_win32InputDriver = nullptr;
+  }
 
 
   bool W32InputDriver::getInput(InputSpec const& spec, InputDetails& details)
@@ -87,6 +102,12 @@ namespace Neuron
     int button = spec.control_id;
     DEBUG_ASSERT(0 <= button && button < KEY_MAX);
     details.type = InputType::INPUT_TYPE_BOOL;
+
+    // The UI took this one. See m_consumedKeys — the state underneath is
+    // untouched and still says what the keyboard is doing; this is the read
+    // being answered as though the key were not there.
+    if (m_consumedKeys[button])
+      return false;
 
     // spec.condition is a driver-defined int; this driver reads it as an
     // InputCondition, which is what the cast says. See InputSpec.h.
@@ -134,12 +155,23 @@ namespace Neuron
 
     if (button >= 0)
     {
+      // A CONSUMED BUTTON HIDES ITS EDGES AND NOT ITS HELD STATE, which is the
+      // one place this mask is narrower than the key mask, and deliberately.
+      // What the UI consumes is a CLICK, and a click is an edge — while UI code
+      // itself still polls `mouse left pressed` to know the button is down over
+      // it. EclipseLMousePressed is read that way by the landscape editor, the
+      // input scrollers and the profile window, and blanking it would break
+      // every one of them. It matches the suppression this replaces:
+      // suppressEvent named ControlEclipseLMouseDown alone and left
+      // ControlEclipseLMousePressed answering.
+      const bool consumed = m_consumedButtons[button];
+
       switch (static_cast<InputCondition>(spec.condition))
       {
       case InputCondition::COND_DOWN:
-        return (m_state.m_mbDeltas[button] == 1);
+        return !consumed && (m_state.m_mbDeltas[button] == 1);
       case InputCondition::COND_UP:
-        return (m_state.m_mbDeltas[button] == -1);
+        return !consumed && (m_state.m_mbDeltas[button] == -1);
       case InputCondition::COND_PRESSED:
         return (m_state.m_mb[button]);
       default:
@@ -156,8 +188,28 @@ namespace Neuron
     case InputCondition::COND_MOVED:
       if (MOUSE_MOVEMENT == spec.control_id)
       {
-        details.x = m_state.m_mouseVel[X];
-        details.y = m_state.m_mouseVel[Y];
+        // RAW WHEN THERE IS RAW, and the difference is what this task exists
+        // for: a client-position difference saturates at the edge of the
+        // screen, so pushing the mouse right with the pointer already against
+        // the right-hand edge produced zero and the camera stopped turning
+        // while the hand kept moving. Raw deltas are unclamped.
+        //
+        // The fallback is not decoration. RegisterRawInputDevices can fail, and
+        // a device can report absolute coordinates instead of relative — a
+        // tablet, some remote-desktop stacks — in which case no relative packet
+        // ever arrives. Without a fallback either of those leaves the game with
+        // no mouse aim whatsoever, which is a worse failure than the saturation
+        // this replaces.
+        if (UsingRawMouseMovement())
+        {
+          details.x = m_state.m_mouseRelative[X];
+          details.y = m_state.m_mouseRelative[Y];
+        }
+        else
+        {
+          details.x = m_state.m_mouseVel[X];
+          details.y = m_state.m_mouseVel[Y];
+        }
         return reading || (details.x != 0 || details.y != 0);
       }
       else if (MOUSE_WHEEL == spec.control_id)
@@ -174,17 +226,34 @@ namespace Neuron
   }
 
 
+  // Is the mouse's motion coming from the device rather than from client-area
+  // position differences? True once a relative raw packet has actually been
+  // seen, which is a stronger claim than "the registration succeeded": a device
+  // that reports ABSOLUTE coordinates registers fine and then never sends one.
+  bool W32InputDriver::UsingRawMouseMovement() const { return m_rawMouseMovementSeen && g_windowManager->RawMouseInput(); }
+
+
   bool W32InputDriver::isIdle()
   {
     static const InputFrameState idle;
 
+    // MOVEMENT IS READ WHEREVER MOVEMENT IS COMING FROM, and on the raw path
+    // that is an improvement rather than a translation: m_mouseVel moves when
+    // the GAME warps the cursor, which it does every frame in the camera modes,
+    // so this could only ever have answered "idle" in a menu. A raw delta
+    // arrives when a hand moves the mouse and at no other time.
+    bool mouseStill = memcmp(idle.m_mouseVel, m_state.m_mouseVel, sizeof(idle.m_mouseVel)) == 0;
+    if (UsingRawMouseMovement())
+    {
+      // The wheel still comes from m_mouseVel[Z]; only X and Y move over.
+      mouseStill =
+        memcmp(idle.m_mouseRelative, m_state.m_mouseRelative, sizeof(idle.m_mouseRelative)) == 0 && idle.m_mouseVel[Z] == m_state.m_mouseVel[Z];
+    }
+
     return memcmp(idle.m_keys, m_state.m_keys, sizeof(idle.m_keys)) == 0 &&
            memcmp(idle.m_keyDeltas, m_state.m_keyDeltas, sizeof(idle.m_keyDeltas)) == 0 && memcmp(idle.m_mb, m_state.m_mb, sizeof(idle.m_mb)) == 0 &&
-           memcmp(idle.m_mouseVel, m_state.m_mouseVel, sizeof(idle.m_mouseVel)) == 0;
+           mouseStill;
   }
-
-
-  InputMode W32InputDriver::getInputMode() { return InputMode::INPUT_MODE_KEYBOARD; }
 
 
   void W32InputDriver::OnFocusLost()
@@ -205,15 +274,30 @@ namespace Neuron
 
   void W32InputDriver::SetMousePosNoVelocity(int _x, int _y)
   {
-    // A warp, so the position moves and the velocity does not follow. Any
-    // MouseMove still queued would undo that by reporting travel from the OLD
-    // position, so they go: the caller has just told us where the mouse is.
-    std::erase_if(m_events, [](InputEvent const& _event) { return _event.m_type == InputEventType::MouseMove; });
+    // THE POSITION IS ALL THIS STILL OWES ON THE RAW PATH. Raw deltas come from
+    // the device, so a warp — and the camera modes warp the cursor every single
+    // frame — produces none, and there is no phantom travel to suppress. The
+    // queue surgery and the zeroed velocity below are load-bearing ONLY for the
+    // WM_MOUSEMOVE fallback, where a queued MouseMove from before the warp
+    // would report travel from the position this call just overwrote.
+    if (!UsingRawMouseMovement())
+    {
+      // ONLY WHAT IS STILL QUEUED, never the events the current frame has
+      // already derived: those are waiting for DispatchEvents to walk them, and
+      // erasing from under it would shift the window it walks. The first
+      // m_frameEventCount entries are the frame's, and they are past being a
+      // warp's problem anyway — the phantom travel this suppresses is in the
+      // messages that have NOT been read yet.
+      const auto queued = m_events.begin() + static_cast<std::ptrdiff_t>(m_frameEventCount);
+      m_events.erase(std::remove_if(queued, m_events.end(), [](InputEvent const& _event) { return _event.m_type == InputEventType::MouseMove; }),
+                     m_events.end());
+
+      m_state.m_mouseVel[X] = 0;
+      m_state.m_mouseVel[Y] = 0;
+    }
 
     m_state.m_mousePos[X] = _x;
     m_state.m_mousePos[Y] = _y;
-    m_state.m_mouseVel[X] = 0;
-    m_state.m_mouseVel[Y] = 0;
   }
 
 
@@ -260,51 +344,43 @@ namespace Neuron
 
   void W32InputDriver::Advance()
   {
-    // Pump first, so everything Windows has for us is in the queue, then
-    // derive one frame from it. What the frame cannot represent stays queued
-    // and is the first thing the next frame sees.
-    PollForEvents();
+    // A control the UI took stays taken until it comes back up. This runs
+    // BEFORE the derivation, so it reads the PREVIOUS frame's held state: a key
+    // released last frame had its up edge suppressed last frame, and clearing
+    // the mark now is the first moment at which nothing is left to hide.
+    for (int key = 0; key < KEY_MAX; ++key)
+    {
+      if (m_consumedKeys[key] && m_state.m_keys[key] == 0)
+        m_consumedKeys[key] = false;
+    }
+    for (int button = 0; button < NUM_MB; ++button)
+    {
+      if (m_consumedButtons[button] && !m_state.m_mb[button])
+        m_consumedButtons[button] = false;
+    }
 
-    // The modifier state BEFORE the frame is derived, because
-    // ApplyConsumedEventSideEffects has to report what the modifiers were at
-    // each event rather than what they ended up as. Reading m_state afterwards
-    // would give every keystroke in the frame the same, final, answer.
-    const ModifierState modifiersAtFrameStart{m_state.m_keys[KEY_SHIFT] == 1, m_state.m_keys[KEY_CONTROL] == 1, m_state.m_keys[KEY_ALT] == 1};
+    // The pump has already run — InputManager does it once, at the top of its
+    // own Advance — so everything Windows had for us this frame is in the queue
+    // and this derives one frame from it. What the frame cannot represent stays
+    // queued and is the first thing the next frame sees.
+    m_frameEventCount = DeriveFrameState(m_events.data(), m_events.size(), m_state);
+    ApplyConsumedEventSideEffects(m_frameEventCount);
 
-    const size_t consumed = DeriveFrameState(m_events.data(), m_events.size(), m_state);
-    ApplyConsumedEventSideEffects(consumed, modifiersAtFrameStart);
-    m_events.erase(m_events.begin(), m_events.begin() + static_cast<std::ptrdiff_t>(consumed));
+    // THE EVENTS ARE NOT ERASED HERE ANY MORE. DispatchEvents still has to walk
+    // them, and it runs later in the frame — after the cursor has moved — so
+    // they are held until then. See DispatchEvents.
   }
 
 
-  // The two things a consumed event does BESIDES change the state. They are
-  // here rather than in DeriveFrameState because that function is pure -- it is
-  // what the tests exercise -- and because both of these reach outside the
-  // driver entirely.
-  void W32InputDriver::ApplyConsumedEventSideEffects(size_t _consumed, ModifierState _modifiers)
+  // The side effects a consumed event has on the WINDOW rather than on the
+  // game: mouse capture, and nothing else since the Eclipse calls moved to the
+  // router's sink. Separate from DeriveFrameState so that stays pure and
+  // testable.
+  void W32InputDriver::ApplyConsumedEventSideEffects(size_t _consumed)
   {
     for (size_t i = 0; i < _consumed; ++i)
     {
-      InputEvent const& event = m_events[i];
-
-      // Tracked as the walk goes, so shift-then-letter inside one frame
-      // reports the letter as shifted and the letter-then-shift case does not.
-      if (event.m_type == InputEventType::KeyDown || event.m_type == InputEventType::KeyUp)
-      {
-        const bool down = (event.m_type == InputEventType::KeyDown);
-        if (event.m_key == KEY_SHIFT)
-          _modifiers.m_shift = down;
-        else if (event.m_key == KEY_CONTROL)
-          _modifiers.m_control = down;
-        else if (event.m_key == KEY_ALT)
-          _modifiers.m_alt = down;
-      }
-      else if (event.m_type == InputEventType::FocusLost)
-      {
-        _modifiers = ModifierState{};
-      }
-
-      switch (event.m_type)
+      switch (m_events[i].m_type)
       {
       case InputEventType::MouseButtonDown:
         // Capture at frame time rather than message time costs nothing: this
@@ -317,17 +393,6 @@ namespace Neuron
         g_windowManager->UncaptureMouse();
         break;
 
-      case InputEventType::KeyDown:
-        // Eclipse's keyboard hook, with the modifier state AS OF THIS EVENT,
-        // which is why it is called from the loop rather than once afterwards.
-        //
-        // NOT for a system key: the old window procedure hooked WM_KEYDOWN and
-        // not WM_SYSKEYDOWN, so Eclipse has never been told about Alt+anything
-        // and this is not the task that changes that.
-        if (!event.m_systemKey)
-          EclUpdateKeyboard(event.m_key, _modifiers.m_shift, _modifiers.m_control, _modifiers.m_alt);
-        break;
-
       default:
         break;
       }
@@ -335,7 +400,64 @@ namespace Neuron
   }
 
 
-  void W32InputDriver::PollForEvents() { g_windowManager->NastyPollForMessages(); }
+  // THE UI GETS FIRST REFUSAL, and what it takes is then invisible to the
+  // bindings for as long as the control is held. This is the whole of the
+  // consume semantics: everything that used to be suppressEvent, the
+  // AdvanceMenus poll-and-push, and T6's text capture is now this one loop.
+  void W32InputDriver::DispatchEvents(InputRouter const& _router)
+  {
+    // Which key produced the character that is about to arrive. Windows sends
+    // WM_CHAR from TranslateMessage on the WM_KEYDOWN before it, so the most
+    // recent key down in this walk IS the one — and it is the key the mark has
+    // to land on, because a character carries no key code of its own.
+    int lastKeyDown = -1;
+
+    for (size_t i = 0; i < m_frameEventCount; ++i)
+    {
+      InputEvent const& event = m_events[i];
+
+      if (event.m_type == InputEventType::KeyDown && event.m_key >= 0 && event.m_key < KEY_MAX)
+        lastKeyDown = event.m_key;
+
+      if (_router.Dispatch(event) == EventDisposition::Consumed)
+        MarkConsumed(event, lastKeyDown);
+    }
+
+    m_events.erase(m_events.begin(), m_events.begin() + static_cast<std::ptrdiff_t>(m_frameEventCount));
+    m_frameEventCount = 0;
+  }
+
+
+  void W32InputDriver::MarkConsumed(InputEvent const& _event, int _lastKeyDown)
+  {
+    switch (_event.m_type)
+    {
+    case InputEventType::KeyDown:
+    case InputEventType::KeyUp:
+      if (_event.m_key >= 0 && _event.m_key < KEY_MAX)
+        m_consumedKeys[_event.m_key] = true;
+      break;
+
+    case InputEventType::Char:
+      // A character carries no key of its own, so the mark lands on the key
+      // that produced it — which is why the walk above tracks the last key
+      // down at all.
+      if (_lastKeyDown >= 0)
+        m_consumedKeys[_lastKeyDown] = true;
+      break;
+
+    case InputEventType::MouseButtonDown:
+    case InputEventType::MouseButtonUp:
+      if (_event.m_button >= 0 && _event.m_button < NUM_MB)
+        m_consumedButtons[_event.m_button] = true;
+      break;
+
+    default:
+      // Movement and the wheel are not consumable: no sink acts on them, and
+      // there is no edge to hide even if one did.
+      break;
+    }
+  }
 
 
   // ENQUEUE ONLY. Nothing here reads or writes the frame state, calls into
@@ -380,6 +502,42 @@ namespace Neuron
       break;
     }
 
+    case WM_INPUT:
+    {
+      // The mouse, as the device reports it: a relative step, unclamped by the
+      // screen and untouched by the pointer acceleration Windows applies on the
+      // way to WM_MOUSEMOVE.
+      RAWINPUT raw;
+      UINT size = sizeof(raw);
+      if (GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, &raw, &size, sizeof(RAWINPUTHEADER)) != static_cast<UINT>(-1) &&
+          raw.header.dwType == RIM_TYPEMOUSE && (raw.data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) == 0)
+      {
+        // A device that reports ABSOLUTE coordinates — a tablet, some
+        // remote-desktop stacks — is skipped rather than differenced, and that
+        // is what m_rawMouseMovementSeen is for: until a RELATIVE packet has
+        // actually arrived, the driver keeps aiming from WM_MOUSEMOVE, so such
+        // a device is left with the aim it always had rather than with none.
+        const int dx = raw.data.mouse.lLastX;
+        const int dy = raw.data.mouse.lLastY;
+        if (dx != 0 || dy != 0)
+        {
+          m_rawMouseMovementSeen = true;
+          Enqueue(InputEventType::MouseRawMove,
+                  [dx, dy](InputEvent& _e)
+                  {
+                    _e.m_x = dx;
+                    _e.m_y = dy;
+                  });
+        }
+      }
+
+      // DELIBERATELY REPORTED AS NOT PROCESSED, which is what routes it on to
+      // DefWindowProc — the system needs to see WM_INPUT to clean the raw input
+      // up after us. This is the one message here that is both read and passed
+      // along.
+      return -1;
+    }
+
     case WM_MOUSEMOVE:
     {
       const short newPosX = lParam & 0xFFFF;
@@ -397,12 +555,21 @@ namespace Neuron
     {
       // Windows has already applied the keyboard layout and the dead keys, so
       // this is the character the user typed rather than a guess from a virtual
-      // key code. Nothing consumes it yet — T6 routes it to text input — but it
-      // is produced here because this is the message that carries it.
+      // key code. The window class is registered with RegisterClassA, so it is
+      // one byte in the active code page — the same encoding the edit buffers
+      // and the 8-bit font downstream of them use.
       const unsigned int character = static_cast<unsigned int>(wParam);
       Enqueue(InputEventType::Char, [character](InputEvent& _e) { _e.m_char = character; });
       break;
     }
+
+    case WM_SYSCHAR:
+      // SWALLOWED, AND THE EMPTY BODY IS THE POINT: it enqueues nothing and
+      // returns 0, so this never reaches DefWindowProc. Alt+key is a game
+      // binding here and never text, and the default handling of a WM_SYSCHAR
+      // with no menu to open is the system beep — one per keystroke for every
+      // Alt combination the game binds.
+      break;
 
     case WM_SYSKEYUP:
     case WM_KEYUP:

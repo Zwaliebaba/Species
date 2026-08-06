@@ -53,29 +53,39 @@ namespace Species
   }
 
 
+  // *** SubscribeToControls
+  void UserInput::SubscribeToControls()
+  {
+    // THE PILOT CONVERSION, and the shape new code should copy: say once what
+    // this cares about, hold the token, and stop asking every frame. The poll
+    // it replaces read ControlGamePause out of the bindings in Advance below.
+    //
+    // Identical in effect and near-identical in time: the poll ran immediately
+    // after g_inputManager->Advance() returned, and the handler runs at the end
+    // of that same call, with nothing in between that touches the pause.
+    m_pauseSubscription = g_inputManager->subscribe(ControlType::ControlGamePause, [] { g_app->m_clientToServer->RequestPause(); });
+  }
+
+
   // *** AdvanceMenus
   void UserInput::AdvanceMenus()
   {
     //	if ( g_keyDeltas[KEY_F1] )
     //		DebugKeyBindings::DebugMenu();
 
-    InputManager* im = g_inputManager;
-    int mouseX = g_target->X();
-    int mouseY = g_target->Y();
-    bool lmb = im->controlEvent(ControlType::ControlEclipseLMousePressed);
-    bool rmb = im->controlEvent(ControlType::ControlEclipseRMousePressed);
-
-    EclUpdateMouse(mouseX, mouseY, lmb, rmb);
+    // THE POLL-AND-PUSH SEAM IS GONE. This used to read three ControlEclipse*
+    // controls out of the bindings, hand the booleans to EclUpdateMouse so it
+    // could reconstruct the click edges by comparing them against last frame's,
+    // and then take one of them back with suppressEvent once it had checked
+    // whether the click was over a window. The clicks are events now, offered
+    // to the UI sink before anything else sees them — see InputRouter.h.
+    //
+    // WHAT IS LEFT IS THE PER-FRAME TICK, and it has to stay a tick rather than
+    // becoming an event: hover highlighting, the one-second tooltip delay and
+    // window dragging all continue while the mouse is perfectly still, and a
+    // still mouse produces no events at all.
+    EclMouseMove(g_target->X(), g_target->Y());
     EclUpdate();
-
-    if (im->controlEvent(ControlType::ControlEclipseLMouseDown))
-    {
-      EclWindow* winUnderMouse = EclGetWindow(mouseX, mouseY);
-      if (winUnderMouse)
-      {
-        im->suppressEvent(ControlType::ControlEclipseLMouseDown);
-      }
-    }
   }
 
 
@@ -100,9 +110,8 @@ namespace Species
 
     bool modsEnabled = g_prefsManager->GetInt("ModSystemEnabled", 0) != 0;
 
-
-    if (g_inputManager->controlEvent(ControlType::ControlGamePause))
-      g_app->m_clientToServer->RequestPause();
+    // THE PAUSE POLL THAT USED TO SIT HERE IS A SUBSCRIPTION — see
+    // SubscribeToControls above.
 
 //    if (g_keyDeltas[KEY_F2]) DebugKeyBindings::DebugCameraButton();
 #ifdef LOCATION_EDITOR
