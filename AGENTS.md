@@ -60,6 +60,7 @@ the same day from scoping work rather than the owner's direction:
 | [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse; the gamepad mode and the control-icon plumbing deleted | **14 of 15 — all code done, T12 is the owner's Garden run** |
 | [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | **11 of 12 — all code done and CI-green at `5da1e86`; T12 is the owner's Garden run** |
 | [`tasks/landscape-index-safety.yaml`](tasks/landscape-index-safety.yaml) | Guard rails for the 16-bit index arithmetic in the landscape containers — the three reachable defects under *Known issues* below, found scoping `tasks/_large-location-prompt.md` | **0 of 4 — not started** |
+| [`tasks/large-location.yaml`](tasks/large-location.yaml) | Implements [`docs/LARGE_LOCATION.md`](docs/LARGE_LOCATION.md): the 65,536² Location — chunked terrain, procedural generation, sparse grids, ledgered population under lockstep — with four owner-run milestone gates | **0 of 19 — not started; two nodes held by `landscape-index-safety`** |
 
 **`input-native-events` has one node left and it is not code.** T12 is a
 seven-step Garden run on a build carrying every other node, and **nothing in that plan has
@@ -91,8 +92,9 @@ today:
   [`docs/LARGE_LOCATION.md`](docs/LARGE_LOCATION.md) is the result, carrying
   fifteen owner decisions with **no question left open** and a five-milestone
   phasing (M0 is `tasks/landscape-index-safety.yaml`, which already exists).
-  Its next artefact is the implementation task DAG written from Part 2's
-  milestones per `docs/TASK_DAG.md`; that plan has not been written.
+  Its implementation DAG is **written**:
+  [`tasks/large-location.yaml`](tasks/large-location.yaml), nineteen tasks in
+  eight waves with the four milestone gates as owner-run nodes.
 - **In scope, and unowned:** the leftovers the closed plans recorded rather than
   fixed. They are listed where they were found — the three raw-ownership
   survivors under *Ownership*, and under *Known issues* the unswept LCG sites,
@@ -810,13 +812,15 @@ day at 20 of 20. T13 narrowed the read-only name parameters to `string_view`,
 T17 replaced `FileWriter::printf` with `std::format` templates, and T9 swept
 the `strcpy`/`sprintf` family to a tree-wide zero and deleted `NewStr` with it.
 
-**Ready tasks exist**, and `--next` will name them — as of late 2026-08-06 they
-are all in ONE plan again, and it is `landscape-index-safety`, which has not
-started. `input-native-events` and `network-transport` each have every code node
-done and one owner Garden run left, so `--next` schedules nothing for either.
-An earlier revision of this paragraph said everything schedulable was in
-`network-transport`; its T1–T11 have since landed and gone CI-green at
-`5da1e86`. Work outside the open plans still needs a plan written for it before
+**Ready tasks exist**, and `--next` will name them — as of late 2026-08-06 in
+TWO plans: `landscape-index-safety` (all four nodes) and `large-location`
+(its wave 1, minus the node held by `landscape-index-safety`). The two plans
+share files — `large-location/T1` and `T7` carry `blocked_by` edges into
+`landscape-index-safety` for exactly that reason — so trust `--next`, which
+sees those edges. `input-native-events` and `network-transport` each have
+every code node done and one owner Garden run left, so `--next` schedules
+nothing for either.
+Work outside the open plans still needs a plan written for it before
 code is written — see *How work is broken down* below and
 [`docs/TASK_DAG.md`](docs/TASK_DAG.md). What the closed plans left behind, each
 recorded and still unowned: the three raw-ownership survivors above, the unswept

@@ -680,6 +680,9 @@ what was chosen.
 *Analysis before design; argument before conclusion; the numbers are
 arithmetic until D9's baseline capture makes them falsifiable at M2. A
 reader with `AGENTS.md` and this document has the whole design and the
-fifteen decisions it stands on; no question remains open, and the next
-artefact is the task DAG written from Part 2's milestones per
-`docs/TASK_DAG.md`.*
+fifteen decisions it stands on; no question remains open. The
+implementation DAG written from Part 2's milestones is
+[`tasks/large-location.yaml`](../tasks/large-location.yaml) — nineteen
+tasks in eight waves, the four milestone gates as owner-run nodes, M0
+reached through `blocked_by` edges into
+[`tasks/landscape-index-safety.yaml`](../tasks/landscape-index-safety.yaml).*

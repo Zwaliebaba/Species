@@ -1,0 +1,655 @@
+# Implementation DAG for the 65,536 x 65,536 Location.
+# Written from docs/LARGE_LOCATION.md Part 2 (milestones M1-M4); M0 is
+# tasks/landscape-index-safety.yaml and precedes this plan via blocked_by.
+# Schema and conventions: docs/TASK_DAG.md
+# Validate with:  python3 tools/check_task_dag.py tasks/large-location.yaml
+
+plan: large-location
+title: Raise the Location to 65,536 x 65,536 under the no-regression bar
+summary: >
+  Executes docs/LARGE_LOCATION.md, whose fifteen owner decisions (D1-D15,
+  all dated 2026-08-06) are the authority this plan implements and does not
+  reopen. The shape in one paragraph, so a task can be judged against it:
+  the large map is 32x32 chunks of 128x128 terrain cells at cellSize 16
+  (D12), terrain and population are pure integer functions of
+  (worldSeed, chunkCoord, layer) (D6, D15), residency is a policy bounded
+  by the unchanged 15,000 far plane (D8), the twelve authored maps keep
+  their exact load path and behaviour throughout (D7), and the map is
+  populated at today's density via per-chunk ledgers materialised by
+  simulation-keyed region activation under an explicit active budget (D5,
+  D10) - which is what keeps ~245,000 entities compatible with the
+  deterministic lockstep this plan must never break.
+
+  Milestone gates T5, T10, T16 and T19 are owner Garden/large-map runs, the
+  same kind of node as input-native-events/T12 - CI proves none of what they
+  prove. Every task before a gate keeps the authored maps green so the
+  seven-step Garden baseline never stops being the control. The performance
+  bar and its proposed numbers are in docs/LARGE_LOCATION.md Part 3; the
+  Garden baseline that makes them falsifiable is captured at the T10 gate
+  (D9).
+
+tasks:
+  # ---------------------------------------------------------------- M1
+  - id: T1
+    title: Move 2dSurfaceMap.h down to NeuronCore
+    intent: >
+      D13. The per-chunk terrain container must be reachable below the
+      client layer so a headless server can hold terrain later. The header
+      includes only 2dArray.h and NeuronMath.h, both already in NeuronCore,
+      and NeuronClient's include directories already list NeuronCore, so no
+      #include text changes anywhere - the move is two .vcxproj edits and a
+      file relocation.
+    project: NeuronCore
+    blocked_by:
+      - landscape-index-safety/T2   # edits 2dSurfaceMap.h construction
+      - landscape-index-safety/T4   # edits its accessors; M0 lands first
+    files:
+      - NeuronCore/2dSurfaceMap.h
+      - NeuronClient/2dSurfaceMap.h
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
+    acceptance:
+      - 2dSurfaceMap.h exists under NeuronCore and not under NeuronClient,
+        and no #include line anywhere changed its spelling
+      - check_layering reports no upward include; check_project_files is
+        clean on all four touched project files
+      - The full solution builds and all tests pass, unchanged in count
+    verify:
+      - python3 tools/check_layering.py
+      - python3 tools/check_project_files.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+    notes: >
+      AGENTS.md's standing lesson on moved/deleted headers - a header
+      withdraws everything it INCLUDED, not just what it declared - is the
+      thing to check: grep what NeuronClient sources were getting through
+      this header's includes before declaring the move trivial.
+
+  - id: T2
+    title: Add the chunk record and chunk coordinate conversion
+    intent: >
+      The one seam everything else builds on - a TerrainChunk owning 129x129
+      height and normal blocks (SurfaceMap2D, far under the 16-bit ceiling
+      by construction) and a ChunkCoord with the world-to-chunk conversions,
+      in one header pair in GameLogic. This is also the seam the open-world
+      int64 design later widens (docs/LARGE_LOCATION.md area A), so the
+      conversion lives in exactly one place.
+    project: GameLogic
+    depends_on: []
+    files:
+      - GameLogic/TerrainChunk.h
+      - GameLogic/TerrainChunk.cpp
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
+      - Tests/GameLogicTests/TerrainChunkTests.cpp
+      - Tests/GameLogicTests/GameLogicTests.vcxproj
+      - Tests/GameLogicTests/GameLogicTests.vcxproj.filters
+    acceptance:
+      - ChunkCoord conversion is tested at the origin, at chunk borders, at
+        the exact world edge 65,536, and one sample inside and outside each
+      - The shared-border rule (sample row/column 128 of chunk N equals row
+        zero of chunk N+1) is stated in the header comment and pinned by a
+        test
+      - Chunk constants (128 cells, cellSize 16, 32x32 chunks) are named
+        constants in one place, per D12
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+
+  - id: T3
+    title: Landscape stores terrain as chunk blocks behind today's sizes
+    intent: >
+      M1's core. Landscape's two whole-world SurfaceMap2Ds become chunked
+      storage behind the unchanged query API (GroundHeight, GetValue paths,
+      RayHit, SphereHit, IsInLandscape, GetWorldSizeX/Z), with authored maps
+      allocating all their chunks at Init and the tile merge writing through
+      to chunk blocks. Behaviour on every authored map is identical - this
+      is a storage conversion, not a terrain change, and it is deliberately
+      done under the existing Garden smoke test where a mistake is visible
+      against known terrain.
+    project: GameLogic
+    depends_on: [T2]
+    files:
+      - GameLogic/Landscape.h
+      - GameLogic/Landscape.cpp
+      - GameLogic/TerrainChunk.h
+      - GameLogic/TerrainChunk.cpp
+      - Tests/GameLogicTests/TerrainChunkTests.cpp
+    acceptance:
+      - A GameLogicTests test builds a small Landscape from a LandscapeDef
+        (LevelFileTests proves defs are constructible in tests) and pins
+        height and normal queries bit-identical between recorded pre-chunk
+        values and the chunked storage, including within one cell of every
+        chunk border
+      - No whole-world height or normal allocation remains in Landscape.cpp
+      - Normals are computed per chunk from its own samples plus the
+        one-sample border, so no chunk's normals depend on another chunk
+        being resident
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_math_types.py
+      - python3 tools/check_format.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+    notes: >
+      If Landscape proves not constructible in a test DLL after all, that is
+      a finding - record it here and fall back to characterising through
+      LevelFile, per docs/TASK_DAG.md's "not tested because X" rule. The
+      declared file list is written from where storage LIVES; grep the
+      member names tree-wide before starting, the work is wherever they are
+      NAMED (eight of nine measured lists were wrong - tasks/_next-batch.md).
+
+  - id: T4
+    title: Render the landscape as per-chunk culled meshes
+    intent: >
+      One whole-map vertex array and one draw become one mesh per chunk,
+      frustum-culled against the unchanged 15,000 far plane, no LOD (D8).
+      The strip builder, below-water skip, colour and UV logic are reused
+      per chunk with chunk-local offsets. On authored maps the rendered
+      image is unchanged; the win only cashes in at M2 scale.
+    project: GameLogic
+    depends_on: [T3]
+    files:
+      - GameLogic/LandscapeRenderer.h
+      - GameLogic/LandscapeRenderer.cpp
+      - GameLogic/Landscape.cpp
+      - GameLogic/Location.cpp
+    acceptance:
+      - LandscapeRenderer builds and owns one mesh per chunk; RenderLandscape
+        submits only chunks intersecting the frustum
+      - No vertex allocation is sized from whole-world dimensions
+      - Authored maps render visually identically (owner-confirmed at the T5
+        gate; nothing in CI can see this and this task does not claim it)
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+    notes: >
+      Not unit-testable (GL); the T5 gate is the evidence. Say so in the
+      commit rather than implying more, per AGENTS.md honesty rules.
+
+  - id: T5
+    title: M1 gate - owner Garden run, all seven steps, on the chunked build
+    intent: >
+      The regression gate for the storage and renderer conversion. Nothing
+      new to see - the point is that nothing changed. A failing step
+      localises the break to T3 or T4 against known terrain, which is the
+      cheapest place this plan can be wrong.
+    depends_on: [T1, T4]
+    acceptance:
+      - All seven Garden steps pass on a build carrying T1-T4, reported by
+        the owner with the per-step breakdown, and recorded in AGENTS.md
+        "What working looks like"
+    parallel_safe: true
+    status: todo
+
+  # ---------------------------------------------------------------- M2
+  - id: T6
+    title: Integer lattice generation, keyed streams, pinned golden values
+    intent: >
+      D6/D15. Terrain height becomes a pure function of (worldSeed,
+      chunkCoord, layer) - hand-rolled integer value-noise octaves, each
+      lattice hash a pure function of (worldSeed, layer, latticeX,
+      latticeZ), accumulated in fixed point and converted to float once at
+      the end. Naturally border-continuous, no whole-tile context, no
+      shared RNG state - the determinism rules 1 and 2 of
+      docs/LARGE_LOCATION.md 1.5 made executable.
+    project: GameLogic
+    depends_on: [T2]
+    files:
+      - GameLogic/WorldGeneration.h
+      - GameLogic/WorldGeneration.cpp
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
+      - Tests/GameLogicTests/WorldGenerationTests.cpp
+      - Tests/GameLogicTests/GameLogicTests.vcxproj
+      - Tests/GameLogicTests/GameLogicTests.vcxproj.filters
+    acceptance:
+      - Purity is pinned - the same (seed, chunkCoord) yields a bit-identical
+        block regardless of generation order or which other chunks were
+        generated first
+      - Border continuity is pinned - adjacent chunks agree exactly on their
+        shared samples
+      - Golden values are pinned - specific samples for a fixed seed are
+        asserted as exact integers, so a compiler or flag change that moves
+        the terrain fails the suite instead of shipping a different world
+      - Nothing in WorldGeneration draws from syncrand, speciesRandom, or
+        any shared RNG state - grep both names, zero hits
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+
+  - id: T7
+    title: Chunk residency as a policy, with synchronous simulation queries
+    intent: >
+      The lifecycle generate -> resident -> evict behind a policy interface,
+      with the camera window (one ring beyond the far plane) as the client
+      policy and budgeted per-frame generation to bound hitches. The
+      load-bearing rule is docs/LARGE_LOCATION.md 1.5 rule 3 - a
+      simulation-critical query (GroundHeight, IsWalkable, ray and sphere
+      hits) against a non-resident chunk generates it synchronously and
+      deterministically, so no simulation value ever depends on what the
+      local client happened to have resident.
+    project: GameLogic
+    depends_on: [T3, T4, T6]
+    blocked_by:
+      - landscape-index-safety/T4   # wrap-to-zero becomes live under
+                                    # partial residency; clamp must land
+    files:
+      - GameLogic/ChunkManager.h
+      - GameLogic/ChunkManager.cpp
+      - GameLogic/Landscape.h
+      - GameLogic/Landscape.cpp
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
+      - Tests/GameLogicTests/ChunkManagerTests.cpp
+      - Tests/GameLogicTests/GameLogicTests.vcxproj
+      - Tests/GameLogicTests/GameLogicTests.vcxproj.filters
+    acceptance:
+      - A test pins that generate -> query -> evict -> query returns
+        bit-identical values, and that a query against a never-resident
+        chunk answers identically to one against a long-resident chunk
+      - Residency policy is an interface with the camera-window policy as
+        one implementation; authored maps run an everything-resident policy
+        and behave exactly as before
+      - Per-frame generation budget is a named tunable; exceeding demand
+        queues chunks rather than stalling the frame unboundedly
+    notes: >
+      The T4 edge is a file-collision serialisation as much as logic - both
+      tasks edit Landscape.cpp and would otherwise share a wave; it also
+      matches the milestone order, since T4 closes M1's code and this opens
+      M2's. docs/TASK_DAG.md names the edge as the sanctioned fix.
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+
+  - id: T8
+    title: The large map exists and loads empty
+    intent: >
+      A new location entry - map file with worldSize 65536, cellSize 16 and
+      the procedural parameter block (worldSeed and generation parameters),
+      LevelFile parsing for that block, a minimal mission file, and the
+      Game.txt wiring to enter it from the menu. No tiles, no flatten
+      areas, no InstantUnits. Empty by design at this milestone; population
+      is M3.
+    project: GameLogic
+    depends_on: [T7]
+    files:
+      - GameData/Levels/MapLarge.txt
+      - GameData/Levels/MissionLargeExplore.txt
+      - GameData/Game.txt
+      - GameLogic/LevelFile.h
+      - GameLogic/LevelFile.cpp
+      - Tests/GameLogicTests/LevelFileTests.cpp
+    acceptance:
+      - LevelFile parses the procedural block, and Save round-trips it -
+        pinned by a LevelFileTests case in the FileWriter-bytes style the
+        suite already uses
+      - The large location is selectable and enters from the menu on a
+        default build (owner-confirmed at the T10 gate)
+      - Entering any of the twelve authored maps is untouched - their files
+        are not modified by this task
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - python3 tools/check_hygiene.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+    notes: >
+      MapLarge/MissionLargeExplore are placeholder names for the owner to
+      rename at the gate if wanted; nothing binds to the strings except the
+      Game.txt entry.
+
+  - id: T9
+    title: Retune the presentation formulas that assumed a small world
+    intent: >
+      D11 and area E's constants trace. Water's grid recentres on the camera
+      at a fixed near-Garden cell size instead of deriving cellSize from
+      worldSize, wave phase keyed to world position so recentring is
+      invisible; clouds anchor to the camera the same way; camera pan speed
+      stops deriving from world size (65,536/30 per second is unusable) and
+      clamps to the largest authored-map speed. All cosmetic-layer changes -
+      nothing here may touch syncrand or simulation state.
+    project: GameLogic
+    depends_on: []
+    files:
+      - GameLogic/Water.h
+      - GameLogic/Water.cpp
+      - GameLogic/Clouds.cpp
+      - Species/Camera.cpp
+    acceptance:
+      - No water or cloud allocation or extent is derived from
+        GetWorldSizeX/Z; both follow the camera at constant vertex counts
+      - On authored maps the visible result is unchanged at normal camera
+        ranges (owner-confirmed at the T10 gate)
+      - Camera pan speed on the large map equals the clamp, not
+        worldSize/30
+      - git diff of this task contains no syncrand/syncfrand call - these
+        files are cosmetic consumers and must stay so
+    verify:
+      - python3 tools/check_format.py
+      - python3 tools/check_math_types.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+
+  - id: T10
+    title: M2 gate - owner runs the empty large map, and captures the D9 baseline
+    intent: >
+      The first run on the new world, and the moment the performance bar
+      becomes falsifiable. Two measurements in one session - the Garden
+      baseline that D9 deferred to here, and the large map against it.
+    depends_on: [T5, T8, T9]
+    acceptance:
+      - Garden baseline captured and recorded in docs/LARGE_LOCATION.md
+        Part 3 - frame time at the standard camera, peak working set,
+        stopwatch level-select-to-playable
+      - On the large map - enter from the menu, fly the camera for several
+        minutes in different directions, terrain streams with no assert, no
+        visible seams at chunk borders, GroundHeight sane everywhere tried
+      - The same three numbers measured on the large map and compared
+        against the bar's proposed budgets, with the verdict recorded
+      - Garden seven steps still pass on the same build
+    parallel_safe: true
+    status: todo
+
+  # ---------------------------------------------------------------- M3
+  - id: T11
+    title: EntityGrid becomes sparse, hashed, population-proportional
+    intent: >
+      The 8.6 GB dense allocation (docs/LARGE_LOCATION.md 1.2) becomes a
+      per-team hash of occupied cells only. Query semantics are the
+      dangerous part, not storage - neighbour ordering feeds AI target
+      selection which feeds positions which feed the sync value, so radius
+      queries must walk the cell rectangle in the exact x-then-z order the
+      dense grid walks it.
+    project: GameLogic
+    depends_on: []
+    files:
+      - GameLogic/EntityGrid.h
+      - GameLogic/EntityGrid.cpp
+      - Tests/GameLogicTests/EntityGridTests.cpp
+    acceptance:
+      - Characterisation first, conversion second, in separate commits -
+        tests written against the dense grid (same insertions -> pinned
+        results AND result order for GetNeighbours, GetEnemies,
+        GetBestEnemy, the counting and presence variants) still pass
+        unmodified on the sparse grid
+      - No allocation in EntityGrid is sized from GetWorldSizeX/Z
+      - Memory is proportional to occupied cells - asserted by a test that
+        inserts N entities and checks the cell count is bounded by N
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_containers.py
+      - python3 tools/check_format.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+    notes: >
+      The preferences-tests precedent (containers-replaced T19, AGENTS.md)
+      is the method - characterise before converting; the first red run is
+      information. EntityGridCell's 32-byte sizeof assumption from the
+      design should be verified here and the doc corrected if wrong.
+
+  - id: T12
+    title: ObstructionGrid becomes per-chunk, built at activation
+    intent: >
+      The whole-world SurfaceMap2D of building-id vectors becomes 32x32
+      cells per chunk, computed when a chunk becomes active from the
+      buildings in and overlapping it. Authored maps build all chunks at
+      Init, so CalculateAll's answers are preserved exactly.
+    project: GameLogic
+    depends_on: [T7]
+    files:
+      - GameLogic/ObstructionGrid.h
+      - GameLogic/ObstructionGrid.cpp
+      - GameLogic/TerrainChunk.h
+      - Tests/GameLogicTests/ObstructionGridTests.cpp
+      - Tests/GameLogicTests/GameLogicTests.vcxproj
+      - Tests/GameLogicTests/GameLogicTests.vcxproj.filters
+    acceptance:
+      - A characterisation test pins GetBuildings answers for a set of
+        placed buildings, including footprints straddling chunk borders,
+        identical before and after the conversion
+      - A building near a border registers in every chunk its footprint
+        touches
+      - No allocation sized from GetWorldSizeX/Z remains
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+
+  - id: T13
+    title: Population generation layer and the per-chunk ledger
+    intent: >
+      D5/D10 made data. A population layer of the T6 function - per chunk,
+      biome-keyed off the terrain octaves, clumped, deterministic spawn
+      groups of species, counts and positions, with clump size clamped so
+      the worst-case activation is bounded. The ledger is the dormant form -
+      records, not entities - with a deterministic materialisation order and
+      a round-trippable dematerialised form. Data only; the machinery that
+      wakes it is T14.
+    project: GameLogic
+    depends_on: [T6]
+    files:
+      - GameLogic/WorldGeneration.h
+      - GameLogic/WorldGeneration.cpp
+      - GameLogic/PopulationLedger.h
+      - GameLogic/PopulationLedger.cpp
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
+      - Tests/GameLogicTests/PopulationLedgerTests.cpp
+      - Tests/GameLogicTests/GameLogicTests.vcxproj
+      - Tests/GameLogicTests/GameLogicTests.vcxproj.filters
+    acceptance:
+      - Population purity is pinned like terrain purity - same (seed,
+        chunkCoord) yields identical groups, any order
+      - Clump-size clamp is a named constant and a test proves no chunk's
+        ledger exceeds it
+      - Ledger round-trip is pinned - materialise-order list ->
+        dematerialise -> materialise yields identical records, keyed
+        (chunk, ordinal) so stable ids can be laid over it later without a
+        format change
+      - The world total at the D5 density is computed by a test and
+        recorded in the task notes as the number the design's ~245,000
+        estimate becomes
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+
+  - id: T14
+    title: Region activation - simulation-keyed wake, budget, sync coverage
+    intent: >
+      The machinery that keeps a quarter-million entities compatible with
+      lockstep. Regions (3x3 chunks) activate on simulation-visible causes
+      only - player-controlled units, orders, active buildings - never the
+      camera (docs/LARGE_LOCATION.md 1.5 rule 4). Activation materialises
+      the region's ledgers through the normal spawn paths in ledger order;
+      deactivation writes survivors back. The active-entity budget is a
+      named constant starting at the design's proposed 4,000.
+      GenerateSyncValue keeps summing the active containers and folds in a
+      ledger checksum per modified chunk.
+    project: GameLogic
+    depends_on: [T7, T11, T13]
+    files:
+      - GameLogic/RegionActivation.h
+      - GameLogic/RegionActivation.cpp
+      - GameLogic/Location.h
+      - GameLogic/Location.cpp
+      - Species/Main.cpp
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
+      - Tests/GameLogicTests/RegionActivationTests.cpp
+      - Tests/GameLogicTests/GameLogicTests.vcxproj
+      - Tests/GameLogicTests/GameLogicTests.vcxproj.filters
+    acceptance:
+      - A test drives two independent activation sequences from the same
+        cause list and pins identical materialisation order and identical
+        ledger state after deactivation
+      - No activation cause reads camera, renderer, or any client-local
+        state - the cause enumeration is reachable from simulation state
+        alone, and the test constructs it without any presentation object
+      - The budget is enforced nearest-cause-first and a test pins the
+        eviction choice deterministically
+      - Authored maps run with activation disabled (everything active, as
+        today) and their behaviour is bit-identical - the Garden sync
+        sequence does not change
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+    notes: >
+      This is the task most exposed to the determinism trap; read
+      CODING_STANDARDS.md#determinism and docs/LARGE_LOCATION.md 1.5 before
+      the first line. Anything reachable from Location::Advance that this
+      task touches is load-bearing for the sync value.
+
+  - id: T15
+    title: Scope SpiritReceiver spawns to the receiver's region
+    intent: >
+      D14. The two syncfrand(worldSize) draws scatter unprocessed spirits
+      across the whole map, which at 65,536 is not the wanted behaviour and
+      makes world size an input to the lockstep stream. Scoping to the
+      receiver's region changes the syncrand sequence - the accepted,
+      version-skew-only cost of the determinism-T5 shape, recorded the same
+      way.
+    project: GameLogic
+    depends_on: [T14]
+    files:
+      - GameLogic/SpiritReceiver.cpp
+      - AGENTS.md
+    acceptance:
+      - Both spawn sites (the lines currently at SpiritReceiver.cpp:463-467
+        and 553-557) draw within the receiver's region, and the two draws
+        stay in their documented order because they advance the RNG
+      - The sequence shift is recorded in AGENTS.md alongside the
+        determinism-T5 record, and the current baseline note inherits the
+        caveat
+    verify:
+      - python3 tools/check_format.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+
+  - id: T16
+    title: M3 gate - owner runs the populated large map
+    intent: >
+      The first run with the world alive. What only eyes can check - clumps
+      where the seed says, behaviour under activation, the sync assert
+      quiet while regions wake and sleep.
+    depends_on: [T10, T12, T14, T15]
+    acceptance:
+      - On the large map - entities appear at the same locations on a
+        second entry with the same seed; 30 seconds of behaviour near an
+        activated clump with no assert; moving away and returning shows the
+        clump repopulated from its ledger
+      - GenerateSyncValue trips no assert across activation and
+        deactivation in single player
+      - Garden seven steps still pass on the same build, and the frame-time
+        and memory numbers on both maps are recorded against the bar
+    parallel_safe: true
+    status: todo
+
+  # ---------------------------------------------------------------- M4
+  - id: T17
+    title: Editor edits the large map by its parameters
+    intent: >
+      D3's editor half. For the procedural map the LandscapeWindow edits the
+      function - seed, octave and biome parameters, population densities -
+      regenerating only the resident window on change; a coarse overview
+      rendered from the continent octave gives navigation. The worldSize
+      and cellSize controls get the construction envelope as their
+      validation, closing the editor half of the index-safety story. Tile
+      and flatten windows remain exactly as they are for authored maps.
+    project: GameLogic
+    depends_on: [T8]
+    files:
+      - GameLogic/LandscapeWindow.cpp
+      - GameLogic/EditorWindow.cpp
+      - Species/LocationEditor.cpp
+      - GameLogic/WorldGeneration.h
+    acceptance:
+      - Editing a generation parameter on the large map regenerates only
+        resident chunks and returns to interactive in bounded time
+      - The worldSize/cellSize value controls reject any pair whose cell
+        count cannot fit the index type, matching the T2 construction check
+        of landscape-index-safety
+      - Opening an authored map in the editor is pixel-for-pixel today's
+        behaviour - tile editing untouched
+    verify:
+      - python3 tools/check_format.py
+      - python3 tools/check_project_files.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+
+  - id: T18
+    title: Add the no-world-sized-allocation check to tools
+    intent: >
+      The one bar property a tool can assert without running the game - no
+      allocation sized from world dimensions. Written in the narrow shape
+      the existing checkers set - resolve by name, skip ambiguity rather
+      than guess, under-report rather than cry wolf; every gap in
+      check_containers and check_math_types closed by narrowing, never by
+      broadening (AGENTS.md).
+    project: tools
+    depends_on: [T9, T11, T12]
+    files:
+      - tools/check_world_alloc.py
+      - .github/workflows/ci.yml
+      - AGENTS.md
+    acceptance:
+      - The check flags a new/resize/Initialise whose size expression
+        reaches GetWorldSizeX/Z or LandscapeDef dimensions, and reports
+        zero findings on the converted tree
+      - Reverting T11's EntityGrid conversion locally makes it report -
+        proven once while writing, recorded in notes
+      - CI runs it; AGENTS.md "Before you push" lists nine checks
+    verify:
+      - python3 tools/check_world_alloc.py
+      - python3 tools/check_task_dag.py
+    parallel_safe: true
+    status: todo
+    notes: >
+      Adding a CI check is a repo-standard change - proposed and accepted in
+      docs/LARGE_LOCATION.md Part 3, so the owner question is already
+      answered. Depends on T9/T11/T12 because before those land the tree
+      legitimately contains the allocations it exists to forbid.
+
+  - id: T19
+    title: M4 gate - owner authors a world and plays it
+    intent: >
+      The editor gate and the plan's close - the owner changes a seed and a
+      biome parameter, regenerates, enters the result, and plays. The full
+      loop this plan exists to enable, performed by the person it was built
+      for.
+    depends_on: [T16, T17]
+    acceptance:
+      - Owner reports the edit-regenerate-enter-play loop working on the
+        large map, and the Garden seven steps one final time on the closing
+        build, recorded in AGENTS.md
+    parallel_safe: true
+    status: todo
