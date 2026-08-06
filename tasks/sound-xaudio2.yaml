@@ -282,11 +282,11 @@ tasks:
       - GameData/Effects.txt
       - GameData/Sounds.txt
       - NeuronClient/SoundLibrary3d.h
-      - NeuronClient/SoundSystem.cpp
+      - NeuronClient/SoundLibraryXAudio2.cpp
     acceptance:
       - Effects.txt no longer contains DSound_ rows; the FX enum and the file are still positionally aligned and LoadtimeVerify passes
-      - The 8 DSound_ usages in Sounds.txt are remapped (echoes to Echo, reverbs to the reverb effect); grep DSound_ over GameData returns nothing
-      - The sound editor still lists and edits the surviving effects
+      - The 8 DSound_ usages in Sounds.txt are remapped with no audible change; grep DSound_ over GameData returns nothing
+      - SaveBlueprints round-trips the rewritten Sounds.txt back to itself, effect and parameter names included
     notes: >
       Shares SoundSystem.cpp with T8, which is in the same wave - do not run
       the two concurrently.
@@ -294,7 +294,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: in_progress
 
   - id: T5
     title: Owner A/B gate - Garden run on the XAudio2 backend
