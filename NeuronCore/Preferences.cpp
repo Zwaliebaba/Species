@@ -185,11 +185,10 @@ int GetDefaultHelpEnabled() { return 1; }
 
 const char* GetDefaultSoundLibrary()
 {
-#ifdef HAVE_DSOUND
-  return "dsound";
-#else
-  return "software";
-#endif
+  // The native backend, default since sound-xaudio2 T6 and the owner's A/B run
+  // of 2026-08-06. "dsound" and "software" still select the two legacy paths
+  // until T7 and T8 delete them; nothing writes those values any more.
+  return "xaudio2";
 }
 
 int GetDefaultSoundDSP() { return 1; }

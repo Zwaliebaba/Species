@@ -312,9 +312,29 @@ tasks:
       - Audio checklist reported alongside - effects audible and positioned (pan follows the camera), laser/echo events carry their effect, music plays and loops, the volume slider works
       - Any audible difference from the dsound backend on the same build is recorded in notes as accepted or as a defect with an owning task
     parallel_safe: false
-    status: todo
+    status: done
     notes: |
-      HOW TO RUN IT. The backend is chosen by one line in the profile's
+      PASSED 2026-08-06. Owner-reported, on the branch build with
+      SoundLibrary=xaudio2: "the audio works fine".
+
+      THAT IS THE OWNER'S WORD FOR THE WHOLE RUN, AND THIS NOTE DOES NOT CLAIM
+      MORE THAN IT WAS GIVEN — same handling as the bd03d4e entry in AGENTS.md.
+      No per-step Garden breakdown and no per-item checklist were reported, so
+      the four questions this task asked are answered only in aggregate. The
+      one worth naming, because it is the difference most likely to be real and
+      least likely to be noticed casually, is DISTANCE ATTENUATION: X3DAudio's
+      curve is not bit-identical to DS3D's, and nobody has compared them
+      directly. If a later run finds sounds fading in or out at the wrong
+      range, this is the gate that would have caught it and did not.
+
+      What the gate was for is nonetheless served: the owner has judged the new
+      backend acceptable against the old one on the same binary, which is the
+      only evidence that could ever unblock deleting the old one. T6 onward
+      proceed.
+
+      HOW TO RUN IT, kept because T11 needs it again and because a re-run is
+      the cheapest way to answer the question above. The backend is chosen by
+      one line in the profile's
       preferences.txt (App::GetPreferencesPath - the profile directory, not
       GameData). Add or change:
 
@@ -365,7 +385,26 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: |
+      Landed 2026-08-06, straight after the T5 gate. GetDefaultSoundLibrary
+      returns "xaudio2", so a fresh preferences file gets the native backend.
+
+      The options window offers ONE library, XAudio2, because there is one
+      worth choosing. "dsound" and "software" still resolve for a preferences
+      file that predates the switch, and pressing Apply migrates such a file to
+      xaudio2 rather than trapping it — the mapping is a scoped set of int
+      constants now rather than the old 0/1 pair, since the dropdown binds an
+      int and there were three values to name.
+
+      The dropdown label needed a new phrase, and a missing key renders as an
+      EMPTY STRING in this engine rather than falling back to English
+      (LangTable::LookupPhrase, which returns offset 0 for an absent key). So
+      dialog_xaudio2 was added to all six language files, not just English,
+      with the same untranslated value DirectSound already had in every one of
+      them. Written as bytes rather than text: those files are not UTF-8 and a
+      round trip through a decoder would have corrupted the accented
+      characters.
 
   - id: T7
     title: Delete the DirectSound backend and everything that only served it

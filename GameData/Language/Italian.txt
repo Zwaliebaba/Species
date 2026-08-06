@@ -638,6 +638,7 @@ dialog_soundoptions                    Opzioni audio
 dialog_unavailable                     non disponibile
 dialog_soundlibrary                    Libreria audio
 dialog_directsound                     DirectSound
+dialog_xaudio2                         XAudio2
 dialog_softwaresound                   Software audio
 dialog_mixfrequency                    Frequenza
 dialog_11khz                           11 KHz: qualità bassa

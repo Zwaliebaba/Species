@@ -355,6 +355,7 @@ dialog_soundoptions	Звук
 dialog_unavailable	недоступно
 dialog_soundlibrary	Библиотека
 dialog_directsound	DirectSound
+dialog_xaudio2     XAudio2
 dialog_softwaresound	Software Sound
 dialog_mixfrequency	Частота
 dialog_11khz	11 КГц низкое качество

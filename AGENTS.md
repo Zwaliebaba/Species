@@ -489,8 +489,26 @@ Launch, start a new profile, enter The Garden, and check:
 Those counts are read from `MissionGardenLiberate.txt`, so they are checkable
 rather than approximate. Any step failing localises the break to a subsystem.
 
+**AUDIO RUN, 2026-08-06, on the `sound-xaudio2` branch with
+`SoundLibrary = xaudio2`: owner-reported, "the audio works fine".** This is
+the `sound-xaudio2` T5 gate, and it is what unblocks deleting the DirectSound
+backend, the software mixer and the waveOut layer — none of which could be
+removed on a green build, because nothing in CI can hear.
+
+What it covers: the native XAudio2 backend end to end — per-channel source
+voices, X3DAudio positioning and doppler, and the effects on XAudio2 (19
+echoes on FXECHO, 2 reverbs on XAUDIO2FX_REVERB, the low pass on the built-in
+voice filter). **It is a verdict on the whole run, not a per-step breakdown**,
+and this file does not claim one it was not given. The specific question left
+unanswered is distance attenuation: X3DAudio's curve is not bit-identical to
+DS3D's and the two were not compared directly, so a later report of sounds
+fading at the wrong range would be the thing this gate did not catch.
+
+**It does not replace the baseline below.** No seven-step Garden run has been
+performed on any 2026-08-06 build.
+
 **CURRENT BASELINE: `acf283b` (2026-08-05), owner-reported, ALL SEVEN STEPS
-PASS.** This is the most recent run, the most recent run with an explicit
+PASS.** This is the most recent full run, the most recent run with an explicit
 per-step breakdown, and the build any future divergence is measured against.
 
 It closes `determinism` T6 and with it that whole plan, 6 of 6 —
