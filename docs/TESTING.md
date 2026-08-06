@@ -19,29 +19,42 @@ in [`BUILD.md`](BUILD.md) true.
 | Project | Covers | State |
 |---|---|---|
 | `Tests/NeuronCoreTests` | `NeuronCore` | Real coverage. IP conversion, the `speciesRandom` sequence, the `ByteStream` wire macros, `WorldObjectId` identity, the containers, the preferences file format, and the native-math conversions and geometry routines. |
-| `Tests/NeuronClientTests` | `NeuronClient` | Real coverage of the path helpers in `FilesysUtils`, of the bytes `FileWriter::printf` emits — every format the level and profile writers use, including the width-specified location row and the encrypted form — of `ShapeMarker`'s parse of a shape-file marker block, and of `ControlBindings`' name lookup. |
+| `Tests/NeuronClientTests` | `NeuronClient` | Real coverage of the path helpers in `FilesysUtils`, of the bytes `FileWriter::printf` emits — every format the level and profile writers use, including the width-specified location row and the encrypted form — of `ShapeMarker`'s parse of a shape-file marker block, of `ControlBindings`' name lookup, and of the three testable pieces of the input system: `DeriveFrameState`, the router's ordering rule, and `ControlSubscription`'s lifetime. |
 | `Tests/NeuronServerTests` | `NeuronServer` | Wiring smoke test only — the layer is a stub with no behaviour yet. |
-| `Tests/GameLogicTests` | `GameLogic` | Real coverage of `EntityGrid`, `Route`, the slice walker, `InputField` and `LevelFile`'s constructors. `LinkStubs.cpp` is empty and on its way out. |
+| `Tests/GameLogicTests` | `GameLogic` | Real coverage of `EntityGrid`, `Route`, the slice walker, `InputField`'s text handling and `LevelFile`'s constructors. `LinkStubs.cpp` is empty and on its way out. |
 
-**211 tests as of `input-native-events` T5 (2026-08-06)** — 117 in
-`NeuronCoreTests`, 56 in `NeuronClientTests`, 33 in `GameLogicTests`, 5 in
+**235 tests as of `input-native-events` T11 (2026-08-06)** — 117 in
+`NeuronCoreTests`, 74 in `NeuronClientTests`, 39 in `GameLogicTests`, 5 in
 `NeuronServerTests`. Read the number off a run's *Total tests* line rather than
 from prose — `AGENTS.md` has carried a wrong figure twice, **and so had this
 paragraph**, which said 191 for a day after the count had moved. A stale count
 is worse than none: it makes a green run look exactly like new tests that were
 never compiled.
 
-**`InputEventTests` is the newest 14 and is worth reading for what it made
-testable.** Input used to be untestable here on principle: the state lived in
-file-scope arrays that a window procedure wrote into, so exercising it needed a
-window. `input-native-events` T5 split the RULE — which events a frame sees, and
-what state they produce — out into `DeriveFrameState`, a free function over
-plain data with no Windows call in it. The behaviour the whole plan exists to
-recover, a key pressed and released between two frames reporting both edges, is
-now an assertion rather than something you have to play the game to observe.
-That is the move to copy when something looks untestable: find the decision
-inside the platform code and lift it out, rather than concluding the platform
-makes it unreachable.
+**These 24 have not been compiled by anything.** `input-native-events` T6–T11
+were written on Linux; `git grep -c TEST_METHOD` is what counted them, and that
+agrees with a *Total tests* line only because every test file in the tree is
+listed in its `.vcxproj` — which is the failure `check_project_files.py` exists
+to prevent, and the reason the two numbers are worth comparing rather than
+trusting one.
+
+**The input tests are worth reading for what they made testable, because input
+used to be untestable here on principle.** The state lived in file-scope arrays
+that a window procedure wrote into, so exercising it needed a window. Three
+separate lifts followed, and the pattern is the same each time — *find the
+decision inside the platform code and pull it out*, rather than concluding the
+platform makes it unreachable:
+
+| Tests | What was lifted out |
+|---|---|
+| `InputEventTests` (16) | `DeriveFrameState` — which events a frame sees and what state they produce. A free function over plain data, no Windows call in it. The behaviour the whole plan exists to recover, a key pressed and released between two frames reporting both edges, is an assertion rather than something you must play the game to observe. |
+| `InputRouterTests` (6) | The router's ordering rule, exercised with stub sinks. Small, and worth pinning because it is silent in both directions: a sink never offered an event makes the UI stop responding, and a chain that keeps going after a sink consumed lets a handled click also reach the game. |
+| `ControlSubscriptionTests` (9) | The subscription token's bookkeeping. It needs no input at all — the manager under test has no drivers and no bindings, so nothing ever fires. What it pins is that a destroyed token really did cancel, which is otherwise invisible from outside and fails by leaving a handler pointing at a freed window. |
+
+**What none of them covers is `EclipseInputSink`**, which decides what the UI
+actually consumes: it reaches Eclipse's window list and the game's cursor, so it
+is not a unit. Its decisions are covered where they are made, in `Eclipse` and
+`InputField`.
 
 The rest of `sound-xaudio2` did NOT get that treatment, and the reason is worth
 stating rather than leaving as a gap. A source voice, a device that disappears
