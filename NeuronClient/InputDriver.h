@@ -117,11 +117,12 @@ namespace Neuron
       // see a message, which is why this is not pure virtual.
       virtual void DispatchEvents(InputRouter const& router);
 
-      // Poll for system events that may require immediate, hard-coded action
-      // eg. Window minimise or XInput plug pulled may always be required to
-      // pause the game. Window close or kill signals should also be dealt with
-      // promptly. This should probably be called in Advance() as well as elsewhere.
-      virtual void PollForEvents();
+      // PollForEvents IS GONE, and with it the chain it sat at the bottom of.
+      // It existed so that any driver could be asked to pump the OS for
+      // messages, and only one driver ever could; the game called it from five
+      // loops AND the driver called it again from its own Advance, so the
+      // message pump ran twice a frame down two different paths. It runs once
+      // now, from InputManager::Advance.
 
       // Return a helpful error string when there's a problem
       virtual const std::string& getLastParseError(InputParserState state) = 0;

@@ -36,7 +36,7 @@ namespace Neuron
   {
     m_screenCoords[AXIS_X] = x;
     m_screenCoords[AXIS_Y] = y;
-    g_windowManager->NastySetMousePos(x, y);
+    g_windowManager->SetMousePos(x, y);
   }
 
 
@@ -46,7 +46,7 @@ namespace Neuron
     m_velocity[AXIS_Y] += y;
     m_screenCoords[AXIS_X] += x;
     m_screenCoords[AXIS_Y] += y;
-    g_windowManager->NastyMoveMouse(x, y);
+    g_windowManager->MoveMouse(x, y);
   }
 
 

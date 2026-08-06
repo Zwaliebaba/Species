@@ -77,9 +77,9 @@ namespace Neuron
 
       void DestroyWin();
       void Flip();
-      void NastyPollForMessages();
-      void NastySetMousePos(int x, int y);
-      void NastyMoveMouse(int x, int y);
+      void PumpMessages();
+      void SetMousePos(int x, int y);
+      void MoveMouse(int x, int y);
 
       void EnsureMouseCaptured();
       void EnsureMouseUncaptured();

@@ -1,35 +1,40 @@
 #pragma once
 
-#include <windows.h>
-#include <vector>
+//*****************************************************************************
+// The window procedure's one stop before the input driver
+//*****************************************************************************
+//
+// THREE TYPES USED TO STAND HERE, each with exactly one implementation:
+// EventHandler (one pure virtual, WindowHasFocus), W32EventProcessor (a WndProc
+// and a focus-lost hook) and W32EventHandler, which inherited from both and
+// kept a VECTOR of processors so that it could fan one window procedure out
+// to — one consumer. `g_eventHandler` was an EventHandler*, so reaching the
+// only implementation meant a dynamic_cast, in a function called on every
+// message.
+//
+// With events in a queue the fan-out is the router's job, so all of that is one
+// concrete class: the window procedure handles what belongs to the WINDOW —
+// focus, moves, close — and hands everything else to the input driver.
 
-#include "EventHandler.h"
-#include "InputDriverWin32.h"
-#include "Win32EventProc.h"
+#include <windows.h>
 
 
 namespace Neuron
 {
-  class W32EventHandler : public EventHandler, public W32EventProcessor
+  class W32EventHandler
   {
-    private:
-      std::vector<W32EventProcessor*> w32eventprocs;
-
     public:
-      W32EventHandler();
-
-      // Called by the WindowManager
+      // Called by the WindowManager's window procedure.
+      // Returns 0 if the event was handled, -1 to pass it to DefWindowProc.
       LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-      // Register driver for Windows callbacks
-      void AddEventProcessor(W32EventProcessor* _driver);
-
-      // Unregister driver (if it is still the registered one)
-      void RemoveEventProcessor(W32EventProcessor* _driver);
-
-      bool WindowHasFocus();
+      // Answered from WM_ACTIVATE. Event-derived since T4, when it stopped
+      // being a GetForegroundWindow call made on every single message.
+      bool WindowHasFocus() const;
   };
 
 
-  W32EventHandler* getW32EventHandler();
+  // THE ONE HANDLER, typed as what it is. It was an EventHandler* and every use
+  // went through a dynamic_cast to get back to this type.
+  extern W32EventHandler* g_eventHandler;
 } // namespace Neuron

@@ -7,6 +7,7 @@
 
 #include "Input.h"
 #include "TargetCursor.h"
+#include "WindowManager.h"
 #include "LanguageTable.h"
 #include "HiResTime.h"
 
@@ -225,6 +226,15 @@ const std::string& InputManager::controlIcon(ControlType type) const { return bi
 
 void InputManager::Advance()
 {
+  // THE MESSAGE PUMP, ONCE, HERE. It used to run twice a frame down two paths:
+  // five game loops called InputManager::PollForEvents, which walked every
+  // driver asking it to pump, and the W32 driver then pumped again at the top
+  // of its own Advance. Doing it here rather than in the loops is deliberate —
+  // three of those loops, MainMenuLoop among them, never called PollForEvents
+  // at all and were served entirely by the driver's second pump, so a pump that
+  // lives in the loops is a pump a loop can forget.
+  g_windowManager->PumpMessages();
+
   bool idleNext = true;
   InputMode nextInputMode = InputMode::INPUT_MODE_NONE;
 
@@ -320,16 +330,6 @@ void InputManager::FireSubscriptions()
     // the stored one can be destroyed underneath it harmlessly.
     std::function<void()> const handler = found->m_handler;
     handler();
-  }
-}
-
-
-void InputManager::PollForEvents()
-{
-  for (unsigned i = 0; i < drivers.size(); ++i)
-  {
-    InputDriver* driver = drivers[i];
-    driver->PollForEvents();
   }
 }
 

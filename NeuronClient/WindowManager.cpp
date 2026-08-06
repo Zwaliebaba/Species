@@ -3,6 +3,11 @@
 #include <algorithm>
 #include "Win32EventHandler.h"
 #include "Debug.h"
+// EXPLICIT SINCE T10, AND IT HAS TO BE. This file both names W32InputDriver and
+// calls through it, and the type used to arrive by way of Win32EventHandler.h,
+// which included the driver's header in order to inherit from it. That header
+// no longer includes anything of the sort.
+#include "InputDriverWin32.h"
 #include "WindowManager.h"
 #include "WindowManagerWin32.h"
 
@@ -11,18 +16,19 @@ namespace Neuron
 {
   static HINSTANCE g_hInstance;
 
-  // DECLARED HERE, AT NAMESPACE SCOPE, RATHER THAN INSIDE THE FUNCTIONS THAT
-  // USE IT. g_win32InputDriver lives in InputDriverWin32.cpp and no header declares
-  // it, so this used to be a block-scope `extern` in each user.
+  // THE HAND-WRITTEN extern FOR g_win32InputDriver IS GONE FROM HERE: T10 moved
+  // the declaration into InputDriverWin32.h, beside the class, because the
+  // window handler needs the same pointer now that the processor list has been
+  // deleted and two files writing their own extern is one too many.
   //
-  // A BLOCK-SCOPE extern DOES NOT JOIN THE ENCLOSING NAMESPACE. With no
-  // visible namespace-scope declaration to match, MSVC gives it external
-  // linkage in the GLOBAL namespace — so once this file moved into namespace
-  // Neuron the declaration named ::g_win32InputDriver while the definition was
-  // Neuron::g_win32InputDriver, and the linker said so. Declaring it out here is what
-  // makes the match visible, and it is correct however a compiler reads the
-  // block-scope rule. namespace-migration T2 learned it from CI.
-  extern W32InputDriver* g_win32InputDriver;
+  // What that extern taught is worth keeping even though the extern is not. It
+  // had to sit at NAMESPACE scope rather than inside the functions that used
+  // it: a BLOCK-SCOPE extern does not join the enclosing namespace, so MSVC
+  // gave it external linkage in the GLOBAL namespace, and once this file moved
+  // into namespace Neuron the declaration named ::g_win32InputDriver while the
+  // definition was Neuron::g_win32InputDriver. The linker said so, during
+  // namespace-migration T2. A declaration in the header cannot make that
+  // mistake at all.
 
 #define WH_KEYBOARD_LL 13
 
@@ -30,9 +36,11 @@ WindowManager* g_windowManager = nullptr;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-  W32EventHandler* w = getW32EventHandler();
-
-  if (!w || (w->WndProc(hWnd, message, wParam, lParam) == -1))
+  // g_eventHandler DIRECTLY. This used to call getW32EventHandler(), which
+  // dynamic_cast an EventHandler* down to its only implementation — on every
+  // message the window received — because the global was typed as the abstract
+  // base. T10 deleted the base; the pointer is the concrete type now.
+  if (!g_eventHandler || (g_eventHandler->WndProc(hWnd, message, wParam, lParam) == -1))
     return DefWindowProc(hWnd, message, wParam, lParam);
 
   return 0;
@@ -301,7 +309,7 @@ void WindowManager::DestroyWin()
 
 void WindowManager::Flip() { SwapBuffers(m_win32Specific->m_hDC); }
 
-void WindowManager::NastyPollForMessages()
+void WindowManager::PumpMessages()
 {
   MSG msg;
   while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
@@ -312,7 +320,7 @@ void WindowManager::NastyPollForMessages()
   }
 }
 
-void WindowManager::NastySetMousePos(int x, int y)
+void WindowManager::SetMousePos(int x, int y)
 {
   if (m_mouseOffsetX == INT_MAX)
   {
@@ -341,7 +349,7 @@ void WindowManager::NastySetMousePos(int x, int y)
   g_win32InputDriver->SetMousePosNoVelocity(x, y);
 }
 
-void WindowManager::NastyMoveMouse(int x, int y)
+void WindowManager::MoveMouse(int x, int y)
 {
   POINT pos;
   GetCursorPos(&pos);

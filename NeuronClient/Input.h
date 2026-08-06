@@ -173,12 +173,11 @@ namespace Neuron
       // rest of the frame. A sink that consumes the event says so before
       // anything reads it; see InputRouter.h.
 
-      // This triggers a read from the input hardware and does message polling
+      // ONE FRAME OF INPUT, and the only place the OS message pump runs. It
+      // drains Windows' queue, has each driver derive its frame, moves the
+      // cursor, offers the events to the router and then fires subscriptions —
+      // in that order, for reasons written at each step.
       void Advance();
-
-      // Poll for system events that may require immediate, hard-coded action
-      // since this will be called more often than Advance()
-      void PollForEvents();
 
       // Add a new driver to the drivers collection. The driver will be deleted
       // at the end of the life of this InputManager, so must have been created

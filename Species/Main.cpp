@@ -375,7 +375,6 @@ void LocationGameLoop()
       }
     }
 
-    g_inputManager->PollForEvents();
     if (g_inputManager->controlEvent(ControlType::ControlMenuEscape) && TheRenderer()->IsFadeComplete())
     {
       if (g_script && TheScript()->IsRunningScript())
@@ -638,8 +637,6 @@ void LocationEditorLoop()
 {
   while (!g_inputManager->controlEvent(ControlType::ControlMenuEscape))
   {
-    g_inputManager->PollForEvents();
-
     if (HandleCommonConditions())
       continue;
 
@@ -683,8 +680,6 @@ void GlobalWorldGameLoop()
   {
     if (g_atMainMenu)
       break;
-
-    g_inputManager->PollForEvents();
 
     if (g_inputManager->controlEvent(ControlType::ControlMenuEscape) && TheRenderer()->IsFadeComplete())
     {
@@ -743,8 +738,6 @@ void GlobalWorldEditorLoop()
 
   while (g_requestedLocationId == -1 && !g_requestToggleEditing)
   {
-    g_inputManager->PollForEvents();
-
     if (g_inputManager->controlEvent(ControlType::ControlMenuEscape))
     {
       g_editing = false;

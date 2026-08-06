@@ -46,9 +46,6 @@
     <ClCompile Include="ControlBindings.cpp">
       <Filter>Input</Filter>
     </ClCompile>
-    <ClCompile Include="EventHandler.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
     <ClCompile Include="FilePaths.cpp">
       <Filter>Input</Filter>
     </ClCompile>
@@ -176,9 +173,6 @@
     <ClInclude Include="ControlTypes.inc">
       <Filter>Input</Filter>
     </ClInclude>
-    <ClInclude Include="EventHandler.h">
-      <Filter>Input</Filter>
-    </ClInclude>
     <ClInclude Include="FilePaths.h">
       <Filter>Input</Filter>
     </ClInclude>
@@ -234,9 +228,6 @@
       <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="Win32EventHandler.h">
-      <Filter>Input</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32EventProc.h">
       <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="2dSurfaceMap.h" />

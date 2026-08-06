@@ -1,13 +1,20 @@
 #pragma once
 
 
+#include <windows.h>
+
 #include <string>
 #include <vector>
 
 #include "InputDriverSimple.h"
 #include "InputEvents.h"
 #include "KeyDefs.h"
-#include "Win32EventProc.h"
+
+// <windows.h> IS INCLUDED HERE NOW, AND IT HAS TO BE. WndProc below takes
+// HWND, UINT, WPARAM and LPARAM and returns LRESULT, and every one of those
+// used to arrive through Win32EventProc.h, which T10 deleted along with the
+// W32EventProcessor base. Deleting a header withdraws everything it
+// included, not just what it declared.
 
 
 namespace Neuron
@@ -19,7 +26,7 @@ namespace Neuron
   // delivered, it just stops partway.
   constexpr size_t MaxQueuedEvents = 4096;
 
-  class W32InputDriver : public SimpleInputDriver, W32EventProcessor
+  class W32InputDriver : public SimpleInputDriver
   {
     private:
       int lastAcceptedDriver; // We're handling multiple driver types
@@ -66,7 +73,10 @@ namespace Neuron
       // but not buttons held down or released or 2D analog events.
       bool getFirstActiveInput(InputSpec& spec, bool instant);
 
-      // This triggers a read from the input hardware and does message polling
+      // Derives this frame's state from the events the pump has queued. The
+      // message pump itself is NOT called from here any more: InputManager
+      // runs it once, at the top of its own Advance, and this driver no longer
+      // has a PollForEvents at all.
       void Advance();
 
       // Offers this frame's events to the router, UI first, and hides from the
@@ -74,28 +84,30 @@ namespace Neuron
       // has advanced and after the cursor has moved — see InputDriver.h.
       void DispatchEvents(InputRouter const& router) override;
 
-      // Poll for system events that may require immediate, hard-coded action
-      void PollForEvents();
-
       // Fill out a description of the input defined by spec
       bool getInputDescription(InputSpec const& spec, InputDescription& desc);
 
       // Get the name of the driver (debuggung purposes)
       const std::string& getName();
 
-      // This is a callback for Windows events
-      // Returns 0 if the event is handled here, -1 otherwise
+      // Called by W32EventHandler for every message it did not handle itself.
+      // Returns 0 if the event is handled here, -1 otherwise.
+      //
+      // Not an override of anything since T10: W32EventProcessor existed so
+      // that the handler could hold a LIST of these, and the list never had
+      // more than this one driver in it.
       LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
       // Warp the mouse to a particular position and pretend it has always been there
       void SetMousePosNoVelocity(int _x, int _y);
 
       // Release every key and button this driver believes is held, reporting an
-      // up edge for each. Called when the window loses focus, because Windows
-      // sends no release for anything held at that moment. Enqueues a FocusLost
-      // event like every other message; the release edges are produced by the
-      // derivation, in frame order with everything else.
-      void OnFocusLost() override;
+      // up edge for each. Called by W32EventHandler when the window loses
+      // focus, because Windows sends no release for anything held at that
+      // moment. Enqueues a FocusLost event like every other message; the
+      // release edges are produced by the derivation, in frame order with
+      // everything else.
+      void OnFocusLost();
 
     private:
       // THE MESSAGES, NOT THE STATE. WndProc appends here and does nothing
@@ -164,4 +176,16 @@ namespace Neuron
         m_events.push_back(event);
       }
   };
+
+
+  // THE ONE DRIVER, DECLARED WHERE IT IS DEFINED at last. No header used to
+  // declare it, so each of its users wrote its own extern — and WindowManager.cpp
+  // carries a long comment about why that extern had to sit at namespace scope
+  // rather than inside a function, learned from a link error during
+  // namespace-migration T2: a BLOCK-SCOPE extern binds to the GLOBAL namespace,
+  // so it named ::g_win32InputDriver while the definition was
+  // Neuron::g_win32InputDriver. T10 gave the pointer a second user — the window
+  // handler reaches the driver through it now that the processor list is gone —
+  // and two hand-written externs is one too many to leave uncentralised.
+  extern W32InputDriver* g_win32InputDriver;
 } // namespace Neuron

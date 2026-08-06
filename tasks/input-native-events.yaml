@@ -993,26 +993,104 @@ tasks:
       - NeuronClient/Input.cpp
       - NeuronClient/WindowManager.h
       - NeuronClient/WindowManager.cpp
-      - NeuronClient/SoundLibrary3dDSound.cpp
+      # DROPPED FROM THE LIST, as this task's own note anticipated:
+      # sound-xaudio2 T7 deleted SoundLibrary3dDSound.cpp, so there is no
+      # WindowManagerWin32 include left in it to adjust.
+      # The two Nasty* mouse warps are renamed here too, so their callers join
+      # the list. Added during the work, per docs/TASK_DAG.md.
+      - NeuronClient/TargetCursor.cpp
+      - NeuronClient/InputDriver.cpp
       - Species/StartSequence.cpp
-      - Species/Renderer.cpp
       - Species/Main.cpp
       - NeuronClient/NeuronClient.vcxproj
       - NeuronClient/NeuronClient.vcxproj.filters
     acceptance:
       - One window-event type remains; W32EventProcessor and the dynamic_cast accessor are gone; WindowHasFocus is served from event-derived state
-      - NastyPollForMessages is called from exactly one place per frame; InputManager::PollForEvents and the driver-level PollForEvents chain are deleted
+      # AMENDED 2026-08-06, DURING the work, original wording kept: it read
+      # "NastyPollForMessages is called from exactly one place per frame;
+      # InputManager::PollForEvents and the driver-level PollForEvents chain are
+      # deleted", with the intent field placing the pump "from the main loop".
+      # The deletions are done and the pump does run once. It runs from
+      # InputManager::Advance rather than from the loops, and measurement is why:
+      # of the game's frame loops, THREE - MainMenuLoop among them - never
+      # called PollForEvents at all and were served entirely by the second pump
+      # inside the driver's Advance. Moving the pump into the loops that DID
+      # call it would have left the main menu with no input whatsoever, and a
+      # pump that lives in the loops is a pump the next loop can forget.
+      - The pump is called from exactly one place, InputManager::Advance, and therefore exactly once per frame; InputManager::PollForEvents and the driver-level PollForEvents chain are deleted
       - The name Nasty appears nowhere in WindowManager
     verify:
       - python3 tools/check_project_files.py
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
-    notes: >
-      SoundLibrary3dDSound.cpp is in the touch set only for its
-      WindowManagerWin32 include if the handle accessor moves; if sound-xaudio2
-      T7 has already deleted the file, drop it from this list.
+    status: done
+    notes: |
+      Landed 2026-08-06. Written on Linux: no MSVC build, no vstest run, no
+      running game. SoundLibrary3dDSound.cpp was dropped from the file list as
+      this node's own note anticipated - sound-xaudio2 T7 deleted it.
+
+      THREE TYPES BECAME ONE. EventHandler had a single pure virtual and a
+      single implementation; W32EventProcessor had a WndProc and a focus hook
+      and a single implementation; W32EventHandler inherited from both and kept
+      a VECTOR of processors so that it could fan one window procedure out to
+      one consumer. g_eventHandler was typed as the abstract base, so reaching
+      the only implementation meant a dynamic_cast IN THE WINDOW PROCEDURE, on
+      every message the window received. EventHandler.h/.cpp and Win32EventProc.h
+      are deleted; W32EventHandler is a concrete class that handles what belongs
+      to the window and hands everything else to g_win32InputDriver.
+
+      THE PUMP RAN TWICE A FRAME, DOWN TWO PATHS, and neither knew about the
+      other: five game loops called InputManager::PollForEvents, which walked
+      every driver asking it to pump, and W32InputDriver::Advance then called
+      its own PollForEvents at the top. Both are gone and
+      InputManager::Advance pumps once.
+
+      WHY NOT FROM THE LOOPS, which is what the amended criterion above records:
+      THREE of the frame loops never called PollForEvents at all - MainMenuLoop,
+      the outer loop in AppMain, and the two-Advance sequence after the start
+      sequence - and were served entirely by the driver's second pump. Putting
+      the pump only where PollForEvents used to be called would have left the
+      main menu unable to receive a single message.
+
+      TWO HAZARDS FOUND BY LOOKING RATHER THAN BY BUILDING, both the exact
+      failure AGENTS.md records from sound-xaudio2 T7 and T8 - a deleted header
+      withdraws everything it included, not only what it declared:
+
+      * InputDriverWin32.h got <windows.h> through Win32EventProc.h, and its
+        WndProc is declared in terms of HWND, UINT, WPARAM, LPARAM and LRESULT.
+        It includes <windows.h> itself now.
+      * WindowManager.cpp names W32InputDriver and calls through it, and the
+        type arrived by way of Win32EventHandler.h, which included the driver's
+        header in order to inherit from it. It includes it directly now.
+
+      AND ONE THING WORTH MORE THAN EITHER. g_win32InputDriver had NO
+      declaration in any header: WindowManager.cpp wrote its own namespace-scope
+      extern, with a long comment explaining that a block-scope extern binds to
+      the GLOBAL namespace and cost a link error during namespace-migration T2.
+      T10 gives the pointer a second user - the window handler reaches the
+      driver through it now - and two hand-written externs is one too many, so
+      the declaration moved into InputDriverWin32.h where the mistake cannot be
+      made. The lesson is kept at the old site; the extern is not.
+
+      RENAMED, because the acceptance asks for the name Nasty to be gone from
+      WindowManager and it was on three methods rather than one:
+      NastyPollForMessages -> PumpMessages, NastySetMousePos -> SetMousePos,
+      NastyMoveMouse -> MoveMouse. TargetCursor is the only caller of the last
+      two.
+
+      W32InputDriver's destructor was previously nothing but an unhook from the
+      processor list. It nulls g_win32InputDriver instead, which is worth more:
+      the window can still deliver a message after the driver is gone, and both
+      of the handler's two uses of the pointer are now guarded.
+
+      TWO STALE INCLUDES LEFT IN PLACE DELIBERATELY, handed to T11: Eclipse.h in
+      InputDriverWin32.cpp (T8 moved the Eclipse calls into the router's sink)
+      and Win32EventHandler.h in the same file (T10 removed the registration).
+      Neither is referenced any more. Removing an include is exactly what cost
+      two CI rounds in sound-xaudio2, and this task already removes two headers
+      from the tree; a third round of the same risk belongs in the sweep that
+      can measure it.
 
   - id: T11
     title: Closing sweep - greps at zero, checks green

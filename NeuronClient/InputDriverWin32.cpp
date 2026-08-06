@@ -61,13 +61,21 @@ namespace Neuron
     // memset. m_events starts empty.
     m_events.reserve(64);
 
-    getW32EventHandler()->AddEventProcessor(this);
-
+    // THE REGISTRATION IS GONE WITH THE PROCESSOR LIST. W32EventHandler reaches
+    // this driver through g_win32InputDriver now, because there was never more
+    // than one of them to reach.
     g_win32InputDriver = this;
   }
 
 
-  W32InputDriver::~W32InputDriver() { getW32EventHandler()->RemoveEventProcessor(this); }
+  // Nulls the pointer the window procedure reaches this driver through, rather
+  // than unhooking from a list. It matters more than the removal it replaces:
+  // the window can still deliver a message after the driver is gone.
+  W32InputDriver::~W32InputDriver()
+  {
+    if (g_win32InputDriver == this)
+      g_win32InputDriver = nullptr;
+  }
 
 
   bool W32InputDriver::getInput(InputSpec const& spec, InputDetails& details)
@@ -349,11 +357,10 @@ namespace Neuron
         m_consumedButtons[button] = false;
     }
 
-    // Pump first, so everything Windows has for us is in the queue, then
-    // derive one frame from it. What the frame cannot represent stays queued
-    // and is the first thing the next frame sees.
-    PollForEvents();
-
+    // The pump has already run — InputManager does it once, at the top of its
+    // own Advance — so everything Windows had for us this frame is in the queue
+    // and this derives one frame from it. What the frame cannot represent stays
+    // queued and is the first thing the next frame sees.
     m_frameEventCount = DeriveFrameState(m_events.data(), m_events.size(), m_state);
     ApplyConsumedEventSideEffects(m_frameEventCount);
 
@@ -449,9 +456,6 @@ namespace Neuron
       break;
     }
   }
-
-
-  void W32InputDriver::PollForEvents() { g_windowManager->NastyPollForMessages(); }
 
 
   // ENQUEUE ONLY. Nothing here reads or writes the frame state, calls into

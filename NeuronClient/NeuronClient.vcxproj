@@ -36,7 +36,6 @@
     <ClCompile Include="EclButton.cpp" />
     <ClCompile Include="Eclipse.cpp" />
     <ClCompile Include="EclWindow.cpp" />
-    <ClCompile Include="EventHandler.cpp" />
     <ClCompile Include="FilesysUtils.cpp" />
     <ClCompile Include="FilePaths.cpp" />
     <ClCompile Include="FileWriter.cpp" />
@@ -101,7 +100,6 @@
     <ClInclude Include="EclButton.h" />
     <ClInclude Include="Eclipse.h" />
     <ClInclude Include="EclWindow.h" />
-    <ClInclude Include="EventHandler.h" />
     <ClInclude Include="FilesysUtils.h" />
     <ClInclude Include="FilePaths.h" />
     <ClInclude Include="FileWriter.h" />
@@ -151,7 +149,6 @@
     <ClInclude Include="Transform.h" />
     <ClInclude Include="UserInfo.h" />
     <ClInclude Include="Win32EventHandler.h" />
-    <ClInclude Include="Win32EventProc.h" />
     <ClInclude Include="WindowManager.h" />
     <ClInclude Include="AppCommands.h" />
     <ClInclude Include="CameraAccess.h" />
