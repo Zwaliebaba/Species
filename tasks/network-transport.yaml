@@ -92,7 +92,7 @@ tasks:
       - python3 tools/check_hygiene.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: in_progress
 
   - id: T2
     title: Give ServerToClientLetter value semantics and end the update leak
