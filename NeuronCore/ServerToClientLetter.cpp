@@ -3,6 +3,7 @@
 #include "Debug.h"
 
 #include "ByteStream.h"
+#include "ProtocolLimits.h"
 #include "ServerToClientLetter.h"
 
 
