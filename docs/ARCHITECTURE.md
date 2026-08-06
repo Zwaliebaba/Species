@@ -102,15 +102,21 @@ Presentation and platform services for a graphical client.
   reported through `IXAudio2EngineCallback::OnCriticalError`, which parks the
   backend silent; `SoundSystem::Advance` then rebuilds it every five seconds
   until a device comes back.
-- **Input:** `InputDriverWin32` pumps the Win32 message queue and holds the
-  key and button state; above it a composable driver stack — `InputDriverSimple`,
-  `Chord`, `Conjoin`, `Invert`, `Idle` — resolves a binding to a `ControlType`.
-  `input-native-events` T1 deleted nine drivers and filters that no binding data
-  used: `Alias`, `Pipe` (never even registered), `Prefs`, `Value` and the whole
-  `InputFilter` family. T2 removed the X360 controller path, T4 the `RegisterHotKey`
-  Alt-Tab binding and the per-message `GetForegroundWindow` polling — focus now
-  arrives as `WM_ACTIVATE`, and losing it releases every key. The rest of the
-  plan turns this into an event stream with a consuming router.
+- **Input:** the window procedure in `InputDriverWin32` **only enqueues**. Each
+  Win32 message becomes an `InputEvent` (`InputEvents.h`), and `DeriveFrameState`
+  — a free function with no Windows call in it — builds the per-frame view the
+  bindings read. Its governing rule is one edge per control per frame, with
+  anything that would need a second left in the queue, which is how a key
+  pressed and released between two frames reports both edges instead of
+  neither. Above that sits the unchanged binding stack: `InputDriverSimple`,
+  `Chord`, `Conjoin`, `Invert`, `Idle`, resolving a spec to a `ControlType`.
+  `input-native-events` T1 deleted nine drivers and filters no binding data
+  used — `Alias`, `Pipe` (never even registered), `Prefs`, `Value` and the whole
+  `InputFilter` family. T2 removed the X360 controller path; T4 the
+  `RegisterHotKey` Alt-Tab binding and the per-message `GetForegroundWindow`
+  polling, so focus arrives as `WM_ACTIVATE`; T5 deleted the `g_keys` and
+  `g_keyDeltas` globals outright. Still to come in that plan: `WM_CHAR` text,
+  Raw Input, and a consuming router the UI subscribes to.
 - **UI:** the **Eclipse** toolkit (`Eclipse`, `EclWindow`, `EclButton`), which
   every in-game window derives from.
 - **Networking:** `ClientToServer`, the client's endpoint — inbox, outbox,

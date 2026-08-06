@@ -46,13 +46,17 @@ making the existing code capable of supporting it, not by building it alongside.
 MODERNISATION IS FINISHED.** Eleven plans, 147 tasks, every one done or
 deliberately abandoned, all of them in `tasks/Archive/`.
 
-**THREE PLANS ARE OPEN AGAIN, opened 2026-08-06 on the owner's direction**, and
-they are the first work since the modernisation that is not cleanup:
+**THREE PLANS OPENED ON 2026-08-06 on the owner's direction** — the first work
+since the modernisation that is not cleanup. One of them, `sound-xaudio2`,
+closed the same day at 11 of 11 and is in
+[`tasks/Archive/sound-xaudio2.yaml`](tasks/Archive/sound-xaudio2.yaml): one
+native XAudio2 backend with X3DAudio positioning and the effects on XAudio2,
+and DirectSound, the software mixer, the waveOut layer and the `SoundLibrary`
+preference all deleted. Two remain open:
 
 | Plan | What it does | State |
 |---|---|---|
-| [`tasks/sound-xaudio2.yaml`](tasks/sound-xaudio2.yaml) | One native XAudio2 backend — per-channel voices, X3DAudio positioning, effects on XAudio2 — with DirectSound, the software mixer and waveOut deleted | 10 of 11. **Blocked on the owner**: T11 is a Garden run |
-| [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse | 3 of 12 |
+| [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse | 5 of 12 |
 | [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | 0 of 12 |
 
 `python3 tools/check_task_dag.py --next tasks/<plan>.yaml` is the authority on
@@ -436,10 +440,12 @@ rather than something to wait for. If you are working somewhere that cannot
 launch a Windows client, say so instead of implying you checked.
 
 **WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-06.** CI is green at
-`ffc5105`, which carries `sound-xaudio2` T1-T10 and `input-native-events` T1-T2:
+`ffc5105`, which carries all of `sound-xaudio2` and `input-native-events` T1-T2:
 it compiles, links, passes the suite on x64 Debug, and the headless server
 reaches sequence 20 at the right rate. Every task since `d858b6b` has gone green
-first round. **THE UNCOMPILED BLOCK THIS ENTRY USED TO WARN ABOUT IS GONE**:
+first round. `input-native-events` T3 and T5 are pushed behind it and awaiting
+their own CI answer — T5 is the largest single change in that plan, so treat
+this line as covering `ffc5105` and not the branch head until it is updated. **THE UNCOMPILED BLOCK THIS ENTRY USED TO WARN ABOUT IS GONE**:
 `strings-modernised` T12, T11, T13, T17 and T9 were the largest ever recorded
 here, and CI has since built all of them.
 
@@ -512,23 +518,38 @@ Launch, start a new profile, enter The Garden, and check:
 Those counts are read from `MissionGardenLiberate.txt`, so they are checkable
 rather than approximate. Any step failing localises the break to a subsystem.
 
-**AUDIO RUN, 2026-08-06, on the `sound-xaudio2` branch with
-`SoundLibrary = xaudio2`: owner-reported, "the audio works fine".** This is
-the `sound-xaudio2` T5 gate, and it is what unblocks deleting the DirectSound
-backend, the software mixer and the waveOut layer — none of which could be
-removed on a green build, because nothing in CI can hear.
+**TWO AUDIO RUNS, 2026-08-06, both owner-reported.** Nothing in CI can hear,
+so these are the only evidence that exists for the whole `sound-xaudio2` plan.
 
-What it covers: the native XAudio2 backend end to end — per-channel source
-voices, X3DAudio positioning and doppler, and the effects on XAudio2 (19
-echoes on FXECHO, 2 reverbs on XAUDIO2FX_REVERB, the low pass on the built-in
-voice filter). **It is a verdict on the whole run, not a per-step breakdown**,
-and this file does not claim one it was not given. The specific question left
-unanswered is distance attenuation: X3DAudio's curve is not bit-identical to
-DS3D's and the two were not compared directly, so a later report of sounds
-fading at the wrong range would be the thing this gate did not catch.
+The first was the T5 A/B gate, on the branch with `SoundLibrary = xaudio2`
+while DirectSound was still present and still the default for everyone else:
+*"the audio works fine"*. That is what unblocked deleting the DirectSound
+backend, the software mixer and the waveOut layer.
 
-**It does not replace the baseline below.** No seven-step Garden run has been
-performed on any 2026-08-06 build.
+The second was the T11 final gate, on a **default** build — no preference
+overrides, because there is no longer a preference to override with, and no
+legacy backend left in the binary to fall back to: *"the audio smoke test is
+done and everything works fine"*. It closes the plan at 11 of 11.
+
+**Both are verdicts on a run, not per-step breakdowns**, and this file does not
+claim breakdowns it was not given. Three things the second gate specifically
+did NOT establish, listed because a pass is easy to over-read:
+
+- The audio checklist was not itemised. Positioned effects, the six rewritten
+  echo events, the two converted reverbs, stereo music and the volume slider
+  were all in the build and none was reported wrong — which is weaker than each
+  having been confirmed.
+- **The device-loss path was never exercised.** Nobody unplugged anything. T10's
+  `OnCriticalError` teardown and the five-second rebuild in
+  `SoundSystem::Advance` have been traced under ASan and UBSan and compiled by
+  CI, and that is the whole of it. It is the least-evidenced code in the plan.
+- Distance attenuation is still the open question from the first gate.
+  X3DAudio's curve is not bit-identical to DS3D's and the two were never
+  compared directly, so sounds fading at the wrong range is what neither run
+  was equipped to catch.
+
+**Neither replaces the baseline below.** No seven-step Garden run with an
+explicit per-step breakdown has been performed on any 2026-08-06 build.
 
 **CURRENT BASELINE: `acf283b` (2026-08-05), owner-reported, ALL SEVEN STEPS
 PASS.** This is the most recent full run, the most recent run with an explicit

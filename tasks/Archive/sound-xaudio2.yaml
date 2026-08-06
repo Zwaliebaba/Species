@@ -897,4 +897,36 @@ tasks:
       - Unplugging or switching the audio device mid-run leaves the game running (silence is acceptable, a crash is not)
       - The result is recorded in AGENTS.md "What working looks like"
     parallel_safe: false
-    status: todo
+    status: done
+    notes: |
+      PASSED 2026-08-06, owner-reported: "the audio smoke test is done and
+      everything works fine".
+
+      WHAT THAT COVERS. A build carrying T1-T10 with no preference overrides —
+      the only backend is XAudio2, DirectSound and the software mixer and the
+      waveOut layer are not in the binary, Effects.txt has six effects and no
+      DSound_ rows, the music voice is stereo, and the SoundLibrary preference
+      no longer exists to override anything with. That is the configuration the
+      gate exists to hear, and the owner heard it.
+
+      WHAT IT DOES NOT COVER, stated rather than assumed from a pass. The report
+      is a verdict on the run, not a per-step breakdown, so this task does NOT
+      claim the seven Garden steps individually and AGENTS.md does not record
+      them — the entity-count baseline there is still acf283b. Two acceptance
+      criteria asked for more than was reported and are marked here rather than
+      quietly counted as met:
+
+      * The audio checklist was not itemised. Positioned effects, the six
+        rewritten echo events, the two converted reverbs, stereo music and the
+        volume slider were all in the build and none was reported wrong, which
+        is weaker than each having been confirmed.
+      * THE DEVICE-LOSS PATH WAS NOT EXERCISED. Nobody unplugged anything.
+        T10's OnCriticalError teardown and the five-second rebuild in
+        SoundSystem::Advance have been traced under ASan and UBSan and compiled
+        by CI, and that is all. It remains the least-evidenced thing in the
+        plan and the first place to look if audio ever stops mid-session.
+
+      The specific question T5 left open is also still open: X3DAudio's distance
+      attenuation curve is not bit-identical to DS3D's and the two were never
+      compared directly. Sounds fading at the wrong range would be the thing
+      neither gate was equipped to catch.

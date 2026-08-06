@@ -23,22 +23,35 @@ in [`BUILD.md`](BUILD.md) true.
 | `Tests/NeuronServerTests` | `NeuronServer` | Wiring smoke test only — the layer is a stub with no behaviour yet. |
 | `Tests/GameLogicTests` | `GameLogic` | Real coverage of `EntityGrid`, `Route`, the slice walker, `InputField` and `LevelFile`'s constructors. `LinkStubs.cpp` is empty and on its way out. |
 
-**198 tests at `c907bfb` (2026-08-06)** — 117 in `NeuronCoreTests`, 43 in
-`NeuronClientTests`, 33 in `GameLogicTests`, 5 in `NeuronServerTests`. Read the
-number off a run's *Total tests* line rather than from prose — `AGENTS.md` has
-carried a wrong figure twice, **and so had this paragraph**, which said 191 for
-a day after the count had moved. A stale count is worse than none: it makes a
-green run look exactly like new tests that were never compiled.
+**211 tests as of `input-native-events` T5 (2026-08-06)** — 117 in
+`NeuronCoreTests`, 56 in `NeuronClientTests`, 33 in `GameLogicTests`, 5 in
+`NeuronServerTests`. Read the number off a run's *Total tests* line rather than
+from prose — `AGENTS.md` has carried a wrong figure twice, **and so had this
+paragraph**, which said 191 for a day after the count had moved. A stale count
+is worse than none: it makes a green run look exactly like new tests that were
+never compiled.
 
-Nothing in `sound-xaudio2` or `input-native-events` added a test, and the reason
-is worth stating rather than leaving as a gap. Both plans work at the boundary
-with the operating system — a source voice, a device that disappears, a window
-message — and this suite cannot reach any of it. What those tasks did instead is
-in their notes: frame arithmetic and a device-recovery state machine lifted
-verbatim into standalone programs and run under ASan and UBSan, and one
-cross-file invariant that no unit test could see moved into
-`tools/check_sound_effects.py`. **That is not a substitute for a test and is not
-offered as one** — it is what was available, recorded so the absence is legible.
+**`InputEventTests` is the newest 14 and is worth reading for what it made
+testable.** Input used to be untestable here on principle: the state lived in
+file-scope arrays that a window procedure wrote into, so exercising it needed a
+window. `input-native-events` T5 split the RULE — which events a frame sees, and
+what state they produce — out into `DeriveFrameState`, a free function over
+plain data with no Windows call in it. The behaviour the whole plan exists to
+recover, a key pressed and released between two frames reporting both edges, is
+now an assertion rather than something you have to play the game to observe.
+That is the move to copy when something looks untestable: find the decision
+inside the platform code and lift it out, rather than concluding the platform
+makes it unreachable.
+
+The rest of `sound-xaudio2` did NOT get that treatment, and the reason is worth
+stating rather than leaving as a gap. A source voice, a device that disappears
+and a mastering voice are not decisions that can be lifted out of the platform —
+they ARE the platform. What those tasks did instead is in their notes: frame
+arithmetic and a device-recovery state machine lifted verbatim into standalone
+g++ programs and run under ASan and UBSan, and one cross-file invariant that no
+unit test could see moved into `tools/check_sound_effects.py`. **That is not a
+substitute for a test and is not offered as one** — it is what was available,
+recorded so the absence is legible.
 
 **`ShapeMarkerTests` is worth reading before you write a conversion test**, and
 it is five tests over one constructor. Four pin behaviour a `std::string`
