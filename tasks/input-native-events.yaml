@@ -252,7 +252,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: in_progress
     notes: >
       Do not run concurrently with network-transport T1 - that task rewrites
       the serialisers that include TeamControls.h.
