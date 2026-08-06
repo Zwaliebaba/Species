@@ -1008,7 +1008,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: in_progress
     notes: >
       SoundLibrary3dDSound.cpp is in the touch set only for its
       WindowManagerWin32 include if the handle accessor moves; if sound-xaudio2
