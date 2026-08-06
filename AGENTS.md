@@ -57,7 +57,7 @@ preference all deleted. Two remain open:
 | Plan | What it does | State |
 |---|---|---|
 | [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse; the gamepad mode and the control-icon plumbing deleted | **14 of 15 — all code done, T12 is the owner's Garden run** |
-| [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | 0 of 12 |
+| [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | **6 of 12 — T1-T6 done, none of it compiled by MSVC** |
 
 **`input-native-events` has one node left and it is not code.** T12 is a
 seven-step Garden run on a build carrying every other node, and **nothing in that plan has
@@ -457,14 +457,27 @@ reaches sequence 20 at the right rate. Every task since `d858b6b` has gone green
 first round.
 
 **THERE IS AN UNCOMPILED BLOCK AGAIN, AND IT IS THE WHOLE OF
-`input-native-events` T3 AND T5–T11.** Nine tasks are pushed behind `ffc5105`
-and awaiting their own CI answer: the event stream, `WM_CHAR` text input, Raw
-Input, the router and its consuming sinks, the subscription API, the collapse of
-the event-handler layers, and the closing sweep. **Treat the green above as
-covering `ffc5105` and not the branch head.** All nine were written on Linux
-against the eight Python checks, a `g++`/ASan/UBSan harness for the parts that
-are pure logic, and reading — no MSVC build and no client launch happened at
-any point.
+`input-native-events` T3 AND T5–T11, PLUS `network-transport` T1–T6.** Nine
+input tasks are pushed behind `ffc5105` and awaiting their own CI answer: the
+event stream, `WM_CHAR` text input, Raw Input, the router and its consuming
+sinks, the subscription API, the collapse of the event-handler layers, and the
+closing sweep. **Treat the green above as covering `ffc5105` and not the branch
+head.** All nine were written on Linux against the eight Python checks, a
+`g++`/ASan/UBSan harness for the parts that are pure logic, and reading — no
+MSVC build and no client launch happened at any point.
+
+**The network block on top of that is six more tasks and it rewrites the
+transport.** T1–T6 replaced the `ByteStream` macros with a bounded reader and
+writer, gave `ServerToClientLetter` value semantics, made the datagram one size
+with per-letter spillover, replaced both listener threads with one polled
+`UdpSocket` at each end, and deleted twelve legacy transport files. **What has
+actually been run is more than usual and still not a build**: `UdpSocket.cpp` was
+compiled unmodified against a POSIX shim for Winsock's names and exercised over
+real loopback UDP, and the codecs were compared byte-for-byte against the old
+macro serialisers under ASan and UBSan. What no harness here can see is
+`Server.cpp`, `ClientToServer.cpp` and `ServerToClient.cpp`, which are where the
+call-site shapes changed — and a deletion of twelve files is exactly the change
+that breaks a file nobody touched.
 
 **What that combination can and cannot catch is the standing lesson of this
 repository, and it applied twice in this block.** A Python check cannot see a
@@ -1024,10 +1037,12 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, **235** tests as of
-  `input-native-events` T11 (2026-08-06) — 117 `NeuronCoreTests`, 74
-  `NeuronClientTests`, 39 `GameLogicTests`, 5 `NeuronServerTests`. **24 of them
-  have never been compiled by anything**: `input-native-events` T6–T11 were
+- **The test suite is thin.** Four projects, **258** tests as of
+  `network-transport` T6 (2026-08-06) — 137 `NeuronCoreTests`, 74
+  `NeuronClientTests`, 39 `GameLogicTests`, 8 `NeuronServerTests`. **47 of them
+  have never been compiled by anything** — the 24 below plus 23 more from
+  `network-transport` T1–T6, which cover hostile and truncated datagrams, the
+  datagram cap, and the letter spillover across two ticks: `input-native-events` T6–T11 were
   written on Linux, and `git grep -c TEST_METHOD` is what counted them.
   The newest are the three lifts that made input testable at all —
   `InputEventTests` over `DeriveFrameState`, `InputRouterTests` over the
