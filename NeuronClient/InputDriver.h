@@ -12,11 +12,12 @@
 //
 // It is scoped, and the casts at every InputSpec::condition boundary are the
 // point rather than an annoyance: condition_t is a driver-defined integer and
-// three drivers fill it with three unrelated things — these enumerators, the
-// anonymous {COND_TRUE, COND_FALSE} in InputDriverPrefs.cpp, and a raw
+// the drivers fill it with unrelated things — these enumerators, and a raw
 // millisecond count that IdleInputDriver::getConditionID parses out of the
 // binding string. See language-hygiene T9's notes; that is why condition_t
-// stayed an int rather than becoming this type.
+// stayed an int rather than becoming this type. There was a third — a deleted
+// driver's own two-value condition enum — until input-native-events T1; two
+// unrelated things in one integer is still two.
 
 
 namespace Neuron

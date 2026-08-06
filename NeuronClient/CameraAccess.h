@@ -87,7 +87,6 @@ namespace Neuron
       virtual DirectX::XMFLOAT3 GetUp() = 0;
       virtual DirectX::XMFLOAT3 GetRight() = 0;
       virtual DirectX::XMFLOAT3 GetVel() = 0;
-      virtual DirectX::XMFLOAT3 GetControlVector() = 0;
 
       // Culling, called per object per frame from entity render bodies.
       virtual bool PosInViewFrustum(DirectX::XMFLOAT3 const& _pos) = 0;

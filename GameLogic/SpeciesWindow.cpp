@@ -308,8 +308,7 @@ namespace Species
   SpeciesWindow::SpeciesWindow(std::string_view name)
     : EclWindow(name),
       m_currentButton(0),
-      m_buttonChangedThisUpdate(false),
-      m_skipUpdate(false)
+      m_buttonChangedThisUpdate(false)
   {
     SetTitle(name);
     // Was strupr(), which uppercases a char buffer in place. m_title is a
@@ -666,11 +665,13 @@ namespace Species
   void SpeciesWindow::Update()
   {
     m_buttonChangedThisUpdate = false;
-    if (m_skipUpdate)
-    {
-      m_skipUpdate = false;
-      return;
-    }
+
+    // THE m_skipUpdate EARLY RETURN THAT USED TO BE HERE IS GONE. The flag was
+    // initialised false and only ever CLEARED — nothing anywhere in the tree
+    // ever set it true — so the branch it guarded was unreachable and the
+    // member was a bool that could only hold one value. Found while converting
+    // the two controls below to subscriptions in T9, because a guard a
+    // subscription would have bypassed is worth checking before bypassing it.
 
     // MenuActivate and MenuClose are SUBSCRIPTIONS now — see the constructor.
     // These two stay polled because they write m_buttonChangedThisUpdate, which

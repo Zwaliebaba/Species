@@ -28,7 +28,6 @@ namespace Species
       std::vector<EclButton*> m_buttonOrder;
       int m_currentButton;
       bool m_buttonChangedThisUpdate;
-      bool m_skipUpdate;
 
     private:
       // PILOT CONVERSION, input-native-events T9 — the owner-requested shape: a

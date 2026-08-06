@@ -4,11 +4,16 @@
 #include <windows.h>
 #include <string>
 
-#include "Eclipse.h"
-
+// Eclipse.h AND Win32EventHandler.h ARE GONE FROM THIS LIST, and their removal
+// was deliberately deferred from T8 and T10 to here so it could be measured
+// rather than guessed. T8 moved every Eclipse call into the router's sink and
+// T10 deleted the event-processor registration, so this file names nothing
+// from either. What the two were still SUPPLYING is what matters, and it is
+// nothing: <windows.h> is included above in its own right, and <string>,
+// <vector>, <cstring> and <algorithm> all arrive through pch.h -> NeuronCore.h,
+// which is where memcmp, strstr and stricmp come from too.
 #include "InputTypes.h"
 #include "ControlBindings.h"
-#include "Win32EventHandler.h"
 #include "InputDriverWin32.h"
 #include "InputRouter.h"
 #include "KeyNames.h"

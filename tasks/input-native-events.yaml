@@ -1099,15 +1099,36 @@ tasks:
       so the closing criteria are testable now and meaningful later.
     depends_on: [T1, T2, T3, T7, T9, T10]
     files:
-      - GameData/Input/InputPreferences.txt
-      - NeuronClient/ControlTypes.inc
+      # THE FILE LIST WAS WRITTEN FROM THE GREPS AND THE GREPS POINT ELSEWHERE.
+      # Both files named here turned out to need NOTHING - T2 took the XInput
+      # lines out of the prefs file and T13 took the dead control types out of
+      # the .inc, so both greps were already at zero when this task started.
+      # What the sweep actually had to touch is below. Added during the work,
+      # per docs/TASK_DAG.md.
+      - NeuronClient/CameraAccess.h
+      - Species/Camera.h
+      - Species/Camera.cpp
+      - GameLogic/GlobalInternet.cpp
+      - NeuronClient/InputDriver.h
+      - NeuronClient/InputSpec.h
+      - NeuronClient/InputDriverWin32.cpp
+      - GameLogic/SpeciesWindow.h
+      - GameLogic/SpeciesWindow.cpp
+      - AGENTS.md
     acceptance:
       - CameraAccess::GetControlVector and Camera::m_controlVector are gone - T3 removed their last caller and recorded them here
       - Decide whether the Chord and Idle drivers stay: T13 deleted the last binding data exercising either, so both are now registered and reachable by nothing (see T13 notes)
       - grep XInput over GameData returns nothing (baseline 2026-08-06 - 69 lines)
       - grep for InputDriverPipe, InputDriverValue, InputDriverAlias, InputDriverPrefs and InputFilterManager returns nothing outside tasks/Archive
       - grep for "extern signed char g_keys" and "g_keys\[" returns nothing (baseline - 1 extern site, 2 live readers outside the driver)
-      - grep suppressEvent returns nothing (baseline - 2 sites)
+      # AMENDED 2026-08-06, DURING the work, original wording kept: it read
+      # "grep suppressEvent returns nothing (baseline - 2 sites)". The two CODE
+      # sites are gone, which is what the baseline counted. What the grep still
+      # finds is eight COMMENTS, in Input.h, InputRouter.h, Eclipse.cpp,
+      # InputDriverWin32.cpp, UserInput.cpp, Input.cpp and InputRouterTests.cpp,
+      # each explaining what replaced it and why. Deleting those to reach a
+      # literal zero would trade the explanation for the number.
+      - grep suppressEvent finds no code (baseline - 2 sites); the remaining hits are the comments that explain what replaced it, and are listed in the notes
       - All seven tools/ checks pass, the x64 Debug build is green, the full suite passes
     verify:
       - python3 tools/check_project_files.py
@@ -1119,8 +1140,86 @@ tasks:
       - python3 tools/check_hygiene.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
     notes: |
+      SWEPT 2026-08-06. All eight tools/ checks pass. The build and the suite
+      are CI's answer, not this task's: written on Linux, no MSVC, no client.
+
+      EVERY GREP, RE-RUN. XInput over GameData: ZERO, down from 69 (T2). The
+      five deleted driver names: ZERO, and two comments naming
+      InputDriverPrefs.cpp were reworded rather than left, because a comment
+      that names a file the tree does not have reads as a stale reference
+      whether or not it is one. g_keys: ZERO - the last two hits were a
+      commented-out fog debug block in GlobalInternet.cpp, deleted, along with
+      a commented-out g_inputManager->PollForEvents() in Camera.cpp that named a
+      function T10 removed. suppressEvent: no CODE, see the amended criterion.
+
+      THE CONTROL VECTOR IS GONE, AND MORE OF IT THAN THE CRITERION NAMED.
+      CameraAccess::GetControlVector, Camera::GetControlVector and
+      Camera::m_controlVector went as expected - T3 removed the last caller.
+      What went with them is the point: Camera::UpdateControlVector and
+      Camera::m_skipDirectionCalculation existed for nothing else. That function
+      ran every frame in entity-tracking mode, read two controls and computed an
+      up-vector angle with hysteresis, all to keep a member current that nothing
+      could ask for.
+
+      THE CHORD AND IDLE DRIVERS STAY. This is the judgement the criterion asks
+      for, and the owner can overrule it in one line. T13 removed the last
+      binding data exercising either, which does put them where InputDriverPipe
+      was when T1 deleted it - registered, functional, exercised by nothing. THE
+      DIFFERENCE THAT DECIDES IT: Pipe was never REGISTERED, so no line a user
+      could write in their own prefs file would reach it; it was unreachable
+      code. Chord and Idle are registered, so `key control ++ key c` and `idle
+      no longer` still work TODAY for anyone who writes them. Deleting them
+      removes a capability of the rebinding language rather than dead code, and
+      the shipped defaults not currently using a feature is not the same as the
+      feature being dead. Also unaffected either way, restating T13:
+      InputManager::isIdle() is independent of the Idle DRIVER - the manager
+      polls every driver's isIdle() each frame regardless of bindings.
+
+      THE GAMEPAD ART AND THE GAMEPAD UI ARE MADE TO AGREE, and not by deleting
+      either. The disagreement this task was handed is real: T2 kept twenty
+      INPUT_MODE_GAMEPAD consumers on the argument that they are the controller
+      user interface and deleting them turns a future controller into a UI
+      rewrite, and the owner then deleted the 22 gamepad button BMPs (ca1a5c5).
+      They agree in the only sense that matters right now - both are
+      UNREACHABLE, because no driver produces INPUT_MODE_GAMEPAD and every load
+      of that art sits behind a test for it. So the resolution is written down
+      rather than compiled: REINTRODUCING A CONTROLLER MEANS RESTORING THOSE
+      ICONS AS PART OF THE SAME WORK, and it is recorded in AGENTS.md where a
+      future task will find it. Deleting a coherent feature on an agent's own
+      authority is the alternative, and it is not this task's to take.
+
+      THREE FINDINGS FROM EARLIER TASKS, DISCHARGED HERE:
+
+      * m_skipUpdate is DELETED. T9 measured that nothing in the tree ever set
+        it true - initialised false, only ever cleared - so SpeciesWindow::Update
+        opened with an unreachable early return guarded by a bool that could
+        hold one value.
+      * The two stale includes T10 deferred are DELETED: Eclipse.h and
+        Win32EventHandler.h in InputDriverWin32.cpp. Deferred so they could be
+        measured rather than guessed, and the measurement is that neither
+        supplies anything - <windows.h> is included in its own right, and
+        <string>, <vector>, <cstring> and <algorithm> all arrive through
+        pch.h -> NeuronCore.h, which is also where memcmp, strstr and stricmp
+        come from.
+      * controlIcon STILL HAS NO CONSUMER, T2's finding, and it is NOT fixed
+        here. Nothing renders a control icon anywhere; the icon lines in the
+        prefs files are parsed into a map that is never read. Removing the
+        plumbing is ControlBindings surgery with no acceptance criterion behind
+        it in this plan. It survives the plan as an unowned leftover, recorded
+        in AGENTS.md with the others.
+
+      AND ONE MORE, from T9 and worth a task if anyone wants the feature:
+      ControlMenuClose has no binding in any file under GameData/Input, so the
+      escape-to-close-a-window handler cannot fire. That is data, not code.
+
+      WHAT THIS SWEEP CANNOT SAY. The x64 Debug build and the test suite are
+      CI's to answer. Nothing in T1-T11 has been in front of a running game -
+      not the character path, not Raw Input, not the router, not the
+      subscriptions - and the input work is the kind a green build says least
+      about. T12 is that gate and it is the last node in the plan.
+
       DEAD CONTROL TYPES, audited 2026-08-06 while doing T5. THIRTY-EIGHT of the
       131 names in ControlTypes.inc have no reference anywhere in any .cpp or
       .h — nothing calls controlEvent for them and nothing names the

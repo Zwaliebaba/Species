@@ -61,12 +61,10 @@ namespace Species
       bool AdvanceManualRotateCamera(DirectX::XMFLOAT3& cameraTarget);
       bool AdvanceManualCameraHeight(DirectX::XMFLOAT3& cameraTarget);
 
-      void UpdateControlVector(); // updates the vector used by units in direct control for the purposes of determining directions
-
     private:
       // Braced to zero throughout: Vector3's default constructor did it and
-      // XMFLOAT3's does not. The constructor writes m_pos, m_front, m_up and
-      // m_controlVector itself; every other member below was reaching a zeroed
+      // XMFLOAT3's does not. The constructor writes m_pos, m_front and m_up
+      // itself; every other member below was reaching a zeroed
       // default and several are read before their first write — m_targetPos on
       // the frame RequestMode(Mode::ModeFreeMovement) has not run yet, m_cameraTarget
       // in AdvanceAutomaticTracking, and all three m_*BeforeAnim if a script
@@ -120,9 +118,7 @@ namespace Species
 
       float m_cameraShake;
 
-      bool m_entityTrack;                                  // the current state of automatic entity tracking
-      DirectX::XMFLOAT3 m_controlVector{0.0f, 0.0f, 0.0f}; // previous right value of the camera, if the unit is not directly below
-      bool m_skipDirectionCalculation;
+      bool m_entityTrack; // the current state of automatic entity tracking
 
     public:
       Camera();
@@ -204,8 +200,6 @@ namespace Species
 
       void SwitchEntityTracking(bool _onOrOff);
       void UpdateEntityTrackingMode();
-
-      DirectX::XMFLOAT3 GetControlVector();
 
       void WaterReflect();
   };

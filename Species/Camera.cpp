@@ -772,7 +772,6 @@ void Camera::AdvanceFreeMovementMode()
     int intMouseDeltaY = floorf(mouseDeltaY);
     mouseDeltaX -= intMouseDeltaX;
     mouseDeltaY -= intMouseDeltaY;
-    // g_inputManager->PollForEvents();
     newMouseX = g_target->X() + intMouseDeltaX;
     newMouseY = g_target->Y() + intMouseDeltaY;
 
@@ -971,31 +970,16 @@ void Camera::AdvanceAutomaticTracking()
 
   // Finally face the unit
   RotateTowardsEntity(m_trackingEntity);
-  UpdateControlVector();
-}
 
-void Camera::UpdateControlVector()
-{
-  constexpr float angleThreshold = 0.98f;
-
-  bool recalc = false;
-  if (g_inputManager->controlEvent(ControlType::ControlUnitMoveDirectionChange))
-  {
-    m_skipDirectionCalculation = false;
-    recalc = true;
-  }
-
-  // operator* between two Vector3s was the DOT product, not a scale. Taking
-  // cosf of a dot is what the original did and is kept exactly.
-  DirectX::XMFLOAT3 const upStore = GetUp();
-  float angle = cosf(DirectX::XMVectorGetX(DirectX::XMVector3Dot(DirectX::g_XMIdentityR1, DirectX::XMLoadFloat3(&upStore))));
-  if ((fabs(angle) < angleThreshold && !m_skipDirectionCalculation) || !g_inputManager->controlEvent(ControlType::ControlUnitMove) || recalc)
-  {
-    m_controlVector = GetRight();
-    m_skipDirectionCalculation = false;
-  }
-  else if (fabs(angle) >= angleThreshold)
-    m_skipDirectionCalculation = true;
+  // THE UpdateControlVector CALL THAT USED TO CLOSE THIS FUNCTION IS GONE, and
+  // so is the function. Everything it computed existed to keep
+  // Camera::m_controlVector current, which existed to be returned by
+  // GetControlVector, whose last caller T3 removed: Team.cpp read it while
+  // building the 10Hz IAmAlive payload, feeding a per-machine camera value into
+  // a simulation input, and the result was thrown away unserialised. The
+  // hysteresis this ran - two control reads and an up-vector angle test, every
+  // frame in entity-tracking mode - was maintaining a value nobody could ask
+  // for.
 }
 
 bool Camera::AdvanceManualRotateCamera(DirectX::XMFLOAT3& cameraTarget)
@@ -1776,8 +1760,7 @@ Camera::Camera()
     m_objectId(),
     m_anim(nullptr),
     m_cameraShake(0.0f),
-    m_entityTrack(false),
-    m_skipDirectionCalculation(false)
+    m_entityTrack(false)
 {
   m_cosFov = cos(m_fov / 180.0f * M_PI);
   m_pos = DirectX::XMFLOAT3(1000.0f,          // g_location->m_landscape.GetWorldSizeX() / 2.0f,
@@ -1796,7 +1779,6 @@ Camera::Camera()
   // the result overwrites it two lines later.
   DirectX::XMVECTOR const right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::g_XMIdentityR1, front));
   DirectX::XMStoreFloat3(&m_up, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(front, right)));
-  DirectX::XMStoreFloat3(&m_controlVector, right);
 }
 
 void Camera::CreateCameraShake(float _intensity) { m_cameraShake = std::max(m_cameraShake, _intensity); }
@@ -2520,8 +2502,6 @@ void Camera::RestoreCameraPosition(bool _cut)
 }
 
 void Camera::SwitchEntityTracking(bool _onOrOff) { m_entityTrack = _onOrOff; }
-
-DirectX::XMFLOAT3 Camera::GetControlVector() { return m_controlVector; }
 
 void Camera::UpdateEntityTrackingMode()
 {
