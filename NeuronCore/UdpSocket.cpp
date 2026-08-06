@@ -2,6 +2,8 @@
 
 #include <format>
 
+#include <ws2tcpip.h>
+
 #include "Generic.h"
 #include "UdpSocket.h"
 
@@ -22,6 +24,33 @@ namespace Neuron
     in_addr address;
     address.s_addr = m_address;
     return std::format("{}:{}", IpToString(address), m_port);
+  }
+
+
+  std::error_code ResolveEndpoint(char const* _host, unsigned short _port, Endpoint& _endpoint)
+  {
+    _endpoint = Endpoint();
+
+    if (!_host || !*_host)
+      return std::make_error_code(std::errc::invalid_argument);
+
+    addrinfo hints = {};
+    hints.ai_family = AF_INET; // IPv4 only, which is what the protocol's packed addresses are
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_protocol = IPPROTO_UDP;
+
+    addrinfo* results = nullptr;
+    const int failed = getaddrinfo(_host, nullptr, &hints, &results);
+    if (failed != 0 || !results)
+      return std::error_code(failed, std::system_category());
+
+    // The first IPv4 answer, which is what NetGetHostByName's caller took —
+    // h_addr_list[0] — so a multi-homed name resolves the same way it did.
+    const sockaddr_in* address = reinterpret_cast<sockaddr_in const*>(results->ai_addr);
+    _endpoint = Endpoint(address->sin_addr.s_addr, _port);
+
+    freeaddrinfo(results);
+    return std::error_code();
   }
 
 

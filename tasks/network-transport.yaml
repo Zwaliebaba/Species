@@ -399,7 +399,39 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: >
+      THE DESTRUCTOR'S SPIN-WAIT IS GONE BY CONSTRUCTION, which is the point of
+      the task rather than a tidy-up. `while (!m_outbox.empty()) {}` waited for a
+      thread to drain a member it accessed without synchronisation, with nothing
+      guaranteeing the thread ever would - and then reset the listener object
+      that thread was still executing inside. With the sending on this thread,
+      waiting for the outbox to empty IS emptying it: the destructor calls
+      AdvanceSender and closes.
+
+      HOSTNAME RESOLUTION WOULD HAVE BEEN LOST SILENTLY, and this is the find of
+      the task. ServerAddress is a preferences string, so a user can write
+      "myserver.local"; NetSocket::Connect resolved it through NetGetHostByName,
+      which T6 deletes. Sending to ConvertIPToInt(serverAddress) instead would
+      have compiled, passed every check, and worked perfectly for the default
+      value of 127.0.0.1 - failing only for the users who typed a name.
+      ResolveEndpoint (getaddrinfo, first IPv4 answer, which is the h_addr_list[0]
+      NetGetHostByName's caller took) is in UdpSocket.cpp and is exercised in the
+      POSIX harness against a dotted quad, a name, a null, an empty string and an
+      unresolvable name.
+
+      THE DEBUG PACKET-DROP HOOK now runs on the main thread because there is no
+      other thread. It used to ask g_inputManager for a control event from the
+      listen thread, which is a thread that never touches input.
+
+      Advance RECEIVES THEN SENDS, deliberately: an order given this frame then
+      goes out carrying the sequence id of a letter that arrived this frame
+      rather than last frame's.
+
+      NOT COMPILED. Nothing in this task can be built here - ClientToServer
+      needs NeuronClient. The socket underneath it is the same UdpSocket that T4
+      compiled and ran under the POSIX shim; the additions to it here,
+      ResolveEndpoint, ran there too. What needs CI is the file that uses them.
 
   - id: T6
     title: Delete the legacy transport files

@@ -39,6 +39,16 @@ namespace Neuron
   };
 
 
+  // Resolves a host — a dotted quad or a name — and a port to an endpoint.
+  //
+  // It exists because the client's server address is a preferences string, so
+  // "myserver.local" is a thing a user can write. NetSocket::Connect resolved
+  // it through NetGetHostByName and T6 deletes that; without this the address
+  // would silently have to be numeric, which is the kind of regression a build
+  // cannot notice.
+  [[nodiscard]] std::error_code ResolveEndpoint(char const* _host, unsigned short _port, Endpoint& _endpoint);
+
+
   // The whole transport, and deliberately small: open, send, try to receive.
   //
   // ONE SOCKET, POLLED, NOT A THREAD PER ENDPOINT. What this replaces was a

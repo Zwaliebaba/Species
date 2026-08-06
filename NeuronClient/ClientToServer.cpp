@@ -1,11 +1,7 @@
 #include "pch.h"
 
 #include "NetLib.h"
-#include "NetMutex.h"
-#include "NetSocket.h"
-#include "NetSocketListener.h"
-#include "NetThread.h"
-#include "NetUdpPacket.h"
+#include "UdpSocket.h"
 
 #include <float.h>
 
@@ -31,92 +27,72 @@ namespace Neuron
   ClientToServer* g_clientToServer = nullptr;
 
 
-  // The socket callbacks are plain function pointers and cannot carry state, so
-  // the running client has to be reachable from file scope. This replaces
-  // g_clientToServer; it is set in the constructor.
-  static ClientToServer* s_client = nullptr;
-
-  static NetCallBackRetType ListenCallback(NetUdpPacket* udpdata)
-  {
-    if (udpdata)
-    {
-      auto letter = std::make_unique<ServerToClientLetter>(udpdata->m_data, udpdata->m_length);
-      // Dropped here rather than in the inbox, because ReceiveLetter acts on a
-      // letter's sequence id before anything reads its type — it moves the
-      // client's clock and its last-valid-sequence id. A letter that did not
-      // parse has no sequence id worth believing.
-      if (letter->IsValid())
-      {
-        s_client->ReceiveLetter(std::move(letter));
-      }
-      //        SET_PROFILE(m_profiler,  "#Client Receive", udpdata->getLength() );
-
-      delete udpdata;
-    }
-
-    return 0;
-  }
-
-
-  static NetCallBackRetType ListenThread(void* ignored)
-  {
-    s_client->m_receiveSocket = std::make_unique<NetSocketListener>(4001);
-    NetRetCode retCode = s_client->m_receiveSocket->StartListening(ListenCallback);
-    DEBUG_ASSERT(retCode == NetRetCode::NetOk);
-    return 0;
-  }
-
-
   ClientToServer::ClientToServer()
   {
-    s_client = this;
-
     m_lastValidSequenceIdFromServer = -1;
     m_startTime = DBL_MAX; // Same initial value g_startTime carried in Main.cpp
-
-    m_inboxMutex = std::make_unique<NetMutex>();
-    m_outboxMutex = std::make_unique<NetMutex>();
 
     m_netLib = std::make_unique<NetLib>();
     m_netLib->Initialise();
 
-    m_sendSocket = std::make_unique<NetSocket>();
     char const* serverAddress = g_prefsManager->GetString("ServerAddress");
-    m_sendSocket->Connect(serverAddress, 4000);
+    const std::error_code unresolved = ResolveEndpoint(serverAddress, ServerPort, m_serverEndpoint);
+    if (unresolved)
+      NetDebugOut("Client could not resolve server address {}: {}", serverAddress, unresolved.message());
 
-    // Null it before the listen thread starts: the thread's first act is to store
-    // its listener here, and this write used to be able to land on top of that.
-    m_receiveSocket.reset();
-
-    NetStartThread(ListenThread);
+    // Bound, not connected. The socket used to be a pair: a NetSocket
+    // "connected" to the server for sending, and a NetSocketListener on a
+    // thread of its own for receiving. The file-scope ClientToServer* that
+    // existed only so a socket callback could find it went with them.
+    const std::error_code failure = m_socket.Open(ClientPort);
+    if (failure)
+      NetDebugOut("Client could not open port {}: {}", ClientPort, failure.message());
   }
 
 
   ClientToServer::~ClientToServer()
   {
-    while (!m_outbox.empty())
-    {
-    }
+    // Sends what is queued and closes. What stood here was
+    // `while (!m_outbox.empty()) {}` — a spin-wait on a member the listen
+    // thread was expected to drain, with no synchronisation and nothing
+    // guaranteeing it ever would, and then a reset() of the listener object
+    // while that thread was still executing inside it. With the sending on this
+    // thread, waiting for it is just doing it.
+    AdvanceSender();
 
-    // Reset explicitly, in the order the SAFE_DELETEs ran. Members are destroyed
-    // in reverse declaration order, which would take the two sockets down BEFORE
-    // NetLib — the opposite of what this did. Whether NetLib outliving its
-    // sockets matters is not established, so it is preserved rather than
-    // reasoned about.
     m_inbox.clear();
     m_outbox.clear();
-    m_inboxMutex.reset();
-    m_outboxMutex.reset();
+    m_socket.Close();
     m_netLib.reset();
-    m_sendSocket.reset();
-    m_receiveSocket.reset();
+  }
+
+
+  void ClientToServer::ReceiveDatagrams()
+  {
+    if (!m_socket.IsOpen())
+      return;
+
+    char datagram[MaxDatagramSize];
+    int received = 0;
+    Endpoint from;
+
+    while (m_socket.TryReceive(datagram, static_cast<int>(sizeof(datagram)), received, from))
+    {
+      auto letter = std::make_unique<ServerToClientLetter>(datagram, received);
+
+      // Dropped here rather than in the inbox, because ReceiveLetter acts on a
+      // letter's sequence id before anything reads its type — it moves the
+      // client's clock and its last-valid-sequence id. A letter that did not
+      // parse has no sequence id worth believing.
+      if (letter->IsValid())
+        ReceiveLetter(std::move(letter));
+    }
   }
 
 
   void ClientToServer::AdvanceSender()
   {
     int bytesSentThisFrame = 0;
-    m_outboxMutex->Lock();
 
     while (!m_outbox.empty())
     {
@@ -125,10 +101,10 @@ namespace Neuron
 
       {
         int letterSize = 0;
-        char* byteStream = letter->GetByteStream(&letterSize);
-        NetSocket* socket = m_sendSocket.get();
-        socket->WriteData(byteStream, letterSize);
-        bytesSentThisFrame += letterSize;
+        char const* byteStream = letter->GetByteStream(&letterSize);
+        const std::error_code failure = m_socket.SendTo(m_serverEndpoint, byteStream, letterSize);
+        if (!failure)
+          bytesSentThisFrame += letterSize;
         // reset() rather than letting the scope end it: the old code deleted
         // here, before the erase, and this plan's rule is that ownership moves
         // without the moment of destruction moving with it.
@@ -137,7 +113,6 @@ namespace Neuron
 
       m_outbox.erase(m_outbox.begin());
     }
-    m_outboxMutex->Unlock();
 
     if (bytesSentThisFrame > 0)
     {
@@ -146,7 +121,13 @@ namespace Neuron
   }
 
 
-  void ClientToServer::Advance() { AdvanceSender(); }
+  // Receive before send, so an order given this frame goes out carrying the
+  // sequence id of a letter that arrived this frame rather than last frame's.
+  void ClientToServer::Advance()
+  {
+    ReceiveDatagrams();
+    AdvanceSender();
+  }
 
 
   int ClientToServer::GetOurIP_Int()
@@ -201,12 +182,10 @@ namespace Neuron
   {
     int result = -1;
 
-    m_inboxMutex->Lock();
     if (!m_inbox.empty())
     {
       result = m_inbox[0]->GetSequenceId();
     }
-    m_inboxMutex->Unlock();
 
     return result;
   }
@@ -214,7 +193,6 @@ namespace Neuron
 
   std::unique_ptr<ServerToClientLetter> ClientToServer::GetNextLetter(int _lastProcessedSequenceId)
   {
-    m_inboxMutex->Lock();
     std::unique_ptr<ServerToClientLetter> letter;
 
     if (!m_inbox.empty())
@@ -226,8 +204,6 @@ namespace Neuron
       }
     }
 
-    m_inboxMutex->Unlock();
-
     return letter;
   }
 
@@ -235,7 +211,10 @@ namespace Neuron
   void ClientToServer::ReceiveLetter(std::unique_ptr<ServerToClientLetter> letter)
   {
     //
-    // Simulate network packet loss
+    // Simulate network packet loss. This used to run on the listen thread,
+    // which meant a debug build asked the input manager for a control event
+    // from a thread that never touches input; it is the main thread now, like
+    // everything else here.
 
 #ifdef _DEBUG
     if (g_inputManager->controlEvent(ControlType::ControlDebugDropPacket))
@@ -274,7 +253,6 @@ namespace Neuron
   //
   // Do a sorted insert of the letter into the inbox
 
-  m_inboxMutex->Lock();
   int i;
   bool inserted = false;
   for (i = static_cast<int>(m_inbox.size()) - 1; i >= 0; --i)
@@ -312,18 +290,13 @@ namespace Neuron
     }
     m_lastValidSequenceIdFromServer = thisLetter->GetSequenceId();
   }
-
-  m_inboxMutex->Unlock();
   }
 
 
 void ClientToServer::SendLetter(std::unique_ptr<NetworkUpdate> letter)
 {
   letter->SetLastSequenceId(m_lastValidSequenceIdFromServer);
-
-  m_outboxMutex->Lock();
   m_outbox.push_back(std::move(letter));
-  m_outboxMutex->Unlock();
 }
 
 
