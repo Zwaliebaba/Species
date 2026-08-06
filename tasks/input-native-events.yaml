@@ -104,6 +104,44 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     status: in_progress
+    notes: |
+      THE AUDIT, re-run 2026-08-06 before anything was deleted, as the first
+      acceptance criterion requires.
+
+      Data. Every binding right-hand side across InputPreferences.txt and both
+      Keyboards/*.txt files, counted by leading token: key 99, XInput 64,
+      mouse 23, idle 1, plus 18 icon paths on ~ lines. A whole-word grep for
+      value, alias, pref and pipe over the same files returns NOTHING - not as
+      a leading token, not anywhere. The combinators do not appear as leading
+      tokens because they scan for their operator mid-spec, and all three are
+      present in the data: && (Conjoin) and not (Invert) on
+      UnitSetTarget/UnitSecondaryFireTarget, ++ (Chord) on
+      GesturesTaskManagerEndTask, and idle on StopAttractMode.
+
+      Code. The only callers that build a spec from a string are the three
+      surviving combinators (recursing into parseInputSpec*) and
+      PrefsKeybindingsWindow's ApplyKeybindingsButton. That last one was the
+      one worth checking, and it is safe: its val comes from
+      m_bindings[i]->pref, which is an InputDescription produced by
+      getInputDescription - "key a pressed", "mouse left down" - never a
+      driver keyword. Every other mention of the four deleted classes was
+      inside their own files or the three addDriver lines in Main.cpp.
+
+      A FINDING THAT STRENGTHENS THE CASE. ValueInputDriver could never have
+      parsed its own syntax: its guard reads
+      `if (tokens.length() < idx + 1 || stricmp(tokens[idx++], "value") == 0)
+      return state;` - it returns FAILURE when the first token IS "value".
+      So a "value ..." spec was always rejected, and what it actually accepted
+      was a bare value name with no driver prefix, reachable only after every
+      other driver had refused. It was not unused-but-working; it was
+      inverted. Nothing in the data reached it either way.
+
+      InputDetailsList and InputDetailsPtr went too. Both were declared in
+      InputTypes.h and named ONLY by the deleted files - the two filter()
+      overloads and InputFilterWithDelta's history buffers - so the deletion
+      orphaned them. <memory> and <vector> stay in that header: nothing in it
+      needs them now, but roughly twenty files include it and some rely on the
+      transitive include, which is not a trade worth a build round.
 
   - id: T2
     title: Delete the gamepad vestige - dead switch, dead dialogs, 69 dead binding lines

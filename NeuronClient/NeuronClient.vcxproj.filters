@@ -70,9 +70,6 @@
     <ClCompile Include="InputDriver.cpp">
       <Filter>Input</Filter>
     </ClCompile>
-    <ClCompile Include="InputDriverAlias.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
     <ClCompile Include="InputDriverChord.cpp">
       <Filter>Input</Filter>
     </ClCompile>
@@ -85,34 +82,10 @@
     <ClCompile Include="InputDriverInvert.cpp">
       <Filter>Input</Filter>
     </ClCompile>
-    <ClCompile Include="InputDriverPipe.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
-    <ClCompile Include="InputDriverPrefs.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
     <ClCompile Include="InputDriverSimple.cpp">
       <Filter>Input</Filter>
     </ClCompile>
-    <ClCompile Include="InputDriverValue.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
     <ClCompile Include="InputDriverWin32.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
-    <ClCompile Include="InputFilter.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
-    <ClCompile Include="InputFilterDirection.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
-    <ClCompile Include="InputFilterWithDelta.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
-    <ClCompile Include="InputFilterManager.cpp">
-      <Filter>Input</Filter>
-    </ClCompile>
-    <ClCompile Include="InputFilterSpec.cpp">
       <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="InputSpec.cpp">
@@ -230,9 +203,6 @@
     <ClInclude Include="InputDriver.h">
       <Filter>Input</Filter>
     </ClInclude>
-    <ClInclude Include="InputDriverAlias.h">
-      <Filter>Input</Filter>
-    </ClInclude>
     <ClInclude Include="InputDriverChord.h">
       <Filter>Input</Filter>
     </ClInclude>
@@ -245,37 +215,10 @@
     <ClInclude Include="InputDriverInvert.h">
       <Filter>Input</Filter>
     </ClInclude>
-    <ClInclude Include="InputDriverPipe.h">
-      <Filter>Input</Filter>
-    </ClInclude>
-    <ClInclude Include="InputDriverPrefs.h">
-      <Filter>Input</Filter>
-    </ClInclude>
     <ClInclude Include="InputDriverSimple.h">
       <Filter>Input</Filter>
     </ClInclude>
-    <ClInclude Include="InputDriverValue.h">
-      <Filter>Input</Filter>
-    </ClInclude>
-    <ClInclude Include="InputDriverValues.inc">
-      <Filter>Input</Filter>
-    </ClInclude>
     <ClInclude Include="InputDriverWin32.h">
-      <Filter>Input</Filter>
-    </ClInclude>
-    <ClInclude Include="InputFilter.h">
-      <Filter>Input</Filter>
-    </ClInclude>
-    <ClInclude Include="InputFilterDirection.h">
-      <Filter>Input</Filter>
-    </ClInclude>
-    <ClInclude Include="InputFilterWithDelta.h">
-      <Filter>Input</Filter>
-    </ClInclude>
-    <ClInclude Include="InputFilterManager.h">
-      <Filter>Input</Filter>
-    </ClInclude>
-    <ClInclude Include="InputFilterSpec.h">
       <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="InputSpec.h">

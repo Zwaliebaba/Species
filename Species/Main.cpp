@@ -15,13 +15,10 @@
 #include "GlobalWorldEditorWindow.h"
 #include "HiResTime.h"
 #include "Input.h"
-#include "InputDriverAlias.h"
 #include "InputDriverChord.h"
 #include "InputDriverConjoin.h"
 #include "InputDriverIdle.h"
 #include "InputDriverInvert.h"
-#include "InputDriverPrefs.h"
-#include "InputDriverValue.h"
 #include "InputDriverWin32.h"
 #include "Landscape.h"
 #include "LanguageTable.h"
@@ -809,15 +806,16 @@ void GlobalWorldEditorLoop()
 
 void InitialiseInputManager()
 {
+  // ORDER IS LOAD-BEARING. parseInputSpecTokens offers a spec to each driver in
+  // turn and takes the first that accepts it, so the three combinators have to
+  // come before W32: each one scans for its own operator (&&, ++, not) and hands
+  // the parts back round, and W32 would otherwise swallow the first part alone.
   g_inputManager = new InputManager;
   g_inputManager->addDriver(new ConjoinInputDriver());
   g_inputManager->addDriver(new ChordInputDriver());
   g_inputManager->addDriver(new InvertInputDriver());
   g_inputManager->addDriver(new IdleInputDriver());
   g_inputManager->addDriver(new W32InputDriver());
-  g_inputManager->addDriver(new PrefsInputDriver());
-  g_inputManager->addDriver(new ValueInputDriver());
-  g_inputManager->addDriver(new AliasInputDriver());
   {
     // Read Darwinia default input preferences file
     TextReader* inputPrefsReader = g_resource->GetTextReader(InputPrefs::GetSystemPrefsPath());

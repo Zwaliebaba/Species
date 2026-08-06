@@ -6,7 +6,6 @@
 
 #include "Input.h"
 #include "TargetCursor.h"
-#include "InputFilterManager.h"
 #include "LanguageTable.h"
 #include "HiResTime.h"
 
@@ -197,8 +196,6 @@ void InputManager::Advance()
   // Record the mode, if we know it, otherwise stick with last recorded
   if (nextInputMode > InputMode::INPUT_MODE_NONE)
     m_inputMode = nextInputMode;
-
-  //	if ( g_inputFilterManager ) g_inputFilterManager->Advance();
 
   if (g_target)
     g_target->Advance();
