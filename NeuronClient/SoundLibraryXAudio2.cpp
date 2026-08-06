@@ -754,14 +754,12 @@ namespace Neuron
         continue;
 
       case DSP_ECHO:
-      case DSP_DSOUND_ECHO:
         if (FAILED(CreateFX(__uuidof(FXEcho), &effect)))
           effect = nullptr;
         break;
 
       case DSP_SIMPLE_REVERB:
-      case DSP_DSOUND_I3DL2REVERB:
-      case DSP_DSOUND_WAVESREVERB:
+      case DSP_I3DL2REVERB:
         if (FAILED(XAudio2CreateReverb(&effect)))
           effect = nullptr;
         break;
@@ -775,9 +773,9 @@ namespace Neuron
         continue;
 
       default:
-        // The remaining DirectX 8 media objects — chorus, compressor,
-        // distortion, flanger, gargle, parametric EQ. No sound in the data
-        // asks for one, and T4 removes them from the effect list outright.
+        // Unreachable while every enumerator above has a case, which is the
+        // point of leaving it: a filter added to Effects.txt and the enum but
+        // not to this switch plays dry rather than doing something undefined.
         continue;
       }
 
@@ -869,39 +867,30 @@ namespace Neuron
     switch (_filterType)
     {
     case DSP_ECHO:
-    case DSP_DSOUND_ECHO:
     {
+      // WetDryMix 0..100, Delay in ms, Attenuation 0..100 — DspEcho's layout,
+      // and now the only echo layout. T4 rewrote the six DirectSound echo
+      // usages into this one: their RightDelay and PanDelay were already being
+      // ignored here, because the voices are mono and two delays are one.
       FXECHO_PARAMETERS echo = {};
-
-      if (_filterType == DSP_ECHO)
-      {
-        // WetDryMix 0..100, Delay in ms, Attenuation 0..100 — DspEcho's layout.
-        echo.WetDryMix = std::clamp(_params[0] * 0.01f, FXECHO_MIN_WETDRYMIX, FXECHO_MAX_WETDRYMIX);
-        echo.Delay = std::clamp(_params[1], FXECHO_MIN_DELAY, FXECHO_MAX_DELAY);
-        echo.Feedback = std::clamp(_params[2] * 0.01f, FXECHO_MIN_FEEDBACK, FXECHO_MAX_FEEDBACK);
-      }
-      else
-      {
-        // DirectSound's layout: WetDryMix, Feedback, LeftDelay, RightDelay,
-        // PanDelay. The voices are mono, so the two delays are one delay.
-        echo.WetDryMix = std::clamp(_params[0] * 0.01f, FXECHO_MIN_WETDRYMIX, FXECHO_MAX_WETDRYMIX);
-        echo.Feedback = std::clamp(_params[1] * 0.01f, FXECHO_MIN_FEEDBACK, FXECHO_MAX_FEEDBACK);
-        echo.Delay = std::clamp(_params[2], FXECHO_MIN_DELAY, FXECHO_MAX_DELAY);
-      }
+      echo.WetDryMix = std::clamp(_params[0] * 0.01f, FXECHO_MIN_WETDRYMIX, FXECHO_MAX_WETDRYMIX);
+      echo.Delay = std::clamp(_params[1], FXECHO_MIN_DELAY, FXECHO_MAX_DELAY);
+      echo.Feedback = std::clamp(_params[2] * 0.01f, FXECHO_MIN_FEEDBACK, FXECHO_MAX_FEEDBACK);
 
       voice->m_voice->SetEffectParameters(static_cast<UINT32>(index), &echo, sizeof(echo));
       break;
     }
 
     case DSP_SIMPLE_REVERB:
-    case DSP_DSOUND_I3DL2REVERB:
-    case DSP_DSOUND_WAVESREVERB:
+    case DSP_I3DL2REVERB:
     {
       // I3DL2 is the interchange format: XAudio2 converts it to its own native
-      // parameters, and the game's own I3DL2 block is field for field the same
-      // standard. The other two reverbs carry less information, so they fill
-      // the parts they have and take the I3DL2 defaults for the rest — which
-      // are the same defaults Effects.txt lists.
+      // parameters, and the game's I3DL2 block is field for field the same
+      // standard. SimpleReverb carries only a mix and takes the defaults below
+      // for everything else. Those are the I3DL2 default preset, and two of
+      // them are deliberately finer than Effects.txt can express: the file
+      // writes {:8.2f}, so it rounds 0.007 and 0.011 to 0.01. A block that
+      // states its own delays overrides these; SimpleReverb gets the exact ones.
       XAUDIO2FX_REVERB_I3DL2_PARAMETERS i3dl2 = {};
       i3dl2.WetDryMix = 100.0f;
       i3dl2.Room = -1000;
@@ -917,31 +906,24 @@ namespace Neuron
       i3dl2.Density = 100.0f;
       i3dl2.HFReference = 5000.0f;
 
-      if (_filterType == DSP_DSOUND_I3DL2REVERB && _numParams >= 12)
+      if (_filterType == DSP_I3DL2REVERB && _numParams >= 13)
       {
-        i3dl2.Room = static_cast<INT32>(_params[0]);
-        i3dl2.RoomHF = static_cast<INT32>(_params[1]);
-        i3dl2.RoomRolloffFactor = _params[2];
-        i3dl2.DecayTime = _params[3];
-        i3dl2.DecayHFRatio = _params[4];
-        i3dl2.Reflections = static_cast<INT32>(_params[5]);
-        i3dl2.ReflectionsDelay = _params[6];
-        i3dl2.Reverb = static_cast<INT32>(_params[7]);
-        i3dl2.ReverbDelay = _params[8];
-        i3dl2.Diffusion = _params[9];
-        i3dl2.Density = _params[10];
-        i3dl2.HFReference = _params[11];
-        // _params[12] is DirectSound's Quality knob. XAudio2's reverb has no
-        // equivalent and does not need one; it is dropped rather than faked.
-      }
-      else if (_filterType == DSP_DSOUND_WAVESREVERB && _numParams >= 4)
-      {
-        // InGain, ReverbMix, ReverbTime, HighFreqRTRatio. The mix is decibels
-        // of attenuation, so it becomes a percentage the same way every other
-        // volume in this file does.
-        i3dl2.WetDryMix = std::clamp(100.0f * HundredthsOfDecibelToAmplitude(_params[1] * 100.0f), 0.0f, 100.0f);
-        i3dl2.DecayTime = std::max(_params[2] * 0.001f, 0.1f);
-        i3dl2.DecayHFRatio = std::clamp(_params[3], 0.1f, 2.0f);
+        // WetDryMix leads, then the twelve standard fields in I3DL2 order.
+        // DirectSound's Quality knob used to trail them; XAudio2's reverb has
+        // no equivalent, so T4 dropped it from the data rather than faking one.
+        i3dl2.WetDryMix = std::clamp(_params[0], 0.0f, 100.0f);
+        i3dl2.Room = static_cast<INT32>(_params[1]);
+        i3dl2.RoomHF = static_cast<INT32>(_params[2]);
+        i3dl2.RoomRolloffFactor = _params[3];
+        i3dl2.DecayTime = _params[4];
+        i3dl2.DecayHFRatio = _params[5];
+        i3dl2.Reflections = static_cast<INT32>(_params[6]);
+        i3dl2.ReflectionsDelay = _params[7];
+        i3dl2.Reverb = static_cast<INT32>(_params[8]);
+        i3dl2.ReverbDelay = _params[9];
+        i3dl2.Diffusion = _params[10];
+        i3dl2.Density = _params[11];
+        i3dl2.HFReference = _params[12];
       }
       else if (_filterType == DSP_SIMPLE_REVERB && _numParams >= 1)
       {

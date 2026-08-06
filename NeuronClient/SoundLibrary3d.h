@@ -41,22 +41,25 @@ namespace Neuron
       bool (*m_musicCallback)(signed short*, unsigned int, int*);
 
     public:
+      // THIS ENUM IS GameData/Effects.txt, POSITION FOR POSITION.
+      // SoundSystem::LoadEffects appends one blueprint per EFFECT block, so an
+      // effect's index is its line position in that file and the two must be
+      // edited together. Nothing checks the alignment at build or load time; a
+      // mismatch reads the wrong blueprint and the game still runs.
+      //
+      // The nine DirectX 8 media objects that used to sit above these went with
+      // sound-xaudio2 T4. Seven had no usage in the data at all. I3DL2Reverb
+      // survives with its prefix dropped, because I3DL2 is not a DirectSound
+      // legacy — it is the interchange format XAUDIO2FX speaks natively, which
+      // is what ReverbConvertI3DL2ToNative converts from.
       enum
       {
-        DSP_DSOUND_CHORUS, // 0
-        DSP_DSOUND_COMPRESSOR,
-        DSP_DSOUND_DISTORTION, // 2
-        DSP_DSOUND_ECHO,
-        DSP_DSOUND_FLANGER, // 4
-        DSP_DSOUND_GARGLE,
-        DSP_DSOUND_I3DL2REVERB, // 6
-        DSP_DSOUND_PARAMEQ,
-        DSP_DSOUND_WAVESREVERB, // 8
-        DSP_RESONANTLOWPASS,
-        DSP_BITCRUSHER, // 10
-        DSP_GARGLE,
-        DSP_ECHO, // 12
-        DSP_SIMPLE_REVERB,
+        DSP_RESONANTLOWPASS, // 0
+        DSP_BITCRUSHER,
+        DSP_GARGLE, // 2
+        DSP_ECHO,
+        DSP_SIMPLE_REVERB, // 4
+        DSP_I3DL2REVERB,
         NUM_FILTERS
       };
 

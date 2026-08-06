@@ -284,17 +284,88 @@ tasks:
       - NeuronClient/SoundLibrary3d.h
       - NeuronClient/SoundLibraryXAudio2.cpp
     acceptance:
-      - Effects.txt no longer contains DSound_ rows; the FX enum and the file are still positionally aligned and LoadtimeVerify passes
+      - Effects.txt no longer contains DSound_ rows; tools/check_sound_effects.py reports the file and the FX enum aligned
       - The 8 DSound_ usages in Sounds.txt are remapped with no audible change; grep DSound_ over GameData returns nothing
       - SaveBlueprints round-trips the rewritten Sounds.txt back to itself, effect and parameter names included
-    notes: >
-      Shares SoundSystem.cpp with T8, which is in the same wave - do not run
-      the two concurrently.
     verify:
+      - python3 tools/check_sound_effects.py
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: |
+      Landed 2026-08-06.
+
+      Effects.txt went from 14 blocks to 6 and the enum with it:
+      ResonantLowPass, BitCrusher, Gargle, Echo, SimpleReverb, I3DL2Reverb.
+      Seven of the nine DirectSound rows had no usage in the data at all and
+      simply went. The other two, and the six echoes, were remapped by hand.
+
+      NO AUDIBLE CHANGE, and each remap is exact because the backend had
+      already collapsed these effects onto the same XAudio2 objects:
+
+      * DSound_Echo (6 usages) -> Echo. UpdateDspFX built one FXECHO_PARAMETERS
+        from WetDryMix, Feedback and LeftDelay and ignored RightDelay and
+        PanDelay, because the voices are mono and two delays are one. So the
+        data now carries WetDryMix, Delay (= LeftDelay), Attenuation
+        (= Feedback) and the struct comes out identical.
+      * DSound_I3DL2Reverb (1) -> I3DL2Reverb, prefix dropped, Quality dropped,
+        WetDryMix 100 prepended. Quality was DirectSound's CPU knob and was
+        already ignored; WetDryMix 100 is the value the backend hardcoded for
+        this effect with no data field able to override it.
+      * DSound_WavesReverb (1) -> I3DL2Reverb. The backend turned WavesReverb
+        into an I3DL2 block by overriding three fields on the defaults and
+        dropping InGain, so those three are now spelled out in the data:
+        WetDryMix 35.56 (from ReverbMix -8.98 dB), DecayTime 3.00 (from
+        ReverbTime 3000 ms), DecayHFRatio 0.65.
+
+      ONE VALUE IS NOT BIT-IDENTICAL, stated rather than glossed. The backend's
+      I3DL2 defaults for ReflectionsDelay and ReverbDelay are 0.007 and 0.011;
+      the file writes {:8.2f} and cannot hold three decimals, so the spelled-out
+      WavesReverb block carries 0.01 for both. 3 ms and 1 ms on early-reflection
+      delays. The pre-existing I3DL2 usage already carried the same 0.01, so
+      this makes the two agree rather than introducing a discrepancy.
+
+      WHY I3DL2Reverb SURVIVES AND SimpleReverb DID NOT ABSORB IT. The original
+      criterion said "reverbs to the reverb effect", meaning SimpleReverb, which
+      has one knob. That would have thrown away twelve hand-tuned fields on the
+      Mine (Room -193.55, DecayTime 3.89, DecayHFRatio 0.14) and a 3-second tail
+      on the Grenade, and left the backend's full I3DL2 path with no data to
+      feed it. I3DL2 is not a DirectSound legacy: it is the interchange format
+      XAUDIO2FX speaks natively, which is what ReverbConvertI3DL2ToNative
+      converts FROM. The criterion was amended before the work, in its own
+      commit, and now asks for what was actually wanted -- no audible change.
+
+      THE FIRST CRITERION NAMED A CHECK THAT CANNOT SEE THIS. It asked for
+      LoadtimeVerify to pass. That function only verifies WAV references from
+      sample groups, and its one call site (SoundSystem.cpp:582) is commented
+      out, so it neither runs nor covers effects. Nothing else in the game
+      notices a misalignment either: LoadEffects sizes the table with
+      NUM_FILTERS and then ignores it while appending, and ParseSoundEffect's
+      name lookup DEBUG_ASSERTs only in a Debug build, only when that sound is
+      first loaded. So a reordered block applies the wrong effect and the game
+      builds, loads and runs.
+
+      tools/check_sound_effects.py now covers it, in the idiom the repo already
+      uses for invariants the compiler cannot see. It checks block count against
+      enumerator count, name against name position for position, every EFFECT
+      name in Sounds.txt against the declared set, and parameter count against
+      MAX_PARAMS. Verified by breaking the tree five ways -- reordered blocks, a
+      block with no enumerator, an enumerator with no block, an unknown name in
+      Sounds.txt, and a 14th parameter -- and it caught all five with the index
+      or the name.
+
+      A FINDING, recorded rather than acted on: the SoundLibrary preference is
+      now fully dead. RestartSoundLibrary constructs SoundLibraryXAudio2
+      unconditionally after T8, but PrefsSoundWindow still reads SOUND_LIBRARY,
+      still offers a three-way dropdown, and still WRITES "dsound" or "software"
+      when one of the dead options is applied. Its own comment says "until T7
+      and T8 remove those backends", and they are removed. That is dead UI
+      writing a preference nothing consumes: it belongs to T10 with the rest of
+      the archaeology, and T10's file list now says so.
+
+      Collides with T9 and T10 over SoundLibrary3d.h and SoundLibraryXAudio2.cpp
+      - do not run concurrently with them.
 
   - id: T5
     title: Owner A/B gate - Garden run on the XAudio2 backend
@@ -613,11 +684,22 @@ tasks:
       - NeuronClient/SoundSystem.cpp
       - NeuronClient/SystemInfo.h
       - NeuronClient/SystemInfo.cpp
+      # Added by T4, which found it dead. RestartSoundLibrary constructs
+      # SoundLibraryXAudio2 unconditionally after T8, so SOUND_LIBRARY has no
+      # reader that changes anything -- but PrefsSoundWindow still offers a
+      # three-way dropdown and still WRITES "dsound" or "software" when a dead
+      # option is applied. The preference default line in Preferences.cpp goes
+      # with it, and dialog_dsound/dialog_software/dialog_xaudio2 in the six
+      # language files are its labels.
+      - GameLogic/PrefsSoundWindow.h
+      - GameLogic/PrefsSoundWindow.cpp
+      - NeuronCore/Preferences.cpp
     acceptance:
       - OnCriticalError parks the backend in a silent state without touching game logic; RestartSoundLibrary recovers when a device is available again
       - No HRESULT anywhere in the backend is a fatal assert
       - The commented-out legacy SoundSystem::Advance block and StartRecordToFile/EndRecordToFile are gone
       - GetCPUOverhead is served by GetPerformanceData or the readout is deleted (decide in-task, record which)
+      - The SoundLibrary preference, its dropdown and its language strings are gone; grep SOUND_LIBRARY returns nothing
     verify:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m

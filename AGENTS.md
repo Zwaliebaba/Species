@@ -329,7 +329,7 @@ troubleshooting — is in [`docs/BUILD.md`](docs/BUILD.md).
 
 ## Before you push
 
-Run all seven. CI runs the same seven and will fail on anything you skip.
+Run all eight. CI runs the same eight and will fail on anything you skip.
 
 ```bash
 python3 tools/check_project_files.py   # .vcxproj matches the files on disk
@@ -337,6 +337,7 @@ python3 tools/check_layering.py        # no new upward includes
 python3 tools/check_task_dag.py        # task plans are valid DAGs
 python3 tools/check_containers.py      # no legacy container call left on a vector
 python3 tools/check_math_types.py      # no legacy math call left on a native type
+python3 tools/check_sound_effects.py   # Effects.txt and the FX enum still line up
 python3 tools/check_format.py          # changed lines match .clang-format
 python3 tools/check_hygiene.py         # changed lines do not reintroduce NULL,
                                        # _included guards, strcpy or plain enum

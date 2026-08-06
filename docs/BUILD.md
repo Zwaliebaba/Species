@@ -176,6 +176,7 @@ build result is most useful earliest.
 | `tools/check_task_dag.py` | A task plan with a cycle, dangling edge or inconsistent status |
 | `tools/check_containers.py` | A call site still asking a `std::vector` for `Size()` or `ValidIndex()` |
 | `tools/check_math_types.py` | A call site still asking a native math type for `Mag()`, an operator or a named row |
+| `tools/check_sound_effects.py` | `GameData/Effects.txt` and the FX enum disagreeing on what effect an index means |
 | `tools/check_format.py` | Changed lines that do not match `.clang-format` |
 | `tools/check_hygiene.py` | Changed lines reintroducing `NULL`, `_included` guards, `strcpy` or a plain `enum` |
 
@@ -184,6 +185,15 @@ cost several consecutive red CI rounds each: a call site a type sweep did not
 reach, which names no type and so survives every grep for one. Both resolve by
 member name, and both skip a name that means two things rather than guessing.
 AGENTS.md explains what that trade buys.
+
+`check_sound_effects.py` catches the opposite kind of mistake — one that costs
+no CI round at all. An effect's index is its line position in
+`GameData/Effects.txt`, and `SoundLibrary3d.h`'s enum is an independent copy of
+that ordering, so reordering a block or adding an enumerator without its data
+row applies the wrong effect to a sound while everything still builds, loads
+and runs. Nothing in the game notices: `LoadEffects` ignores `NUM_FILTERS`
+after sizing the table, and `LoadtimeVerify` only checks WAV references and has
+its one call site commented out.
 
 The first two cover `Tests/<Name>Tests` as well as the six library projects, and
 discover those directories from the tree rather than from a hard-coded list — so
@@ -228,6 +238,7 @@ python3 tools/check_layering.py
 python3 tools/check_task_dag.py
 python3 tools/check_containers.py
 python3 tools/check_math_types.py
+python3 tools/check_sound_effects.py
 python3 tools/check_format.py            # --fix to apply
 python3 tools/check_hygiene.py
 ```
