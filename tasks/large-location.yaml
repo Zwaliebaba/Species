@@ -101,6 +101,32 @@ tasks:
       - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
     parallel_safe: true
     status: in_progress
+    notes: >
+      CODE COMPLETE 2026-08-06, NOT DONE - the vstest verify line cannot be
+      run from Linux and neither can MSVC. Everything else passes.
+
+      GameLogic/TerrainChunk.h/.cpp plus thirteen tests, all wired into the
+      .vcxproj and .filters. Compiled and RUN against a CppUnitTest shim on
+      Linux - 16,924 checks, zero failures - covering both sides of all 31
+      interior chunk boundaries, the world edge at 65,536, the negative
+      floor, the origin/local round trip on every chunk, and the
+      shared-border rule.
+
+      Two decisions inside it are worth more than their size. The
+      world-to-chunk conversion FLOORS rather than truncates, so -1 is chunk
+      -1 and not chunk 0 - nothing on the large map is negative today, but
+      the open world's address space is signed and centred on the origin,
+      and truncation would have been a bug that first appeared a milestone
+      later in code nobody was editing. ChunkCoord carries a total order,
+      because region activation (T14) breaks eviction ties in
+      chunk-coordinate order precisely so two clients cannot make different
+      choices from identical state.
+
+      Recorded for T3 and T7 rather than acted on here: a query inside a
+      chunk's own bounds cannot reach SurfaceMap2D's far-edge wrap, because
+      at the far border the upper sample index is 128 and the wrap needs
+      129. That is why callers must resolve the chunk first and query
+      second, and it is written at the site in TerrainChunk.cpp.
 
   - id: T3
     title: Landscape stores terrain as chunk blocks behind today's sizes
@@ -386,6 +412,16 @@ tasks:
       wave 1's. Clouds have no such coupling (no GetWorldSizeX/Z, no height
       map query, fixed extents at Clouds.cpp:94-99) but they move with the
       water in T21 so that one Garden gate covers both rather than two.
+
+      CODE COMPLETE 2026-08-06 for the narrowed scope, NOT DONE - the vstest
+      verify line cannot be run from Linux. One site changed in
+      Species/Camera.cpp; the cap is MapEscort's 5,372/30 = 179 u/s.
+
+      Measured rather than assumed: all twelve authored maps divide to less
+      than the cap and are bit-identical, and the clamp binds on the large
+      map alone - 12 of 12 unchanged, 1 of 1 clamped. Traversal comes out at
+      366 seconds corner to corner and 37 at the existing x10 sprint, which
+      is the figure D18 was accepted on rather than a number that drifted.
     verify:
       - python3 tools/check_format.py
       - python3 tools/check_math_types.py
