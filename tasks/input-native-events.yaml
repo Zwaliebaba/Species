@@ -629,8 +629,10 @@ tasks:
     depends_on: [T1, T2, T3, T7, T9, T10]
     files:
       - GameData/Input/InputPreferences.txt
+      - NeuronClient/ControlTypes.inc
     acceptance:
       - CameraAccess::GetControlVector and Camera::m_controlVector are gone - T3 removed their last caller and recorded them here
+      - The 38 control types with no code consumer are audited one by one and each is either deleted with its bindings or given a note saying what it is waiting for; the three GesturesTaskManager* controls are deleted outright (see notes)
       - grep XInput over GameData returns nothing (baseline 2026-08-06 - 69 lines)
       - grep for InputDriverPipe, InputDriverValue, InputDriverAlias, InputDriverPrefs and InputFilterManager returns nothing outside tasks/Archive
       - grep for "extern signed char g_keys" and "g_keys\[" returns nothing (baseline - 1 extern site, 2 live readers outside the driver)
@@ -648,6 +650,49 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll
     status: todo
     notes: |
+      DEAD CONTROL TYPES, audited 2026-08-06 while doing T5. THIRTY-EIGHT of the
+      131 names in ControlTypes.inc have no reference anywhere in any .cpp or
+      .h — nothing calls controlEvent for them and nothing names the
+      enumerator. The audit is trustworthy in both directions: the only
+      static_cast<ControlType> in the tree is ControlBindings.cpp:85, the
+      name-to-index lookup itself, so there is no enum arithmetic anywhere that
+      could be reaching one of these under a computed name.
+
+      They fall into two kinds and the sweep should not treat them alike:
+
+      * DECLARED, BOUND, NEVER ASKED. A binding is parsed out of
+        InputPreferences.txt, stored, and no code ever queries it. The three
+        GesturesTaskManager* controls are the clearest case — Display on
+        `key alt pressed`, Hide on `key alt up`, EndTask on
+        `key control ++ key c`, which is the ONLY chord in the whole data set.
+        StopAttractMode is another, bound four times.
+      * DECLARED AND NOT EVEN BOUND. MouseMovement and TaskManagerDisplay have
+        no line in any prefs file and no consumer. Pure declarations.
+
+      DELETE THE THREE GesturesTaskManager* CONTROLS AND THEIR BINDINGS. They
+      are what prompted this note, and they are the safest of the 38: T5 found
+      that `key alt up` could never have fired anyway, because WM_SYSKEYUP wrote
+      the key state and never a delta. So the pair is dead twice over — no
+      consumer, and a binding that could not have reached one. Removing
+      GesturesTaskManagerEndTask also removes the only `++` line in the data,
+      which means the Chord driver would afterwards have NO data exercising it;
+      that is a fact to record when it happens, not a reason to keep a dead
+      control, and T1's audit already established Chord parses correctly.
+
+      The other 35 need judging individually rather than sweeping. Several
+      (RTLoader*, GOLLoader*) look like they belong to loader screens that may
+      still be wanted; deleting a control type is cheap to reverse but the
+      decision is about intent, not code. Removing any of them is safe for
+      players' own prefs files: ControlBindings already tolerates a name it does
+      not know — that is what the 69 XInput lines did at every startup before T2.
+
+      Three lines out of ControlTypes.inc shifts every enumerator after them,
+      which is FINE and worth stating so nobody worries: bindings resolve by
+      NAME, not index, no control index is written to disk or the wire, and the
+      two ControlBindingsTests that pin the table's ends pin MenuLeft (line 2)
+      and IconsTaskManagerQuickUnitRight (line 165) — the Gestures block is at
+      67-69 and touches neither.
+
       NOT THIS TASK'S WORK, but it lands in this task's territory and the sweep
       needs to know. The owner deleted the 22 gamepad button BMPs under
       GameData/Icons on 2026-08-06 (commit ca1a5c5), finishing what T2 started
