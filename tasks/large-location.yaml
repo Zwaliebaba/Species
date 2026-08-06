@@ -349,41 +349,92 @@ tasks:
       Game.txt entry.
 
   - id: T9
-    title: Retune the presentation formulas that assumed a small world
+    title: Cap the camera pan speed instead of deriving it from world size
     intent: >
-      D11 and area E's constants trace. Water's grid recentres on the camera
-      at a fixed near-Garden cell size instead of deriving cellSize from
-      worldSize, wave phase keyed to world position so recentring is
-      invisible; clouds anchor to the camera the same way; camera pan speed
-      stops deriving from world size (65,536/30 per second is unusable) and
-      clamps to the largest authored-map speed. All cosmetic-layer changes -
+      Pan speed is worldSize/30 per second, a fair reading of "cross the map
+      in half a minute" while every map was a couple of thousand units
+      across. At 65,536 it is 2,185 units per second, which is unusable near
+      the ground and would outrun chunk streaming besides. Cap it at the
+      speed the largest authored map already produces, so all twelve are
+      bit-identical and only the large map clamps. Cosmetic layer only -
       nothing here may touch syncrand or simulation state.
-    project: GameLogic
+    project: Species
     depends_on: []
     files:
-      - GameLogic/Water.h
-      - GameLogic/Water.cpp
-      - GameLogic/Clouds.cpp
       - Species/Camera.cpp
     acceptance:
-      - No water or cloud allocation or extent is derived from
-        GetWorldSizeX/Z; both follow the camera at constant vertex counts
-      - On authored maps the visible result is unchanged at normal camera
-        ranges (owner-confirmed at the T10 gate)
-      - Camera pan speed on the large map equals the clamp, not
-        worldSize/30
-      - git diff of this task contains no syncrand/syncfrand call - these
-        files are cosmetic consumers and must stay so
+      - Camera pan speed on the large map equals the cap, not worldSize/30,
+        and every authored map is bit-identical to before
+      - git diff of this task contains no syncrand/syncfrand call - this is
+        a cosmetic consumer and must stay so
     notes: >
-      The traversal consequence of the clamp is decided, D18 - roughly six
+      The traversal consequence of the cap is decided, D18 - roughly six
       minutes base pan corner to corner, ~37 seconds at the existing x10
       sprint - accepted by the owner; do not add fast travel here.
+
+      SCOPE NARROWED 2026-08-06, and the removed half is now T21. As written
+      this task also carried the water and cloud camera-recentring, with no
+      dependencies. That was wrong, and the reason is a finding worth
+      keeping: Water cannot be built before terrain is resident. Its
+      constructor runs inside Location::Init (Location.cpp:125) and calls
+      BuildTriangleStrips, whose IsVertNeeded queries
+      m_landscape.m_heightMap->GetValue (Water.cpp:288), while
+      GenerateLightMap scans the height map across the whole world
+      (Water.cpp:113-135). On the large map no chunk is generated at Init,
+      so a camera-following water mesh must be rebuilt as the camera moves
+      against whatever residency provides - which is T7's machinery, not
+      wave 1's. Clouds have no such coupling (no GetWorldSizeX/Z, no height
+      map query, fixed extents at Clouds.cpp:94-99) but they move with the
+      water in T21 so that one Garden gate covers both rather than two.
     verify:
       - python3 tools/check_format.py
       - python3 tools/check_math_types.py
       - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
     parallel_safe: true
     status: in_progress
+
+  - id: T21
+    title: Water and clouds follow the camera at constant vertex counts
+    intent: >
+      D11, and the half of T9 that turned out to depend on residency. Water's
+      grid recentres on the camera at a fixed near-Garden cell size instead
+      of deriving cellSize from worldSize, with wave phase keyed to world
+      position so the recentring is invisible; the mesh, depth map and shore
+      noise are rebuilt as the camera crosses into new territory rather than
+      once at Init, because on the large map there is no terrain to build
+      them from at Init. Clouds anchor to the camera with texture
+      coordinates keyed to world position, so they do not appear to follow
+      the player. Cosmetic layer only.
+    project: GameLogic
+    depends_on: [T7, T8]
+    files:
+      - GameLogic/Water.h
+      - GameLogic/Water.cpp
+      - GameLogic/Clouds.cpp
+    acceptance:
+      - No water or cloud allocation or extent is derived from
+        GetWorldSizeX/Z; both follow the camera at constant vertex counts,
+        and water's cell size is a constant rather than a function of the
+        world
+      - Water rebuilds against resident terrain as the camera moves, and
+        never queries a height the residency policy has not provided -
+        forcing generation where it must, per T7's synchronous-query rule
+      - On authored maps the visible result is unchanged at normal camera
+        ranges, water tessellation included (owner-confirmed at the T16
+        gate; nothing in CI can see this)
+      - Clouds do not visibly track the camera - texture coordinates derive
+        from world position, not from the anchor
+      - git diff contains no syncrand/syncfrand call
+    verify:
+      - python3 tools/check_format.py
+      - python3 tools/check_math_types.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+    notes: >
+      Depends on T8 as well as T7 because the visible result cannot be
+      judged without a large map to judge it on, and the T16 gate is where
+      the owner judges it.
 
   - id: T20
     title: Instrumentation - the counters the gates read
