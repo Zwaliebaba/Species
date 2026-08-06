@@ -100,7 +100,7 @@ tasks:
       - python3 tools/check_format.py
       - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T3
     title: Landscape stores terrain as chunk blocks behind today's sizes
@@ -383,7 +383,7 @@ tasks:
       - python3 tools/check_math_types.py
       - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T20
     title: Instrumentation - the counters the gates read
@@ -475,7 +475,7 @@ tasks:
       - python3 tools/check_format.py
       - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
     parallel_safe: true
-    status: todo
+    status: in_progress
     notes: >
       The preferences-tests precedent (containers-replaced T19, AGENTS.md)
       is the method - characterise before converting; the first red run is
