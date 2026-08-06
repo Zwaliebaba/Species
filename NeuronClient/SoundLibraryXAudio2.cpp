@@ -42,6 +42,11 @@ namespace Neuron
     // nominal rate still matters when XAudio2 resamples everything anyway.
     constexpr int NominalSampleRate = 44100;
 
+    // The music voice's width. Effect voices are mono and must stay mono —
+    // X3DAudio positions them and it pans a mono source — so this is the one
+    // voice in the backend that is not 1.
+    constexpr int MusicChannels = 2;
+
     // The largest pitch multiplier the blueprints ask for is 2.17 (measured over
     // GameData/Sounds.txt), and a voice cannot exceed the ratio it was created
     // with. Four is that with room, and well inside XAUDIO2_MAX_FREQ_RATIO.
@@ -95,7 +100,13 @@ namespace Neuron
       // allocated and untouched for as long as it is queued — which is what the
       // rotation through BlocksPerChannel guarantees.
       std::vector<signed short> m_blocks;
-      int m_blockSamples = 0;
+
+      // FRAMES per block, and the width of a frame. Every effect voice is mono,
+      // so for those two the width is 1 and a frame is a short; the music voice
+      // is stereo and a frame is two. Keeping both means no expression below has
+      // to guess which unit it is in.
+      int m_blockFrames = 0;
+      int m_voiceChannels = 1;
       int m_nextBlock = 0;
 
       // Owned by the SoundSystem callbacks, which count down a sound's trailing
@@ -148,7 +159,9 @@ namespace Neuron
       DirectX::XMFLOAT3 m_pos{0.0f, 0.0f, 0.0f};
       DirectX::XMFLOAT3 m_vel{0.0f, 0.0f, 0.0f};
 
-      signed short* Block(int _index) { return m_blocks.data() + static_cast<size_t>(_index) * m_blockSamples; }
+      int BlockShorts() const { return m_blockFrames * m_voiceChannels; }
+
+      signed short* Block(int _index) { return m_blocks.data() + static_cast<size_t>(_index) * BlockShorts(); }
   };
 
 
@@ -256,7 +269,7 @@ namespace Neuron
     m_numChannels = std::min(_numChannels, GetMaxChannels());
     m_musicChannelId = -1;
 
-    const int blockSamples = std::max(m_sampleRate / BlocksPerSecond, 1);
+    const int blockFrames = std::max(m_sampleRate / BlocksPerSecond, 1);
 
     // Storage first, and unconditionally: with no device the callbacks still run
     // (see TopUpChannel), so every sound still starts, ends and releases at the
@@ -274,11 +287,21 @@ namespace Neuron
     m_data->m_channels.resize(GetNumMainChannels());
     for (XAudio2Voice& channel : m_data->m_channels)
     {
-      channel.m_blockSamples = blockSamples;
-      channel.m_blocks.assign(static_cast<size_t>(blockSamples) * BlocksPerChannel, 0);
+      channel.m_blockFrames = blockFrames;
+      channel.m_voiceChannels = 1;
+      channel.m_blocks.assign(static_cast<size_t>(channel.BlockShorts()) * BlocksPerChannel, 0);
     }
-    m_data->m_musicChannel.m_blockSamples = blockSamples;
-    m_data->m_musicChannel.m_blocks.assign(static_cast<size_t>(blockSamples) * BlocksPerChannel, 0);
+
+    // The music voice is stereo and stays stereo, rather than being rebuilt to
+    // match whatever track is playing. A source voice's channel count is fixed
+    // at creation, so matching the sample would mean destroying and recreating
+    // the voice on every track change — and the callback has to be able to fan
+    // a mono sample out anyway, because every music file the game ships is
+    // mono. Once it can do that, a permanently stereo voice costs one extra
+    // block of memory and removes the whole recreate path.
+    m_data->m_musicChannel.m_blockFrames = blockFrames;
+    m_data->m_musicChannel.m_voiceChannels = MusicChannels;
+    m_data->m_musicChannel.m_blocks.assign(static_cast<size_t>(m_data->m_musicChannel.BlockShorts()) * BlocksPerChannel, 0);
 
     //
     // Initialise COM. XAudio2Create needs it, and RPC_E_CHANGED_MODE means
@@ -345,17 +368,17 @@ namespace Neuron
     // starting point — ResetChannel replaces it with the sample's own rate the
     // first time a sound lands on the channel.
 
-    WAVEFORMATEX format = {};
-    format.wFormatTag = WAVE_FORMAT_PCM;
-    format.nChannels = 1;
-    format.nSamplesPerSec = static_cast<DWORD>(m_sampleRate);
-    format.wBitsPerSample = 16;
-    format.nBlockAlign = static_cast<WORD>(format.nChannels * format.wBitsPerSample / 8);
-    format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
-    format.cbSize = 0;
-
     auto createVoice = [&](XAudio2Voice& _channel)
     {
+      WAVEFORMATEX format = {};
+      format.wFormatTag = WAVE_FORMAT_PCM;
+      format.nChannels = static_cast<WORD>(_channel.m_voiceChannels);
+      format.nSamplesPerSec = static_cast<DWORD>(m_sampleRate);
+      format.wBitsPerSample = 16;
+      format.nBlockAlign = static_cast<WORD>(format.nChannels * format.wBitsPerSample / 8);
+      format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
+      format.cbSize = 0;
+
       // USEFILTER is what makes the resonant low pass free: it is XAudio2's own
       // per-voice biquad, so that effect needs no object in the chain at all.
       // It has to be asked for at creation or SetFilterParameters does nothing.
@@ -412,31 +435,39 @@ namespace Neuron
     if (!voice)
       return;
 
-    const unsigned int numSamples = static_cast<unsigned int>(voice->m_blockSamples);
+    const unsigned int numFrames = static_cast<unsigned int>(voice->m_blockFrames);
+    const unsigned int numShorts = static_cast<unsigned int>(voice->BlockShorts());
 
     if (_channel == m_musicChannelId)
     {
       if (m_musicCallback)
-        m_musicCallback(_block, numSamples, &voice->m_silenceRemaining);
+        m_musicCallback(_block, numFrames, voice->m_voiceChannels, &voice->m_silenceRemaining);
       else
-        WriteSilence(_block, numSamples);
+        WriteSilence(_block, numShorts);
     }
     else
     {
       if (m_mainCallback)
-        m_mainCallback(static_cast<unsigned int>(_channel), _block, numSamples, &voice->m_silenceRemaining);
+        m_mainCallback(static_cast<unsigned int>(_channel), _block, numFrames, &voice->m_silenceRemaining);
       else
-        WriteSilence(_block, numSamples);
+        WriteSilence(_block, numShorts);
     }
 
     // The effects XAudio2 has no equivalent of, run over the block that has
     // just been filled — the same place, on the same 16-bit samples, at the
     // same point in the signal path as the DirectSound backend ran them in
     // PopulateBuffer. Everything else is in the voice's own effect chain.
+    //
+    // numShorts, not numFrames: these walk samples and know nothing about
+    // interleaving. BitCrusher is memoryless and correct either way; Gargle
+    // advances an LFO per sample, so on a stereo voice its rate would come out
+    // doubled. Only music is stereo and no music blueprint asks for either
+    // effect, so that is a property to know about rather than a bug to see —
+    // and the place it would first appear is a modded Sounds.txt.
     for (std::unique_ptr<DspEffect> const& effect : voice->m_inFillEffects)
     {
       if (effect)
-        effect->Process(_block, numSamples);
+        effect->Process(_block, numShorts);
     }
   }
 
@@ -469,7 +500,7 @@ namespace Neuron
       FillBlock(_channel, block);
 
       XAUDIO2_BUFFER buffer = {};
-      buffer.AudioBytes = static_cast<UINT32>(voice->m_blockSamples * sizeof(signed short));
+      buffer.AudioBytes = static_cast<UINT32>(voice->BlockShorts() * sizeof(signed short));
       buffer.pAudioData = reinterpret_cast<BYTE const*>(block);
       voice->m_voice->SubmitSourceBuffer(&buffer);
 
@@ -999,12 +1030,14 @@ namespace Neuron
   }
 
 
+  // FRAMES, and it has to be: the callbacks compare it against a frame count
+  // when they work out how much trailing silence a finished sound still owes.
   int SoundLibraryXAudio2::GetChannelBufSize(int _channel) const
   {
     XAudio2Voice const* voice = GetVoice(_channel);
     if (!voice)
       return 0;
 
-    return voice->m_blockSamples * BlocksPerChannel;
+    return voice->m_blockFrames * BlocksPerChannel;
   }
 } // namespace Neuron

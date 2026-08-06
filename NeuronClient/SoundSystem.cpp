@@ -302,6 +302,8 @@ void SoundSystem::StopAllDSPEffects()
   }
 }
 
+// AN EFFECT CHANNEL IS MONO, so here a frame is a short and the two counts are
+// the same number. That is not an assumption, it is enforced below.
 bool SoundSystem::SoundLibraryMainCallback(unsigned int _channel, signed short* _data, unsigned int _numSamples, int* _silenceRemaining)
 {
   if (!g_soundSystem)
@@ -309,6 +311,20 @@ bool SoundSystem::SoundLibraryMainCallback(unsigned int _channel, signed short* 
 
   SoundInstanceId soundId = g_soundSystem->m_channels[_channel];
   SoundInstance* instance = g_soundSystem->GetSoundInstance(soundId);
+
+  // A non-mono sample on an effect channel would read m_numChannels shorts per
+  // frame into a block sized for one, which is a write past the end of the
+  // voice's ring — not a wrong noise, memory corruption. SoundSourceNotMono is
+  // supposed to catch this at load, but its only caller is IsSoundSourceOK,
+  // reached only from LoadtimeVerify, whose one call site is commented out. So
+  // the rule is enforced where the damage would happen instead: a modded
+  // Sounds.txt naming a stereo sample makes that sound silent, and nothing else.
+  if (instance && instance->m_cachedSampleHandle && instance->m_cachedSampleHandle->GetNumChannels() != 1)
+  {
+    DebugTrace("SOUND : sample on channel {} is not mono; effect channels are mono only, so it is silent\n", _channel);
+    g_soundLibrary3d->WriteSilence(_data, _numSamples);
+    return false;
+  }
 
   if (instance && instance->m_cachedSampleHandle)
   {
@@ -372,7 +388,47 @@ bool SoundSystem::SoundLibraryMainCallback(unsigned int _channel, signed short* 
   return false;
 }
 
-bool SoundSystem::SoundLibraryMusicCallback(signed short* _data, unsigned int _numSamples, int* _silenceRemaining)
+namespace
+{
+  // Reads frames from a music sample into a buffer that is _numChannels wide,
+  // whatever width the sample itself is. Returns FRAMES written.
+  //
+  // Every music file the game ships is mono and the music voice is stereo, so
+  // this fan-out is the normal path rather than the exceptional one. It reads
+  // the mono frames into the front of the block and then expands BACKWARDS, so
+  // a frame is never overwritten before it has been read — frame N's source
+  // sits at index N and its destination starts at N * _numChannels, which is at
+  // or ahead of it for every N.
+  unsigned int ReadMusicFrames(CachedSampleHandle* _handle, signed short* _data, unsigned int _numFrames, int _numChannels)
+  {
+    const int sampleChannels = static_cast<int>(_handle->GetNumChannels());
+
+    if (sampleChannels == _numChannels)
+      return _handle->Read(_data, _numFrames);
+
+    // A sample wider than the voice has no meaning to give it; the decoder
+    // caps at two channels, so with a stereo music voice this is unreachable
+    // today. Silence rather than a guess, and never a partial interleave.
+    if (sampleChannels != 1)
+      return 0;
+
+    const unsigned int framesRead = _handle->Read(_data, _numFrames);
+
+    for (int frame = static_cast<int>(framesRead) - 1; frame >= 0; --frame)
+    {
+      const signed short sample = _data[frame];
+      for (int channel = 0; channel < _numChannels; ++channel)
+        _data[frame * _numChannels + channel] = sample;
+    }
+
+    return framesRead;
+  }
+} // namespace
+
+// COUNTS ARE FRAMES AND OFFSETS ARE SHORTS, which is why every pointer step
+// below carries _numChannels and no count does. _silenceRemaining is a frame
+// count too, because it is compared against GetChannelBufSize.
+bool SoundSystem::SoundLibraryMusicCallback(signed short* _data, unsigned int _numFrames, int _numChannels, int* _silenceRemaining)
 {
   if (!g_soundSystem)
     return false;
@@ -388,44 +444,56 @@ bool SoundSystem::SoundLibraryMusicCallback(signed short* _data, unsigned int _n
     //
     // Fill the space with sample data
 
-    int numSamplesWritten = instance->m_cachedSampleHandle->Read(_data, _numSamples);
+    int numFramesWritten = ReadMusicFrames(instance->m_cachedSampleHandle, _data, _numFrames, _numChannels);
 
-    if (numSamplesWritten < _numSamples)
+    if (numFramesWritten < _numFrames)
     {
-      signed short* loopStart = _data + numSamplesWritten;
-      unsigned int numSamplesRemaining = _numSamples - numSamplesWritten;
+      signed short* loopStart = _data + numFramesWritten * _numChannels;
+      unsigned int numFramesRemaining = _numFrames - numFramesWritten;
 
       if (instance->m_loopType == SoundInstance::Looped || instance->m_loopType == SoundInstance::LoopedADSR)
       {
-        while (numSamplesRemaining > 0)
+        while (numFramesRemaining > 0)
         {
           bool looped = instance->AdvanceLoop();
           if (looped)
           {
-            unsigned int numWritten = instance->m_cachedSampleHandle->Read(loopStart, numSamplesRemaining);
-            loopStart += numWritten;
-            numSamplesRemaining -= numWritten;
+            unsigned int numWritten = ReadMusicFrames(instance->m_cachedSampleHandle, loopStart, numFramesRemaining, _numChannels);
+
+            // A loop that yields nothing would spin here forever. The old code
+            // could not reach that state because Read only returned zero at the
+            // end of a sample, which AdvanceLoop had just rewound; ReadMusicFrames
+            // can also return zero for a sample too wide for the voice.
+            if (numWritten == 0)
+            {
+              g_soundLibrary3d->WriteSilence(loopStart, numFramesRemaining * _numChannels);
+              numFramesRemaining = 0;
+              break;
+            }
+
+            loopStart += numWritten * _numChannels;
+            numFramesRemaining -= numWritten;
           }
           else
           {
-            g_soundLibrary3d->WriteSilence(loopStart, numSamplesRemaining);
-            numSamplesRemaining = 0;
+            g_soundLibrary3d->WriteSilence(loopStart, numFramesRemaining * _numChannels);
+            numFramesRemaining = 0;
           }
         }
       }
       else if (instance->m_loopType == SoundInstance::SinglePlay)
       {
-        if (numSamplesWritten > 0)
+        if (numFramesWritten > 0)
         {
           // The sound just came to an end, so write a whole buffers worth of silence
-          g_soundLibrary3d->WriteSilence(loopStart, numSamplesRemaining);
-          *_silenceRemaining = g_soundLibrary3d->GetChannelBufSize(g_soundLibrary3d->m_musicChannelId) - numSamplesRemaining;
+          g_soundLibrary3d->WriteSilence(loopStart, numFramesRemaining * _numChannels);
+          *_silenceRemaining = g_soundLibrary3d->GetChannelBufSize(g_soundLibrary3d->m_musicChannelId) - numFramesRemaining;
         }
         else
         {
           // The sound came to an end and now we are writing silence
-          g_soundLibrary3d->WriteSilence(loopStart, numSamplesRemaining);
-          *_silenceRemaining -= numSamplesRemaining;
+          g_soundLibrary3d->WriteSilence(loopStart, numFramesRemaining * _numChannels);
+          *_silenceRemaining -= numFramesRemaining;
           if (*_silenceRemaining <= 0)
             instance->BeginRelease(false);
         }
@@ -437,7 +505,7 @@ bool SoundSystem::SoundLibraryMusicCallback(signed short* _data, unsigned int _n
 #endif
     return true;
   }
-  g_soundLibrary3d->WriteSilence(_data, _numSamples);
+  g_soundLibrary3d->WriteSilence(_data, _numFrames * _numChannels);
   return false;
 }
 

@@ -40,15 +40,22 @@ namespace Neuron
   }
 
 
-  void CachedSample::Read(signed short* _data, unsigned int _startSample, unsigned int _numSamples)
+  // EVERY COUNT HERE IS A FRAME AND EVERY INDEX IS A SHORT, which is the
+  // distinction this function used to lose. m_rawSampleData holds
+  // m_numChannels * m_numSamples shorts interleaved, so frame N begins at
+  // short N * m_numChannels — and both subscripts below were missing that
+  // factor while the memcpy length carried it. For a mono sample the factor is
+  // one and the two agree; for a stereo one the copy wrote twice the shorts
+  // the caller had room for, from an offset half as far in as it meant.
+  void CachedSample::Read(signed short* _data, unsigned int _startFrame, unsigned int _numFrames)
   {
     if (m_soundStreamDecoder)
     {
-      int highestSampleRequested = _startSample + _numSamples - 1;
-      if (highestSampleRequested >= m_amountCached)
+      int highestFrameRequested = _startFrame + _numFrames - 1;
+      if (highestFrameRequested >= m_amountCached)
       {
-        int amountToRead = highestSampleRequested - m_amountCached + 1;
-        unsigned int amountRead = m_soundStreamDecoder->Read(&m_rawSampleData[m_amountCached], amountToRead);
+        int amountToRead = highestFrameRequested - m_amountCached + 1;
+        unsigned int amountRead = m_soundStreamDecoder->Read(&m_rawSampleData[m_amountCached * m_numChannels], amountToRead);
         m_amountCached += amountRead;
         DEBUG_ASSERT(m_amountCached <= m_numSamples);
         if (m_amountCached == m_numSamples)
@@ -59,7 +66,7 @@ namespace Neuron
       }
     }
 
-    memcpy(_data, &m_rawSampleData[_startSample], sizeof(signed short) * m_numChannels * _numSamples);
+    memcpy(_data, &m_rawSampleData[_startFrame * m_numChannels], sizeof(signed short) * m_numChannels * _numFrames);
   }
 
 
@@ -81,18 +88,18 @@ namespace Neuron
   }
 
 
-  unsigned int CachedSampleHandle::Read(signed short* _data, unsigned int _numSamples)
+  unsigned int CachedSampleHandle::Read(signed short* _data, unsigned int _numFrames)
   {
-    int samplesRemaining = m_cachedSample->m_numSamples - m_nextSampleIndex;
-    if (_numSamples > samplesRemaining)
+    int framesRemaining = m_cachedSample->m_numSamples - m_nextSampleIndex;
+    if (_numFrames > framesRemaining)
     {
-      _numSamples = samplesRemaining;
+      _numFrames = framesRemaining;
     }
 
-    m_cachedSample->Read(_data, m_nextSampleIndex, _numSamples);
-    m_nextSampleIndex += _numSamples;
+    m_cachedSample->Read(_data, m_nextSampleIndex, _numFrames);
+    m_nextSampleIndex += _numFrames;
 
-    return _numSamples;
+    return _numFrames;
   }
 
 

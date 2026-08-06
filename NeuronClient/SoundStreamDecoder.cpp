@@ -96,14 +96,28 @@ namespace Neuron
     }
   }
 
-  unsigned int SoundStreamDecoder::ReadWavData(signed short* _data, unsigned int _numSamples)
+  // FRAMES IN, FRAMES OUT, and both branches below say so. m_numSamples and
+  // m_samplesRemaining come from ReadWavHeader as chunkLength divided by
+  // channels * bits/8, so they have always been frame counts; what this
+  // function returned had not been. The 16-bit branch returned bytes/2, which
+  // is a count of SHORTS, and the caller then subtracted it from a frame
+  // budget. For mono the two are the same number, which is why 1332 mono files
+  // never showed it. For stereo it decoded twice as far as it reported, walked
+  // m_samplesRemaining down at double rate, and left the caller believing it
+  // had a frame's worth of data in half the space.
+  unsigned int SoundStreamDecoder::ReadWavData(signed short* _data, unsigned int _numFrames)
   {
-    if (_numSamples > m_samplesRemaining)
-      _numSamples = m_samplesRemaining;
+    if (_numFrames > m_samplesRemaining)
+      _numFrames = m_samplesRemaining;
 
     if (m_bits == 8)
     {
-      for (unsigned int i = 0; i < _numSamples; ++i)
+      // One byte per sample, m_numChannels samples per frame, so the loop runs
+      // over samples and the return converts back.
+      const unsigned int numSamples = _numFrames * m_numChannels;
+      unsigned int written = numSamples;
+
+      for (unsigned int i = 0; i < numSamples; ++i)
       {
         signed short c = m_in->ReadU8() - 128;
         c <<= 8;
@@ -111,16 +125,21 @@ namespace Neuron
 
         if (m_in->m_eof)
         {
-          _numSamples = i;
+          written = i;
           break;
         }
       }
+
+      // A truncated file can end mid-frame. Reporting the partial frame would
+      // hand the caller an interleave that is one sample out of phase for
+      // everything after it, so it is dropped.
+      _numFrames = written / m_numChannels;
     }
     else
     {
-      int bytesPerSample = 2 * m_numChannels;
-      _numSamples = m_in->ReadBytes(_numSamples * bytesPerSample, (unsigned char*)_data);
-      _numSamples /= 2;
+      const unsigned int bytesPerFrame = 2 * m_numChannels;
+      const unsigned int bytesRead = m_in->ReadBytes(_numFrames * bytesPerFrame, (unsigned char*)_data);
+      _numFrames = bytesRead / bytesPerFrame;
       //		float prevVal = 0.0f;
       //		float smooth = sqrtf(0.9f);
       //		float oneMinusSmooth = 1.0f - smooth;
@@ -133,25 +152,25 @@ namespace Neuron
       //		}
     }
 
-    m_samplesRemaining -= _numSamples;
-    return _numSamples;
+    m_samplesRemaining -= _numFrames;
+    return _numFrames;
   }
 
 #define IS_BIG_ENDIAN 0
 
-unsigned int SoundStreamDecoder::Read(signed short* _data, unsigned int _numSamples)
-{
-  switch (m_fileType)
+  unsigned int SoundStreamDecoder::Read(signed short* _data, unsigned int _numFrames)
   {
-  case TypeUnknown:
-    ASSERT_TEXT(0, "Unknown format of sound file {}", m_in->m_filename);
-  case TypeWav:
-    return ReadWavData(_data, _numSamples);
-  }
+    switch (m_fileType)
+    {
+    case TypeUnknown:
+      ASSERT_TEXT(0, "Unknown format of sound file {}", m_in->m_filename);
+    case TypeWav:
+      return ReadWavData(_data, _numFrames);
+    }
 
-  DEBUG_ASSERT(0);
-  return 0;
-}
+    DEBUG_ASSERT(0);
+    return 0;
+  }
 
 void SoundStreamDecoder::Restart()
 {

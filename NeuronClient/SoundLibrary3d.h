@@ -37,8 +37,15 @@ namespace Neuron
 
       // This callback is called whenever SoundLibrary3d needs some more sound data for a certain channel.
       // The return value is true if some audio was written, or false if silence was written
+      //
+      // Both count FRAMES. The main callback has no channel count because an
+      // effect channel is mono and nothing may change that: the voices are
+      // positioned individually, and X3DAudio pans a mono source. The music
+      // callback is handed the width of the music voice, and must write that
+      // many interleaved channels per frame whatever the sample it is reading
+      // from happens to hold.
       bool (*m_mainCallback)(unsigned int, signed short*, unsigned int, int*);
-      bool (*m_musicCallback)(signed short*, unsigned int, int*);
+      bool (*m_musicCallback)(signed short*, unsigned int, int, int*);
 
     public:
       // THIS ENUM IS GameData/Effects.txt, POSITION FOR POSITION.
@@ -83,7 +90,7 @@ namespace Neuron
       // no. XAudio2 has no equivalent question.
       virtual void Initialise(int _numChannels) = 0;
       void SetMainCallback(bool (*_callback)(unsigned int, signed short*, unsigned int, int*));
-      void SetMusicCallback(bool (*_callback)(signed short*, unsigned int, int*));
+      void SetMusicCallback(bool (*_callback)(signed short*, unsigned int, int, int*));
       void SetMasterVolume(int _volume);
 
       virtual int GetMaxChannels() = 0;

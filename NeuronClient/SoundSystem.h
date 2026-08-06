@@ -172,7 +172,7 @@ namespace Neuron
       int FindBestAvailableChannel();
 
       static bool SoundLibraryMainCallback(unsigned int _channel, signed short* _data, unsigned int _numSamples, int* _silenceRemaining);
-      static bool SoundLibraryMusicCallback(signed short* _data, unsigned int _numSamples, int* _silenceRemaining);
+      static bool SoundLibraryMusicCallback(signed short* _data, unsigned int _numFrames, int _numChannels, int* _silenceRemaining);
 
     public:
       SoundSystem();

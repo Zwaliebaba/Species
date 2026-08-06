@@ -692,7 +692,81 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: |
+      Landed 2026-08-06.
+
+      THE BUG WAS REAL AND IT WAS A HEAP OVERFLOW. Demonstrated rather than
+      asserted: the old shape — a mono block of N shorts handed to a Read that
+      memcpy's channels * N — is a WRITE of 32 bytes into a 16-byte region under
+      AddressSanitizer, and g++ flags it at compile time with
+      -Wstringop-overflow. A stereo file was never a downmix.
+
+      FRAMES ARE COUNTED AS FRAMES NOW, in the three places that confused them
+      with shorts:
+
+      * SoundStreamDecoder::ReadWavData returned bytes/2 from its 16-bit branch,
+        a count of SHORTS, and the caller subtracted it from m_samplesRemaining,
+        a count of FRAMES. Its 8-bit branch read _numSamples single samples and
+        called them frames. Both now take and return frames. A truncated file
+        that ends mid-frame drops the partial frame rather than reporting an
+        interleave one sample out of phase.
+      * CachedSample::Read indexed BOTH its source subscripts by frame into a
+        short array — m_rawSampleData[m_amountCached] and
+        m_rawSampleData[_startSample] — while its memcpy length carried the
+        channel factor. Both subscripts now carry it too.
+      * The music callback's pointer arithmetic. Counts stayed frames, offsets
+        became shorts, and every step through the block carries _numChannels.
+
+      For a mono sample the channel factor is one and every one of those
+      expressions is the number it always was, which is why 1332 mono files
+      never showed any of it — and why this cannot change what the game sounds
+      like today.
+
+      THE MUSIC VOICE IS STEREO AND STAYS STEREO rather than being rebuilt per
+      track. A source voice's channel count is fixed at creation, so matching
+      the sample would mean DestroyVoice/CreateSourceVoice on every track
+      change, and a window where the voice and the sample disagree. The
+      callback has to fan a mono sample out regardless — every music file the
+      game ships is mono — so once it can do that, a permanent stereo voice
+      costs one extra block of memory and deletes the whole recreate path.
+      ReadMusicFrames expands BACKWARDS so a frame is never overwritten before
+      it is read: frame N reads index N and writes from N * channels, which is
+      at or ahead of it for every N.
+
+      EFFECT CHANNELS ARE MONO BY CONSTRUCTION NOW. The acceptance originally
+      leaned on LoadtimeVerify rejecting non-mono EFFECT samples through
+      SoundSourceNotMono. That function only checks WAV references, is
+      #ifdef _DEBUG, and its one call site at SoundSystem.cpp:582 is commented
+      out — it does not run. So the rule is enforced where the damage would
+      happen: SoundLibraryMainCallback refuses a sample whose channel count is
+      not one, writes silence and traces. A modded Sounds.txt naming a stereo
+      effect sample now loses that sound instead of corrupting the ring.
+
+      A LOOP GUARD THAT THE OLD CODE DID NOT NEED. The music callback's Looped
+      branch spins until the block is full, trusting each Read to return
+      something after AdvanceLoop rewinds. ReadMusicFrames can also return zero
+      — for a sample wider than the voice — which would have made that an
+      infinite loop inside the audio fill. It writes silence and breaks.
+
+      VERIFIED WITHOUT MSVC, because the arithmetic is what a green build says
+      least about. The fan-out and the frame indexing were lifted verbatim into
+      a standalone g++ program and run under ASan and UBSan: ten checks covering
+      mono to stereo, partial reads, stereo passthrough, a SPLIT stereo read
+      (the case that catches the misindexing), a sample wider than the voice,
+      and mono to mono unchanged. All pass. Re-running the same checks against
+      the old indexing fails the split-read case, which is the proof the checks
+      are worth anything.
+
+      NOT DONE, and it is a property rather than a bug: the in-fill effects walk
+      shorts and know nothing about interleaving. BitCrusher is memoryless and
+      correct either way; Gargle advances an LFO per sample, so on a stereo
+      voice its rate comes out doubled. Only music is stereo and no music
+      blueprint asks for either effect, so there is nothing to hear — it is
+      commented at the call site as the thing a modded Sounds.txt would meet.
+
+      Collides with T10 over SoundLibraryXAudio2 and SoundSystem.cpp - do not
+      run the two concurrently.
 
   - id: T10
     title: Device-loss resilience and the last dead code
