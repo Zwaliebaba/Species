@@ -165,8 +165,6 @@ namespace Neuron
       // invisible from outside.
       size_t subscriptionCount() const { return m_subscriptions.size(); }
 
-      const std::string& controlIcon(ControlType type) const;
-
       // suppressEvent IS GONE. It existed so UserInput::AdvanceMenus could
       // notice, after the fact, that a click it had already read out of the
       // bindings had really been meant for a window, and take it back for the

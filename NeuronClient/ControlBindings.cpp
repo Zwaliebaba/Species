@@ -124,24 +124,6 @@ namespace Neuron
   }
 
 
-  const std::string& ControlBindings::getIcon(ControlType id) const
-  {
-    if (isRealControlType(id))
-      return icons[Neuron::I(id)];
-    else
-      throw "Invalid control type.";
-  }
-
-
-  void ControlBindings::setIcon(ControlType id, std::string const& iconfile)
-  {
-    if (isRealControlType(id))
-      icons[Neuron::I(id)] = iconfile;
-    else
-      throw "Invalid control type.";
-  }
-
-
   bool ControlBindings::bind(ControlType type, InputSpec const& spec, bool replace)
   {
     if (isAcceptibleInputType(type, spec.type))

@@ -98,45 +98,25 @@ namespace Neuron
   while (reader.ReadLine())
   {
     // derr << "Line " << line++ << ": ";
-    bool iconline = false;
     char* control = reader.GetNextToken();
     if (control)
     {
+      // THE `~` ICON-LINE BRANCH IS GONE. `Control ~ path/to/icon.bmp` parsed
+      // into a map nothing ever read, and no file under GameData/Input has
+      // carried such a line since T2 removed the eighteen gamepad glyphs. A
+      // `~` in somebody's own prefs file is now reported as an unparseable
+      // line, which is what it is.
       char* eq = reader.GetNextToken();
       if (!eq || strcmp(eq, "=") != 0)
       {
-        if (eq && !strcmp(eq, "~"))
-        {
-          iconline = true;
-        }
-        else
-        {
-          derr << "Assignment not found." << endl;
-          continue;
-        }
+        derr << "Assignment not found." << endl;
+        continue;
       }
 
       string inputspec = reader.GetRestOfLine();
       std::optional<ControlType> const control_id = getControlID(control);
       if (control_id.has_value())
       {
-        if (iconline)
-        {
-          if (inputspec != "")
-          {
-            unsigned len = inputspec.length() - 1;
-            if (inputspec[len] == '\n')
-              inputspec = inputspec.substr(0, len--);
-            if (inputspec[len] == '\r')
-              inputspec = inputspec.substr(0, len);
-            bindings.setIcon(*control_id, inputspec);
-            derr << "Treated as icon: " << Q(bindings.getIcon(*control_id)) << endl;
-          }
-          else
-            derr << "Empty icon line." << endl;
-          continue;
-        }
-
         InputSpec spec;
         string err;
         if (PARSE_SUCCESS(parseInputSpecString(inputspec, spec, err)))
@@ -219,9 +199,6 @@ bool InputManager::controlEvent(ControlType type)
   InputDetails details;
   return controlEvent(type, details);
 }
-
-
-const std::string& InputManager::controlIcon(ControlType type) const { return bindings.getIcon(type); }
 
 
 void InputManager::Advance()

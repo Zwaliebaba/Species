@@ -24,8 +24,6 @@ namespace Neuron
       // Holds the actual bindings
       InputSpecList bindings[Neuron::I(ControlType::NumControlTypes)];
 
-      // Hold icon file paths
-      std::string icons[Neuron::I(ControlType::NumControlTypes)];
 
     public:
       ControlBindings();
@@ -48,10 +46,12 @@ namespace Neuron
       // Grab the list of InputSpec associated with a particular control type
       const InputSpecList& operator[](ControlType id) const;
 
-      // Grab the icon path associated with a particular control type
-      const std::string& getIcon(ControlType id) const;
-
-      void setIcon(ControlType id, std::string const& iconfile);
+      // THE ICON PATHS ARE GONE. getIcon, setIcon and the array behind them
+      // were dead at BOTH ends: nothing in the tree rendered a control icon,
+      // and the `~` lines that fed them were at zero in GameData/Input,
+      // because the eighteen input-native-events T2 removed were all of them.
+      // A parser branch reading a syntax no file uses into a map nothing asks
+      // about is not a feature waiting for a consumer.
 
       // Associate an InputSpec with a control type, returning true on success
       bool bind(ControlType type, InputSpec const& spec, bool replace = false);
@@ -74,8 +74,10 @@ namespace Neuron
 
   // FIVE MEMBERS ABOVE WERE DECLARED TWICE UNTIL language-hygiene T11 — once
   // taking ControlType and once taking controltype_t — and the pair compiled
-  // only because controltype_t was `typedef int`. operator[], getIcon and their
-  // int-taking siblings differed in BEHAVIOUR as well as in type: the ControlType
+  // only because controltype_t was `typedef int`. Two of the five have since
+  // been deleted outright with the icon paths; operator[] and its int-taking
+  // sibling are the surviving example, and they differed in BEHAVIOUR as well
+  // as in type: the ControlType
   // overloads indexed unchecked, the int ones bounds-checked and threw. Making
   // controltype_t name ControlType makes each pair one function, so one body had
   // to win, and THE CHECKED ONE DID. That is a behaviour change on exactly the

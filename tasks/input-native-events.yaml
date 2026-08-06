@@ -1462,7 +1462,29 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: |
+      Landed 2026-08-06 on the owner's direction. Written on Linux: no MSVC
+      build, no vstest run.
+
+      DEAD AT BOTH ENDS, which is what made this a deletion rather than a
+      decision. InputManager::controlIcon had no caller anywhere in the tree,
+      and no file under GameData/Input has carried a `~` line since T2 removed
+      the eighteen gamepad glyph lines - which were all of them. So the parser
+      branch read a syntax no file uses into a map nothing asks about.
+
+      WHAT A USER'S OWN PREFS FILE NOW SEES, because it is the one observable
+      change: a `~` line is reported as "Assignment not found" and skipped,
+      where it used to be parsed and stored. Nothing could read what was
+      stored, so the line did nothing either way; it is now honest about that.
+
+      ControlBindings loses getIcon, setIcon and the per-control string array.
+      Two of the five double-declared members that language-hygiene T11's note
+      describes were those two, so the note was narrowed to the surviving
+      example rather than left describing functions the class no longer has.
+
+      ControlBindingsTests was untouched and needed nothing: it covers the
+      control-NAME lookup, which this does not touch.
 
   - id: T12
     title: Owner-run Garden smoke test on the event-driven input
