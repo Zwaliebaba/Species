@@ -85,6 +85,11 @@ tasks:
       - NeuronClient/InputDriverPrefs.h
       - NeuronClient/InputDriverPrefs.cpp
       - NeuronClient/Input.cpp
+      # Declares InputDetailsList, whose only consumer is the filter family.
+      # Added to the list during the work, per docs/TASK_DAG.md - a file list
+      # is written from where a thing is declared and the work is wherever it
+      # is named.
+      - NeuronClient/InputTypes.h
       - NeuronClient/NeuronClient.vcxproj
       - NeuronClient/NeuronClient.vcxproj.filters
       - Species/Main.cpp
@@ -98,7 +103,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: in_progress
 
   - id: T2
     title: Delete the gamepad vestige - dead switch, dead dialogs, 69 dead binding lines
