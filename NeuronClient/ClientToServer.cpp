@@ -173,6 +173,19 @@ namespace Neuron
   }
 
 
+  int ClientToServer::GetNextLetterSeqID()
+  {
+    int result = -1;
+
+    if (!m_inbox.empty())
+    {
+      result = m_inbox[0]->GetSequenceId();
+    }
+
+    return result;
+  }
+
+
   std::unique_ptr<ServerToClientLetter> ClientToServer::GetNextLetter(int _lastProcessedSequenceId)
   {
     std::unique_ptr<ServerToClientLetter> letter;

@@ -192,7 +192,6 @@ namespace Neuron
       letter->SetTeamType(_teamType);
       SendLetter(std::move(letter));
     }
-
   }
 
   std::unique_ptr<NetworkUpdate> Server::GetNextLetter()
