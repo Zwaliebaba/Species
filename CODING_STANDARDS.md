@@ -54,6 +54,14 @@ converted code. It is legal C++ — the reserved forms are `_Uppercase` and
 `__anything`, and identifiers starting `_lowercase` at global scope. Do not use
 either of those.
 
+**A type name carries no prefix, and that includes abstract ones.** An interface
+is `Transport`, not `ITransport`; a base class is not `Base` or `Abstract`
+anything. `PascalCase` in the table above means the name and nothing else —
+there is no Hungarian remnant here and none is to be introduced. Nothing in the
+tree carries such a prefix; name the concept, and let the concrete types say
+what they are instead: `Transport` with `UdpTransport` and `LoopbackTransport`
+under it, the way `SoundLibrary3d` names its backends.
+
 **Engine code lives in `namespace Neuron`; game code lives in
 `namespace Species`.** All of `NeuronClient` and `NeuronServer` are in the
 first, all of `GameLogic` and the `Species` executable in the second, and

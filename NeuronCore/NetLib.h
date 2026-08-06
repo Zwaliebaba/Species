@@ -1,7 +1,17 @@
 // ****************************************************************************
-//  Top level include file for NetLib
+//  What is left of NetLib.
 //
-//  NetLib - A very thin portable UDP network library
+//  It described itself as "a very thin portable UDP network library": a socket,
+//  a listener, a datagram, a thread, a mutex and a sheet of Win32 macros
+//  standing in for a portability layer that only ever had one platform.
+//  network-transport T4 and T5 replaced the whole of it with UdpSocket, and T6
+//  deleted it — taking with it a connect retry loop meaningless for UDP, a
+//  partial-send loop that cannot happen for a datagram, a Flush() that handed a
+//  SOCKET to _fdopen and had no callers, select timeout arithmetic off by a
+//  factor of ten, and a global MIN macro.
+//
+//  This is what nothing else does: start Winsock, stop Winsock, and write a
+//  line to the debugger.
 // ****************************************************************************
 
 #pragma once
@@ -9,12 +19,6 @@
 #include <format>
 #include <string_view>
 #include <utility>
-
-#include "NetLibWin32.h"
-
-#if (!defined MIN)
-#define MIN(a, b) ((a < b) ? a : b)
-#endif
 
 // Writes one already-formatted line to the platform's debug output. Callers
 // want NetDebugOut below; this is separate only so the platform #ifdef stays
@@ -24,32 +28,13 @@ void NetDebugOutMessage(std::string_view _message);
 
 // Was `void NetDebugOut(const char* fmt, ...)` over a char[512] and an
 // unbounded vsprintf. strings-modernised T18. The format string is checked at
-// compile time now, which is worth having here specifically: every one of the
-// fourteen call sites is a literal, and six of them interpolate an errno-style
-// int that used to be spelled %d with nothing verifying it.
+// compile time now, which is worth having here specifically: every call site is
+// a literal, and several interpolate an errno-style value that used to be
+// spelled %d with nothing verifying it.
 template <class... Types> void NetDebugOut(std::format_string<Types...> _fmt, Types&&... _args)
 {
   NetDebugOutMessage(std::format(_fmt, std::forward<Types>(_args)...));
 }
-
-#define MAX_HOSTNAME_LEN 256
-#define MAX_PACKET_SIZE 512
-
-using NetIpAddress = struct sockaddr_in;
-
-// int rather than the default, because NetFailed is -1. This one does NOT cross
-// the wire — it is a return code — which is why it has no pinning test, unlike
-// NetworkUpdate::UpdateType and ServerToClientLetter::LetterType.
-enum class NetRetCode : int
-{
-  NetFailed = -1,
-  NetOk,
-  NetTimedout,
-  NetBadArgs,
-  NetMoreData,
-  NetClientDisconnect,
-  NetNotSupported
-};
 
 class NetLib
 {

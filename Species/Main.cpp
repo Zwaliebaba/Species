@@ -168,7 +168,7 @@ namespace Species
     switch (letter->m_type)
     {
     case ServerToClientLetter::LetterType::HelloClient:
-      if (letter->m_ip == g_app->m_clientToServer->GetOurIP_Int())
+      if (letter->m_connectionId == g_app->m_clientToServer->GetConnectionId())
         DebugTrace("CLIENT : Received HelloClient from Server\n");
       return true;
 
@@ -178,7 +178,11 @@ namespace Species
 
     case ServerToClientLetter::LetterType::TeamAssign:
 
-      if (letter->m_ip == g_app->m_clientToServer->GetOurIP_Int())
+      // Matched by connection id. It used to be matched by IP address against
+      // GetOurIP_Int, which was hard-coded to 127.0.0.1 — so on any real
+      // network every client took every team as its own, and this line is the
+      // whole of why remote play did not work.
+      if (letter->m_connectionId == g_app->m_clientToServer->GetConnectionId())
         g_location->InitialiseTeam(letter->m_teamId, letter->m_teamType);
       else
         g_location->InitialiseTeam(letter->m_teamId, Team::TeamTypeRemotePlayer);

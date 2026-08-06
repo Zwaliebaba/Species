@@ -5,9 +5,15 @@
 // It lived in GameLogic/WorldObject.h, next to WorldObject, which meant the
 // sound system had to include GameLogic upward to name the type its API is
 // written in. Nothing about it is GameLogic's: it is four scalars with no
-// dependencies, it goes onto the wire whole through WRITE_WORLDOBJECTID, and
+// dependencies, it goes onto the wire whole as one object representation, and
 // its comparison and validity rules are protocol rather than convenience.
 // See tasks/layering-inversion.yaml T10.
+//
+// Going onto the wire whole is why it has no hand-written copy assignment any
+// more: one existed, memberwise and identical to the implicit one, and its only
+// effect was to stop the type being trivially copyable. ByteWriter::Write
+// static_asserts on exactly that, so the wire's requirement is now the
+// compiler's — see tasks/network-transport.yaml T1.
 //
 // m_index is a raw container slot. Replacing a container with one that assigns
 // slots differently repoints every reference in the world — see
@@ -52,5 +58,4 @@ class WorldObjectId
 
     bool operator!=(WorldObjectId const& w) const;
     bool operator==(WorldObjectId const& w) const;
-    WorldObjectId const& operator=(WorldObjectId const& w);
 };

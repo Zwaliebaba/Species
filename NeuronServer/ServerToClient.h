@@ -3,12 +3,7 @@
 
 #pragma once
 
-#include <string>
-#include <string_view>
-
-
-// NeuronCore, still at global scope until namespace-migration T2 reaches it.
-class NetSocket;
+#include "UdpSocket.h"
 
 
 namespace Neuron
@@ -16,20 +11,31 @@ namespace Neuron
   class ServerToClient
   {
     private:
-      // std::string since strings-modernised T9. Was char[16] with an unbounded
-      // strcpy into it — wide enough for dotted IPv4 and nothing else, which
-      // strings-modernised T1 recorded as a hazard the day a hostname reaches
-      // it. It is a per-connection registry key and is never serialised, so
-      // there is no wire format to keep.
-      std::string m_ip;
-      NetSocket* m_socket;
+      // WHERE this client is: the address and port its datagrams arrived from,
+      // which is also where replies go. It replaces a dotted-quad string plus a
+      // fixed reply port, and that pair is what limited a host to one client and
+      // could not work through NAT — two players behind one router share an
+      // address and differ only by port.
+      //
+      // It also replaces a socket. Each client used to own one.
+      Endpoint m_endpoint;
+
+      // WHO this client is, as far as the protocol is concerned. Assigned by the
+      // server, sent to the client in HelloClient, and what a TeamAssign is
+      // matched against.
+      int m_connectionId;
 
     public:
-      ServerToClient(char* _ip);
+      ServerToClient(Endpoint const& _endpoint, int _connectionId);
 
-      std::string_view GetIP();
-      NetSocket* GetSocket();
+      [[nodiscard]] Endpoint const& GetEndpoint() const;
+      [[nodiscard]] int GetConnectionId() const;
 
       int m_lastKnownSequenceId;
+
+      // Server ticks since anything arrived from this client. Reset by every
+      // datagram it sends, including the IAmAlive it sends when it has nothing
+      // else to say.
+      int m_ticksSinceHeardFrom;
   };
 } // namespace Neuron

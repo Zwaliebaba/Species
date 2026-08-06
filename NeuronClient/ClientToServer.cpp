@@ -1,11 +1,7 @@
 #include "pch.h"
 
 #include "NetLib.h"
-#include "NetMutex.h"
-#include "NetSocket.h"
-#include "NetSocketListener.h"
-#include "NetThread.h"
-#include "NetUdpPacket.h"
+#include "Transport.h"
 
 #include <float.h>
 
@@ -13,6 +9,7 @@
 #include "Debug.h"
 #include "Preferences.h"
 #include "Profiler.h"
+#include "Random.h"
 #include "Input.h"
 
 // Server.h was included here and never used — no Server appears in this file.
@@ -31,84 +28,111 @@ namespace Neuron
   ClientToServer* g_clientToServer = nullptr;
 
 
-  // The socket callbacks are plain function pointers and cannot carry state, so
-  // the running client has to be reachable from file scope. This replaces
-  // g_clientToServer; it is set in the constructor.
-  static ClientToServer* s_client = nullptr;
-
-  static NetCallBackRetType ListenCallback(NetUdpPacket* udpdata)
+  namespace
   {
-    if (udpdata)
-    {
-      s_client->ReceiveLetter(std::make_unique<ServerToClientLetter>(udpdata->m_data, udpdata->m_length));
-      //        SET_PROFILE(m_profiler,  "#Client Receive", udpdata->getLength() );
-
-      delete udpdata;
-    }
-
-    return 0;
-  }
-
-
-  static NetCallBackRetType ListenThread(void* ignored)
-  {
-    s_client->m_receiveSocket = std::make_unique<NetSocketListener>(4001);
-    NetRetCode retCode = s_client->m_receiveSocket->StartListening(ListenCallback);
-    DEBUG_ASSERT(retCode == NetRetCode::NetOk);
-    return 0;
-  }
+    // Client-local and never simulation state, so the cosmetic generator is the
+    // right one — syncrand is the lockstep stream and drawing from it here would
+    // shift it by a client-dependent amount. Two draws because one is not
+    // guaranteed to be wider than 15 bits.
+    int MakeJoinToken() { return (speciesRandom() << 16) ^ speciesRandom(); }
+  } // namespace
 
 
   ClientToServer::ClientToServer()
   {
-    s_client = this;
-
+    m_connectionId = -1;
+    m_joinToken = MakeJoinToken();
+    m_lastHeardFromServer = GetHighResTime();
     m_lastValidSequenceIdFromServer = -1;
     m_startTime = DBL_MAX; // Same initial value g_startTime carried in Main.cpp
-
-    m_inboxMutex = std::make_unique<NetMutex>();
-    m_outboxMutex = std::make_unique<NetMutex>();
 
     m_netLib = std::make_unique<NetLib>();
     m_netLib->Initialise();
 
-    m_sendSocket = std::make_unique<NetSocket>();
     char const* serverAddress = g_prefsManager->GetString("ServerAddress");
-    m_sendSocket->Connect(serverAddress, 4000);
+    const std::error_code unresolved = ResolveEndpoint(serverAddress, ServerPort, m_serverEndpoint);
+    if (unresolved)
+      NetDebugOut("Client could not resolve server address {}: {}", serverAddress, unresolved.message());
 
-    // Null it before the listen thread starts: the thread's first act is to store
-    // its listener here, and this write used to be able to land on top of that.
-    m_receiveSocket.reset();
+    // PORT 0: whatever the OS gives us. The client used to bind a fixed port so
+    // the server had somewhere to reply to, and that single fact is what
+    // limited a host to one client and broke NAT — the server replies to the
+    // address a datagram came FROM now, so nothing needs the port to be
+    // predictable.
+    auto transport = std::make_unique<UdpTransport>();
+    const std::error_code failure = transport->Open(0);
+    if (failure)
+      NetDebugOut("Client could not open a socket: {}", failure.message());
 
-    NetStartThread(ListenThread);
+    m_transport = std::move(transport);
   }
+
+
+  ClientToServer::ClientToServer(std::unique_ptr<Transport> _transport, Endpoint const& _serverEndpoint)
+    : m_serverEndpoint(_serverEndpoint),
+      m_transport(std::move(_transport))
+  {
+    // No NetLib and no preferences: this constructor exists so a test can hold
+    // a client, and a test has neither. Nothing in the game calls it.
+    m_connectionId = -1;
+    m_joinToken = MakeJoinToken();
+    m_lastHeardFromServer = GetHighResTime();
+    m_lastValidSequenceIdFromServer = -1;
+    m_startTime = DBL_MAX;
+  }
+
+
+  double ClientToServer::TimeSinceServerHeard() const { return GetHighResTime() - m_lastHeardFromServer; }
+
+  bool ClientToServer::IsServerSilent() const { return TimeSinceServerHeard() > ServerSilenceTimeout; }
 
 
   ClientToServer::~ClientToServer()
   {
-    while (!m_outbox.empty())
-    {
-    }
+    // Sends what is queued and closes. What stood here was
+    // `while (!m_outbox.empty()) {}` — a spin-wait on a member the listen
+    // thread was expected to drain, with no synchronisation and nothing
+    // guaranteeing it ever would, and then a reset() of the listener object
+    // while that thread was still executing inside it. With the sending on this
+    // thread, waiting for it is just doing it.
+    AdvanceSender();
 
-    // Reset explicitly, in the order the SAFE_DELETEs ran. Members are destroyed
-    // in reverse declaration order, which would take the two sockets down BEFORE
-    // NetLib — the opposite of what this did. Whether NetLib outliving its
-    // sockets matters is not established, so it is preserved rather than
-    // reasoned about.
     m_inbox.clear();
     m_outbox.clear();
-    m_inboxMutex.reset();
-    m_outboxMutex.reset();
+    m_transport.reset();
     m_netLib.reset();
-    m_sendSocket.reset();
-    m_receiveSocket.reset();
+  }
+
+
+  void ClientToServer::ReceiveDatagrams()
+  {
+    if (!m_transport)
+      return;
+
+    char datagram[MaxDatagramSize];
+    int received = 0;
+    Endpoint from;
+
+    while (m_transport->TryReceive(datagram, static_cast<int>(sizeof(datagram)), received, from))
+    {
+      auto letter = std::make_unique<ServerToClientLetter>(datagram, received);
+
+      // Dropped here rather than in the inbox, because ReceiveLetter acts on a
+      // letter's sequence id before anything reads its type — it moves the
+      // client's clock and its last-valid-sequence id. A letter that did not
+      // parse has no sequence id worth believing.
+      if (letter->IsValid())
+        ReceiveLetter(std::move(letter));
+    }
   }
 
 
   void ClientToServer::AdvanceSender()
   {
+    if (!m_transport)
+      return;
+
     int bytesSentThisFrame = 0;
-    m_outboxMutex->Lock();
 
     while (!m_outbox.empty())
     {
@@ -116,11 +140,14 @@ namespace Neuron
       DEBUG_ASSERT(letter);
 
       {
-        int letterSize = 0;
-        char* byteStream = letter->GetByteStream(&letterSize);
-        NetSocket* socket = m_sendSocket.get();
-        socket->WriteData(byteStream, letterSize);
-        bytesSentThisFrame += letterSize;
+        // The whole datagram, frame included. GetByteStream would give the
+        // payload alone, which is what a letter carries nested and NOT what a
+        // client sends.
+        char datagram[MaxDatagramSize];
+        const int letterSize = letter->SerialiseDatagram(datagram, static_cast<int>(sizeof(datagram)));
+        const std::error_code failure = letterSize > 0 ? m_transport->Send(m_serverEndpoint, datagram, letterSize) : std::error_code();
+        if (!failure)
+          bytesSentThisFrame += letterSize;
         // reset() rather than letting the scope end it: the old code deleted
         // here, before the erase, and this plan's rule is that ownership moves
         // without the moment of destruction moving with it.
@@ -129,7 +156,6 @@ namespace Neuron
 
       m_outbox.erase(m_outbox.begin());
     }
-    m_outboxMutex->Unlock();
 
     if (bytesSentThisFrame > 0)
     {
@@ -138,54 +164,12 @@ namespace Neuron
   }
 
 
-  void ClientToServer::Advance() { AdvanceSender(); }
-
-
-  int ClientToServer::GetOurIP_Int()
+  // Receive before send, so an order given this frame goes out carrying the
+  // sequence id of a letter that arrived this frame rather than last frame's.
+  void ClientToServer::Advance()
   {
-    // We're not doing networking for now
-    static int s_localIP = ConvertIPToInt("127.0.0.1");
-    return s_localIP;
-
-    // Notes by John
-    // =============
-    //
-    // The commented code below has the following problems
-    //
-    // - it doesn't always return the same IP (sometimes 127.0.0.1
-    //   and sometimes the real ip). This means that the remote packet
-    //   detection code in ProcessServerLetters in main.cpp
-    //   can incorrectly classify a TeamAssignment message as Remote
-    //   when it should be local.
-    //
-    // - on many machines the hostname has nothing to do with IP address. I
-    //   believe the correct thing to do is open a TCP connection to the
-    //   server and ask the server what it thinks your IP address is
-    //   (see getpeername). This will work even if the client is behind a NAT.
-    //
-    // - h_addr_list[0] is in network byte order. Treating it directly
-    //   as an int leads to endianness problems. ConvertIntToIP and ConvertIPToInt
-    //   assume that the least significant byte of the integer
-    //   corresponds to the A of the ip address A.B.C.D. The problem is that
-    //   a direct cast from h_addr_list[0] to an integer means that the least
-    //   significant byte be different on big endian machines (Macintosh). The effect
-    //   of this is that the IP comes out in reverse order on the Mac.
-    //		See functions ntohl and hton for possible solutions.
-    //
-    // - Constant parsing of IP strings and generation again seems wasteful. I think
-    //   that IPs should be represented as a class, with various different constructors.
-    //	 The private data should be 4 unsigned chars. With this strategy you could
-    //   even support IPv6 (if that actually happens before the year 3000).
-
-    //	char hostName[256];
-    //
-    //	int errorCode = gethostname( hostName, sizeof(hostName) );
-    //	if (errorCode == 0) {
-    //		struct hostent *hostEnt = gethostbyname(hostName);
-    //		if (hostEnt && hostEnt->h_addr_list[0])
-    //			return *((int*)hostEnt->h_addr_list[0]);
-    //	}
-    //	return ConvertIPToInt( "127.0.0.1" );
+    ReceiveDatagrams();
+    AdvanceSender();
   }
 
 
@@ -193,12 +177,10 @@ namespace Neuron
   {
     int result = -1;
 
-    m_inboxMutex->Lock();
     if (!m_inbox.empty())
     {
       result = m_inbox[0]->GetSequenceId();
     }
-    m_inboxMutex->Unlock();
 
     return result;
   }
@@ -206,7 +188,6 @@ namespace Neuron
 
   std::unique_ptr<ServerToClientLetter> ClientToServer::GetNextLetter(int _lastProcessedSequenceId)
   {
-    m_inboxMutex->Lock();
     std::unique_ptr<ServerToClientLetter> letter;
 
     if (!m_inbox.empty())
@@ -218,8 +199,6 @@ namespace Neuron
       }
     }
 
-    m_inboxMutex->Unlock();
-
     return letter;
   }
 
@@ -227,7 +206,10 @@ namespace Neuron
   void ClientToServer::ReceiveLetter(std::unique_ptr<ServerToClientLetter> letter)
   {
     //
-    // Simulate network packet loss
+    // Simulate network packet loss. This used to run on the listen thread,
+    // which meant a debug build asked the input manager for a control event
+    // from a thread that never touches input; it is the main thread now, like
+    // everything else here.
 
 #ifdef _DEBUG
     if (g_inputManager->controlEvent(ControlType::ControlDebugDropPacket))
@@ -235,6 +217,25 @@ namespace Neuron
       return;
     }
 #endif
+
+    //
+    // The server is alive. After the drop hook rather than before it, so a
+    // packet the debug build is pretending to lose does not count as having
+    // been heard.
+
+    m_lastHeardFromServer = GetHighResTime();
+
+    //
+    // Our own welcome, recognised by the token we chose and the server echoed.
+    // Done on arrival rather than when the letter is released from the inbox in
+    // sequence: this is client bookkeeping, not simulation state, and the game
+    // needs the id before it processes the TeamAssign that follows.
+
+    if (letter->m_type == ServerToClientLetter::LetterType::HelloClient && m_connectionId == -1 && letter->m_joinToken == m_joinToken)
+    {
+      m_connectionId = letter->m_connectionId;
+      DebugTrace("CLIENT : the server assigned us connection id {}\n", m_connectionId);
+    }
 
   //
   // Check for duplicates
@@ -266,7 +267,6 @@ namespace Neuron
   //
   // Do a sorted insert of the letter into the inbox
 
-  m_inboxMutex->Lock();
   int i;
   bool inserted = false;
   for (i = static_cast<int>(m_inbox.size()) - 1; i >= 0; --i)
@@ -304,18 +304,13 @@ namespace Neuron
     }
     m_lastValidSequenceIdFromServer = thisLetter->GetSequenceId();
   }
-
-  m_inboxMutex->Unlock();
   }
 
 
 void ClientToServer::SendLetter(std::unique_ptr<NetworkUpdate> letter)
 {
   letter->SetLastSequenceId(m_lastValidSequenceIdFromServer);
-
-  m_outboxMutex->Lock();
   m_outbox.push_back(std::move(letter));
-  m_outboxMutex->Unlock();
 }
 
 

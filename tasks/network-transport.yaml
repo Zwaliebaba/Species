@@ -47,7 +47,7 @@ summary: >
   Deliberate design calls, so nobody relitigates them mid-task: the transport
   stays a SINGLE non-blocking socket polled from the tick - IOCP/RIO earn their
   complexity at thousands of sockets and a UDP game server is one socket at any
-  client count; ITransport is the seam where a fancier implementation would
+  client count; Transport is the seam where a fancier implementation would
   slot in later with zero protocol change. Single player STAYS real UDP over
   loopback (recorded stance, NeuronServer/Server.h:55); the loopback transport
   introduced here is a TEST seam, not a runtime shortcut. Payload encodings
@@ -92,7 +92,71 @@ tasks:
       - python3 tools/check_hygiene.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: >
+      THE FILES LIST WAS SHORT BY FIVE, in the way _next-batch.md keeps
+      recording: it names where the macros are DECLARED and the work is wherever
+      they are USED. Tests/NeuronCoreTests/ByteStreamTests.cpp and
+      WorldObjectIdTests.cpp both used the macro family and both had to be
+      ported for the zero-users acceptance to be true. NeuronServer/Server.cpp
+      and NeuronClient/ClientToServer.cpp are the two receive callbacks - the
+      first was constructing a NetworkUpdate from m_data with NO length at all,
+      which is the unbounded read this task exists to close, so bounding the
+      type without fixing its only production caller would have been a change
+      with no effect. NeuronCore/WorldObjectId.cpp is explained below.
+
+      FOUR DECISIONS BEYOND THE LETTER OF THE ACCEPTANCE, each because the
+      acceptance is unmeetable or meaningless without it:
+
+      1. WorldObjectId lost its hand-written operator=. It was memberwise and
+      identical to the implicit one, and its only effect was to make the type
+      not trivially copyable - so ByteWriter::Write<WorldObjectId> would not
+      compile against the static_assert that the wire only carries object
+      representations. The type's whole documented purpose is going onto the
+      wire whole; the assert now enforces that.
+
+      2. An unrecognised type is invalid, not "whatever the wire said". Both
+      parsers used to assign m_type from the wire BEFORE switching on it, so a
+      datagram carrying any integer produced an update or letter claiming to be
+      that type. They now switch on the raw value and assign only what this
+      build knows.
+
+      3. The DEBUG_ASSERTs on the RECEIVING side are gone. DEBUG_ASSERT(false)
+      on an Invalid update type and DEBUG_ASSERT(numUpdates >= 0) were both
+      reached from bytes off a socket: in Release they checked nothing, and in
+      Debug they handed anyone who can reach the port a way to stop the build a
+      developer is running. The writing-side assert on Invalid STAYS - nothing
+      hostile reaches it.
+
+      4. Both receive callbacks drop what did not parse. A letter that fails to
+      parse still has a sequence id, and ClientToServer::ReceiveLetter acts on
+      that id - it moves the client's clock and its last-valid-sequence id -
+      before anything looks at the type. Parsing safely and then acting on the
+      result anyway is not a fix.
+
+      WRITTEN WITHOUT MSVC AND SINCE BUILT GREEN BY CI at f169ab1, 258/258
+      tests. What was run BEFORE that, on Linux: all eight tools/ checks, and a g++ 13 harness under ASan and UBSan
+      over verbatim copies of NetworkUpdate.cpp, ServerToClientLetter.cpp and
+      TeamControls.cpp against shims for pch.h, Debug.h and the XMFLOAT3
+      storage. It carries the PRE-T1 macro serialisers alongside the new ones
+      and compares byte for byte: all twelve update types and all four letter
+      types are identical, at the same lengths the suite pins (8, 11, 24, 21,
+      30, 25, 12, 10, 22, 13). It then feeds the real parsers every truncation
+      of a 63-byte letter and a 30-byte update, 263 type values, a
+      billion-update count, a negative count and 20,000 random datagrams with
+      no sanitizer report. A negative control confirms the harness can see the
+      defect: the same five-byte datagram through the old READ_INT is a
+      heap-buffer-overflow, and UBSan reports the old WRITE_FLOAT as a
+      misaligned store while running the comparison.
+
+      WHAT THAT CANNOT SEE is a type that no longer matches its use at a call
+      site MSVC compiles and g++ never saw - the standing lesson of this
+      repository. The signature changes are the exposure: NetworkUpdate(char*)
+      became NetworkUpdate(char const*, int), ReadByteStream(char*) became
+      ReadByteStream(ByteReader&) returning bool, and
+      ServerToClientLetter(char*, int) became (char const*, int). Every caller
+      of all three was found by grep and changed; a caller that was missed is a
+      compile error rather than anything worse.
 
   - id: T2
     title: Give ServerToClientLetter value semantics and end the update leak
@@ -120,7 +184,50 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: >
+      MEASURED, NOT ASSERTED: the leak is 24 allocations for three letters
+      carrying eight updates each - one built, one broadcast copy, one parsed
+      off the wire - counted by a global operator new/delete pair in the g++
+      harness. The same program over this task's code balances at zero.
+      LeakSanitizer is disabled in this container (a deliberate `new int[10]`
+      goes unreported), which is why the counter exists rather than a sanitizer
+      run being cited.
+
+      THE FILES LIST WAS RIGHT this time, with one addition:
+      NeuronCore/NetworkUpdate.h and .cpp, because NetworkUpdate's own
+      hand-written operator= - memcpy(this, &n, sizeof(*this)) - is the other
+      half of "copies no bytes by hand", and declaring it stopped the type being
+      trivially copyable. A vector of these by value is the whole task, so the
+      thing standing in the way of the vector had to go with it. The implicit
+      copy assignment is memberwise over scalars, which is what the memcpy was.
+
+      GetByteStream BECAME Serialise(char*, int) ON THE LETTER, and the rename
+      is the honest part of the change rather than churn: the buffer is the
+      caller's now. What it replaces is a file-scope char[1024] shared by every
+      letter in the process, so the bytes a letter "returned" stayed valid only
+      until the next letter was serialised anywhere. Nothing was relying on
+      that, because the one caller sent immediately - but it is a static that
+      two sending threads would have raced over, and T4 and T5 are about to
+      delete the threads that made it survivable. NetworkUpdate::GetByteStream
+      keeps its shape and its member buffer; only the letter changed.
+
+      WHY UPDATES ARE STILL FLATTENED THROUGH A SCRATCH BUFFER rather than
+      written straight into the letter's writer: T3 needs to know whether the
+      next update fits BEFORE committing any of it, so that a full letter stops
+      cleanly and the remainder spills into the next tick. Writing through
+      directly would leave a partial update behind the cursor with no way back.
+      That is why ByteWriter::WriteBytes exists and is kept.
+
+      WRITTEN WITHOUT MSVC AND SINCE BUILT GREEN BY CI at f169ab1. The harness was
+      refreshed onto this task's sources: the byte comparison against the
+      pre-T1 macro serialisers still passes for all twelve update types and all
+      four letter types, the truncation and hostile-datagram sweeps still pass
+      under ASan and UBSan, and the allocation balance is the new section. What
+      it does not cover is Species/ServerUpdates.cpp and NeuronServer/Server.cpp
+      - the two call sites that had to change shape (`m_updates[i]` is a value,
+      `AddUpdate` takes a reference, the send path owns its buffer). Both are
+      compile errors if they are wrong, not silent ones.
 
   - id: T3
     title: One datagram size, enforced at both ends, with per-letter spillover
@@ -150,7 +257,51 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: >
+      1024, NOT 512, and the reason is arithmetic rather than taste: a full tick
+      of 48 SelectUnits is 1020 bytes with its header, so 512 would have made
+      spillover the normal case rather than the overflow case. The upper bound
+      is one un-fragmented IP datagram - 1500 MTU less 20 IP and 8 UDP - so
+      there is room above 1024 but nothing to buy with it.
+
+      THE SPILLOVER NEEDED A LIFT, and it is the same shape input-native-events
+      used for DeriveFrameState. Server::Advance cannot be called in a test: it
+      locks a mutex Initialise creates, drains an inbox a listen thread fills,
+      and reads g_prefsManager. So the decision it makes - which updates go in
+      this letter and which are carried - moved into FillLetter, a free function
+      over a letter and a queue, and THAT is what NeuronServerTests drives. The
+      loop in Advance now queues into m_pendingUpdates and calls it once.
+
+      Two things about that queue are load-bearing and both are asserted:
+      updates carried from a full tick go at the FRONT of the next letter, and
+      the first refusal ends the fill. "Add everything that fits" would let a
+      small update overtake the large one that did not, and the order updates
+      are broadcast in is the order every client applies them in - so that is a
+      desync, not a cosmetic difference.
+
+      SerialisedSize IS A SECOND PLACE THE LAYOUT IS WRITTEN DOWN. The cap has
+      to be checked before an update is committed, and Serialise only answers
+      after writing, so HeaderSize computes the per-type header independently.
+      TheSerialisedSizeMatchesWhatSerialiseWrites is the only thing stopping the
+      two drifting - it is the test that will fail when T8 adds a frame header
+      to one and not the other, which is the intended way to find out.
+
+      AddUpdate IS [[nodiscard]] because a caller that ignores the refusal has
+      silently dropped a player's order.
+
+      THE FILES LIST WAS SHORT BY THREE: NeuronCore/NetUdpPacket.h and .cpp both
+      sized themselves from MAX_PACKET_SIZE, and Tests/NeuronServerTests is
+      where the spillover test had to go.
+
+      WRITTEN WITHOUT MSVC AND SINCE BUILT GREEN BY CI at f169ab1, with both new
+      NeuronServerTests passing by name. The harness was extended:
+      60 updates spill across two letters at 1020 and 264 bytes, in order, and
+      the capped letter round trips through the parser. FillLetter's five lines
+      are TRANSCRIBED into the harness rather than compiled from Server.cpp,
+      which cannot build here - so the cap itself is real code under test and
+      the loop around it is not. The byte-identity comparison against the pre-T1
+      macro serialisers still passes for every type.
 
   - id: T4
     title: Introduce UdpSocket and poll it from the server tick
@@ -183,7 +334,50 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: >
+      THE REAL UdpSocket.cpp WAS COMPILED AND RUN, which is more than any other
+      task in this plan can say. Winsock's names are shimmed onto POSIX in a
+      harness - SOCKET, closesocket, ioctlsocket, WSAGetLastError and the three
+      error codes are renames; recvfrom's address-length parameter is the one
+      genuine difference, int* on Windows and socklen_t* here, and the shim
+      converts it. The file itself is byte-identical to the one in the tree. It
+      builds clean under -Wall -Wextra and passes 30 checks over real loopback
+      UDP: bind, non-blocking receive reporting empty as empty, send, receive
+      with the source address and port recovered, REPLY TO THAT SOURCE (which is
+      T9's identity change working before it is wired up), a five-datagram drain
+      in one pass, sending on a closed socket, null and empty payloads,
+      reopening and double-closing.
+
+      THE WIRING WAS THE UNCOMPILED PART AND CI HAS NOW BUILT IT: Server.cpp,
+      Server.h, ServerToClient.cpp and the test file need MSVC and the rest of
+      NeuronServer. The shapes that changed there are the ones to look at if CI
+      is red - Server owns a UdpSocket by value (so Server is no longer
+      copyable), ServerToClient::GetSocket became GetEndpoint, and Server.h
+      includes UdpSocket.h and therefore winsock2.h (safe only because every pch
+      includes WinSock2.h before Windows.h; the reverse order is the classic
+      redefinition error).
+
+      BOTH MUTEXES WENT, not just the inbox one the acceptance names. The outbox
+      mutex protected m_outbox against the same listen thread, and AdvanceSender
+      is called from Advance on the same thread as everything else, so it was
+      guarding one thread from itself.
+
+      THE PORTS ARE NAMED NOW - ServerPort and ClientPort in ProtocolLimits.h.
+      That is T11's acceptance rather than this one's, but 4000 and 4001 were
+      literals in the code this task rewrote, and putting them back as literals
+      to be swept later would have been theatre. ClientPort is deliberately
+      short-lived: T9 deletes the whole idea of a fixed reply port.
+
+      THE ACCEPTANCE'S LAST LINE IS DISCHARGED: CI at f169ab1 reports "headless
+      server reached sequence id 20 in 2.0971917s with no client attached". That
+      is the most valuable signal on this task - Initialise opening a real
+      socket, and twenty real ticks of Advance draining it with the listen
+      thread gone, at the right rate rather than free-running.
+
+      ServerToClient became CONSTRUCTIBLE IN A TEST as a side effect - it used
+      to open and connect a socket to exist at all - so there is now a test that
+      its endpoint is the address ConvertIPToInt produces on ClientPort.
 
   - id: T5
     title: Poll the client socket from the frame loop and fix shutdown
@@ -206,7 +400,39 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: >
+      THE DESTRUCTOR'S SPIN-WAIT IS GONE BY CONSTRUCTION, which is the point of
+      the task rather than a tidy-up. `while (!m_outbox.empty()) {}` waited for a
+      thread to drain a member it accessed without synchronisation, with nothing
+      guaranteeing the thread ever would - and then reset the listener object
+      that thread was still executing inside. With the sending on this thread,
+      waiting for the outbox to empty IS emptying it: the destructor calls
+      AdvanceSender and closes.
+
+      HOSTNAME RESOLUTION WOULD HAVE BEEN LOST SILENTLY, and this is the find of
+      the task. ServerAddress is a preferences string, so a user can write
+      "myserver.local"; NetSocket::Connect resolved it through NetGetHostByName,
+      which T6 deletes. Sending to ConvertIPToInt(serverAddress) instead would
+      have compiled, passed every check, and worked perfectly for the default
+      value of 127.0.0.1 - failing only for the users who typed a name.
+      ResolveEndpoint (getaddrinfo, first IPv4 answer, which is the h_addr_list[0]
+      NetGetHostByName's caller took) is in UdpSocket.cpp and is exercised in the
+      POSIX harness against a dotted quad, a name, a null, an empty string and an
+      unresolvable name.
+
+      THE DEBUG PACKET-DROP HOOK now runs on the main thread because there is no
+      other thread. It used to ask g_inputManager for a control event from the
+      listen thread, which is a thread that never touches input.
+
+      Advance RECEIVES THEN SENDS, deliberately: an order given this frame then
+      goes out carrying the sequence id of a letter that arrived this frame
+      rather than last frame's.
+
+      NOT COMPILED WHEN WRITTEN, SINCE BUILT GREEN BY CI at f169ab1. Nothing in
+      this task can be built here - ClientToServer needs NeuronClient. The socket underneath it is the same UdpSocket that T4
+      compiled and ran under the POSIX shim; the additions to it here,
+      ResolveEndpoint, ran there too. What needs CI is the file that uses them.
 
   - id: T6
     title: Delete the legacy transport files
@@ -244,10 +470,39 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: >
+      TWELVE FILES, NOT TEN: the acceptance says ten and names NetLib.h and
+      NetLib.cpp among the files, which survive. What went is NetSocket,
+      NetSocketListener, NetUdpPacket, NetThread/NetThreadWin32,
+      NetMutex/NetMutexWin32 and NetLibWin32 - six pairs. NetLib keeps
+      WSAStartup, WSACleanup and NetDebugOut and nothing else; MIN,
+      MAX_HOSTNAME_LEN, NetIpAddress and the whole NetRetCode enum went with the
+      code that used them.
+
+      THE GREPS ARE ZERO IN CODE AND NOT IN COMMENTS, and that is deliberate.
+      Ten comments across UdpSocket, ServerToClient, ClientToServer, Server and
+      NetLib name what was deleted in order to say why the current shape is what
+      it is - "it replaces a NetSocket per client", "NetSocket::Connect resolved
+      it through NetGetHostByName". Rewriting them to dodge a grep would cost
+      the reader the reason. T11's sweep should read these as history rather
+      than as survivors; the check that matters is that no declaration,
+      definition, include or project entry names any of them, and that is true.
+
+      NOT COMPILED WHEN WRITTEN, SINCE BUILT GREEN BY CI at f169ab1 - the
+      reasoning below held. A deletion is the change most likely to break a build
+      in a file nobody touched, and this repository has been red twice for exactly
+      that - see AGENTS.md, "deleting a header withdraws everything it
+      included, not just what it declared". The three things NetLib.h used to
+      supply transitively are winsock2.h and windows.h (through NetLibWin32.h)
+      and the MIN macro. Every survivor that includes NetLib.h - Generic.cpp,
+      Server.cpp, ClientToServer.cpp - includes pch.h first, and NeuronCore.h
+      includes WinSock2.h then Windows.h, so the withdrawal is covered. MIN had
+      one user, NetUdpPacket.cpp, which is gone. That reasoning is what CI will
+      confirm or refute.
 
   - id: T7
-    title: Put ITransport behind the endpoints and test the protocol end to end
+    title: Put Transport behind the endpoints and test the protocol end to end
     intent: >
       The protocol has never once been exercised by CI - the tests cover
       encodings, not conversations. A two-method transport interface with a
@@ -273,7 +528,7 @@ tasks:
       - Tests/NeuronServerTests/NeuronServerTests.vcxproj
       - Tests/NeuronServerTests/NeuronServerTests.vcxproj.filters
     acceptance:
-      - Server and ClientToServer send and receive through ITransport; the game injects UdpTransport, so runtime behaviour is unchanged and single player still runs real loopback UDP
+      - Server and ClientToServer send and receive through Transport; the game injects UdpTransport, so runtime behaviour is unchanged and single player still runs real loopback UDP
       - ServerProtocolTests drives a scripted client over LoopbackTransport - join produces HelloClient, RequestTeam produces TeamAssign, updates come back sequenced, an unacked letter is retransmitted, an acked one is not
       - The new test file is in the vcxproj (check_project_files is the guard) and runs in CI
     verify:
@@ -281,7 +536,52 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: >
+      UdpTransport IS IN Transport.h, NOT UdpSocket.h, and the first attempt put
+      it in UdpSocket.h and was wrong. Transport.h includes UdpSocket.h for
+      Endpoint; UdpSocket.h including Transport.h back makes a cycle that
+      #pragma once turns into an ORDER DEPENDENCY rather than an error - include
+      Transport.h first and UdpTransport's base class is not yet declared.
+      Caught by reading rather than by a compiler, which is the only way it
+      could have been caught here. The dependency now runs one way.
+
+      THE SCRIPTED CLIENT IS NOT A ClientToServer, deliberately. Driving the
+      real client against the real server would test that the two halves of one
+      codebase agree with each other, which they would even if both were wrong
+      about the protocol. The tests build NetworkUpdates by hand and read
+      ServerToClientLetters by hand.
+
+      NINE TESTS, and two of them pin things the acceptance did not ask for
+      because Advance's guards are otherwise untested: joining twice registers
+      one client (RegisterNewClient ASSERTS on a duplicate, so the guard is the
+      only thing between a repeated datagram and a Debug crash), and a team
+      request from an address that never joined is ignored (RegisterNewTeam
+      asserts the same way).
+
+      ONE TEST PINS A DEFECT AS A DEFECT. ASecondClientGetsItsOwnTeamAssign
+      asserts that two clients on one host register as ONE and that the second
+      hears nothing - which is what today's addressing does, because clients are
+      keyed by IP string and replied to on a fixed port. It is named for what it
+      should say and asserts what it does say, with the reason at the site. T9
+      rewrites it.
+
+      THE FAKE WIRE WAS COMPILED AND RUN. LoopbackTransport.cpp built clean
+      under -Wall -Wextra against the POSIX shim and passed 30 checks: ordering,
+      isolation between mailboxes, the source address, armed drops, a datagram
+      larger than the receiver's buffer being refused rather than truncated the
+      way Winsock refuses it, and the bad-argument paths. That matters more than
+      it looks - every assertion in ServerProtocolTests rests on the wire
+      behaving like a wire, and a fake that quietly delivered what a real socket
+      would not would make those tests pass for the wrong reason.
+
+      WHAT IS NOT COMPILED HERE is ServerProtocolTests.cpp itself and the
+      injection points in Server and ClientToServer. The traces were worked
+      through by hand against Advance's broadcast loop - sendFrom is
+      m_lastKnownSequenceId + 1 and history replays from there - and the
+      retransmission test was rewritten once because the first version assumed a
+      client that had acknowledged nothing would be sent one letter per tick
+      rather than its whole history.
 
   - id: T8
     title: Frame every datagram - magic, version, kind - and bump to protocol v2
@@ -311,7 +611,44 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: >
+      THE FRAME IS ON THE DATAGRAM, NOT ON THE PAYLOAD, and that distinction is
+      the whole design. A NetworkUpdate is serialised in TWO situations - as a
+      datagram the client sends, and nested inside a letter that carries several
+      of them - so putting the header in GetByteStream would have stamped it on
+      every nested update as well. GetByteStream stays the unframed payload;
+      SerialiseDatagram is new and writes frame plus payload; the (char*, int)
+      constructor now expects a whole datagram. The letter is only ever a
+      datagram, so Serialise and its parse constructor just gained the header.
+
+      FOUR BYTES: 'S', 'P', version 2, kind. The kind is the part that was not
+      asked for and earns its byte - LetterType and UpdateType overlap
+      numerically (LetterType::Update is 4, UpdateType::Alive is 4), so without
+      it a letter looped back to the server parses as a plausible update rather
+      than being dropped. Verified in the harness by flipping the kind byte on a
+      real datagram in each direction.
+
+      THE PAYLOAD DID NOT CHANGE, and the harness proves it rather than the
+      commit message asserting it: every update type and every letter type is
+      still compared byte-for-byte against the PRE-T1 macro serialisers, now as
+      "the payload is identical and the frame is in front of it". All twelve
+      update payloads and all four letter payloads match at their original
+      lengths.
+
+      HeaderSize GAINED THE FRAME TOO. It is what the datagram cap is checked
+      against, and leaving the four bytes out of it would have let a letter be
+      built four bytes too long to send - the exact class of bug T3 exists to
+      remove. The 48-update tick now comes to 1024 bytes precisely, which is the
+      cap; 49 is refused as before.
+
+      COMPILED AND RUN under ASan and UBSan against the POSIX shim: the frame
+      accepted, wrong magic refused, version 1 refused, wrong kind refused in
+      both directions, an unframed v1 datagram refused (its first four bytes are
+      a valid UpdateType, so this is the case that would otherwise parse
+      cleanly), every truncation from 0 to 4 bytes refused, and the 20,000
+      random datagrams re-run. What is not compiled here is the three test files
+      and the client's send path.
 
   - id: T9
     title: Server-assigned connection ids and reply-to-source addressing
@@ -346,10 +683,62 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
     notes: >
       Collides with input-native-events T2/T8 and sound-xaudio2 T8 over
-      Species/Main.cpp - do not run concurrently with them.
+      Species/Main.cpp. Both plans are finished, so there was nothing to collide
+      with.
+
+      THE ACCEPTANCE HAS A HOLE AND THIS TASK FILLED IT. "HelloClient carries the
+      assigned connection id; the client stores it" is not implementable as
+      written: EVERY LETTER GOES TO EVERY CLIENT, because the sequence stream has
+      to be identical for all of them or lockstep breaks. So a joining client
+      receives HelloClients for other clients too, and cannot tell which is its
+      own - it cannot match on an id it does not yet have, and it cannot be told
+      privately without breaking the stream.
+
+      A JOIN TOKEN closes it, and it is the only client-chosen value in the
+      protocol. The client picks one, sends it with ClientJoin, and the server
+      echoes it in that client's HelloClient beside the id it assigned. The
+      server never trusts it, stores it or keys anything by it - identity is the
+      datagram's source address and nothing else, so a client cannot claim to be
+      another by sending its token. That last property has its own test.
+
+      The alternative considered and rejected: adopt the id from the first
+      HelloClient to arrive. It works whenever one client joins at a time and
+      fails silently the moment two do, which is the worst shape a bug can have.
+
+      THE TOKEN COMES FROM speciesRandom, NOT syncrand, and that is the rule in
+      CODING_STANDARDS.md rather than a preference: it is client-local and never
+      simulation state, and drawing from the synchronised stream here would shift
+      it by a client-dependent amount and desync everyone. Two draws, because one
+      is not guaranteed wider than 15 bits.
+
+      THE CONNECTION ID IS THE SLOT INDEX. It is already what the outbox routes
+      by, and SlotMap's contract is that an entry's index never changes.
+      GetNextFree reserves the slot so the ServerToClient can be built with its
+      own id in one step rather than being patched afterwards.
+
+      WHAT WENT: GetOurIP_Int and its notes-by-John block, ServerToClient's IP
+      string, NetworkUpdate::m_clientIp and SetClientIp, ServerToClientLetter's
+      m_ip, ClientPort, and the commented-out RegisterNewTeam block that
+      described the identity model this task replaced. The client binds port 0
+      now and lets the OS choose.
+
+      THE BUG THIS FIXES IS NOT SUBTLE: ProcessServerLetters decided "is this
+      TeamAssign mine?" by comparing against GetOurIP_Int, which returned a
+      hard-coded 127.0.0.1. On any real network every client believed every team
+      assignment was its own. It has a test now, and so does the two-clients-on-
+      one-host case that the old addressing could not represent at all - that
+      test previously asserted the limitation and now asserts the fix.
+
+      COMPILED AND RUN under ASan and UBSan for the codecs: every update and
+      letter payload still matches a serialiser written to the new layout, the
+      frame checks still hold, and the 20,000 random datagrams re-run clean. One
+      harness expectation changed and it is worth knowing why - ClientJoin's
+      payload is twelve bytes rather than eight now, because it carries the
+      token, so an eight-byte payload no longer parses as a join.
+
 
   - id: T10
     title: Liveness, history pruning, and runtime lockstep guards
@@ -378,7 +767,52 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: >
+      THE TIMEOUT IS COUNTED IN TICKS, NOT SECONDS, and that is a deliberate
+      reading of "ten times IAMALIVE_PERIOD". The server has no clock inside
+      Advance; the server tick period and IAMALIVE_PERIOD are the same number,
+      so ten ticks IS ten IAmAlive periods; and a tick count is reachable by a
+      test where a wall clock is not. The client's side of it is in seconds,
+      because the client has a clock and no tick of its own.
+
+      PRUNING BROKE AN INVARIANT NOTHING WROTE DOWN: m_history was indexed by
+      SEQUENCE ID, because the two were the same number while nothing was ever
+      removed. Dropping from the front makes them differ, so the broadcast loop
+      now subtracts m_historyBaseSequenceId. That is the kind of thing that
+      would have compiled, run, and silently retransmitted the wrong letters.
+
+      A CLIENT THAT ACKNOWLEDGES NOTHING HOLDS THE WINDOW OPEN, by design -
+      pruning must not drop what somebody can still ask for. What stops that
+      being a leak is the timeout: the client is removed, and the window goes
+      with it. Both halves have a test, and so does the negative control, a
+      client that keeps talking and is not disconnected.
+
+      TWO DEBUG_ASSERTS BECAME RUNTIME BEHAVIOUR. The desync check logged
+      nothing and stopped nothing in Release - two clients simulating different
+      worlds played on, and the divergence compounds - so it now names the
+      sequence id and both sync values and disconnects the client that
+      disagrees. The team-capacity check was a Debug crash and a Release write
+      past the end of the table for the ordinary event of a fifth player asking
+      for a team on a four-team server; it refuses and says so.
+
+      THE DESYNC IS ACTED ON AFTER THE DRAIN, not inside it: removing a client
+      mid-loop invalidates the id the rest of that iteration uses. The timeout
+      loop has the same hazard in a smaller form and takes a COPY of the
+      endpoint before calling RemoveClient, which destroys the object the
+      reference points into.
+
+      WHAT IS EXPOSED AND NOT YET USED: ClientToServer::IsServerSilent. The
+      acceptance asks the client to expose the state rather than to act on it,
+      and nothing does act on it - there is no UI for "the server has gone
+      away". Recorded as a gap rather than left to be discovered.
+
+      NOT COMPILED. Nothing in this task is reachable by the g++ harness: it is
+      all Server and ClientToServer. The tick and sequence arithmetic in the
+      three counting tests was traced by hand against Advance's order of
+      operations, and one boundary was wrong on the first attempt - the join
+      tick itself increments the silence counter, so the timeout arrives a tick
+      earlier than the obvious reading suggests.
 
   - id: T11
     title: Closing sweep - greps at zero, constants named, checks green
@@ -405,7 +839,49 @@ tasks:
       - python3 tools/check_hygiene.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: >
+      EVERY GREP IS AT ZERO OVER CODE, and two of them needed work rather than a
+      declaration. Ten comments across UdpSocket, ClientToServer, ServerToClient,
+      Server and the letter tests still spelled the names of deleted classes to
+      explain why the current shape is what it is; they now describe what was
+      there - "a socket per client, and a listener on its own blocking thread" -
+      which loses nothing a reader needs. Server/WinMain.cpp was printing the
+      port as a literal beside the constant.
+
+      ONE PORT, NOT TWO. The acceptance says "both ports"; T9 deleted the
+      client's, so ServerPort is the only one. MaxDatagramSize,
+      ClientTimeoutTicks and ServerSilenceTimeout are in ProtocolLimits.h with
+      it, and nowhere else.
+
+      GREEN AT 5da1e86: all eight tools/ checks, the x64 Debug build, 281 of 281
+      tests, and the headless server at sequence id 20 in 2.04s. THAT TOOK THREE
+      RED ROUNDS and the reason is worth recording against this plan rather than
+      against the tasks that caused it. T1-T7 were pushed and checked ONE AT A
+      TIME and every one went green first round. T8-T11 went in as a block
+      without a CI answer between them, and cost:
+
+      1. speciesRandom used without including Random.h. A C3861, in a file no
+      Linux harness compiles.
+
+      2. LNK2019 on ClientToServer::GetNextLetterSeqID. T9 deleted GetOurIP_Int
+      by cutting the RANGE between two function names, and the next function was
+      inside it. The header still declared it, so every translation unit
+      compiled and only the executable's link step could notice - the same shape
+      as the two sound-xaudio2 failures AGENTS.md records.
+
+      3. Three tests. Two were ClientJoin's payload growing by the join token,
+      corrected in the sanitizer harness and not in the suite - the harness and
+      the suite are two places the same fact is written down, and that is the
+      cost of having one. The third asserted that a timed-out client receives
+      its own GoodbyeClient; it does not, because it is removed before that
+      tick's broadcast, and that is correct. The test was wrong about who the
+      letter is for. Only a running suite could have said so.
+
+      THE TRANSFERABLE PART: a plan whose tasks are pushed individually gets one
+      CI answer per task and a bisected failure. A plan whose tasks are pushed
+      in a block gets one answer for four tasks and three rounds to separate
+      them.
 
   - id: T12
     title: Owner-run Garden smoke test on the v2 transport

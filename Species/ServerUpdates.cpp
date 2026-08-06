@@ -35,7 +35,7 @@ namespace Species
 
     for (int i = 0; i < static_cast<int>(_letter->m_updates.size()); ++i)
     {
-      NetworkUpdate* update = _letter->m_updates[i];
+      NetworkUpdate const* update = &_letter->m_updates[i];
 
       switch (update->m_type)
       {

@@ -57,7 +57,7 @@ preference all deleted. Two remain open:
 | Plan | What it does | State |
 |---|---|---|
 | [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse; the gamepad mode and the control-icon plumbing deleted | **14 of 15 — all code done, T12 is the owner's Garden run** |
-| [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | 0 of 12 |
+| [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | **11 of 12 — all code done and CI-green at `5da1e86`; T12 is the owner's Garden run** |
 
 **`input-native-events` has one node left and it is not code.** T12 is a
 seven-step Garden run on a build carrying every other node, and **nothing in that plan has
@@ -451,20 +451,43 @@ rather than something to wait for. If you are working somewhere that cannot
 launch a Windows client, say so instead of implying you checked.
 
 **WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-06.** CI is green at
-`ffc5105`, which carries all of `sound-xaudio2` and `input-native-events` T1-T2:
-it compiles, links, passes the suite on x64 Debug, and the headless server
-reaches sequence 20 at the right rate. Every task since `d858b6b` has gone green
-first round.
+`5da1e86`, which carries the whole of `input-native-events` and the whole of
+`network-transport` T1–T11: it builds x64 Debug, passes **281 of 281** tests,
+and the headless server reaches sequence id 20 in 2.04s with no client
+attached. That last number is the one worth reading twice — it is
+`Server::Initialise` opening a real socket and twenty real ticks of `Advance`
+draining it, with the listen thread deleted.
 
-**THERE IS AN UNCOMPILED BLOCK AGAIN, AND IT IS THE WHOLE OF
-`input-native-events` T3 AND T5–T11.** Nine tasks are pushed behind `ffc5105`
-and awaiting their own CI answer: the event stream, `WM_CHAR` text input, Raw
-Input, the router and its consuming sinks, the subscription API, the collapse of
-the event-handler layers, and the closing sweep. **Treat the green above as
-covering `ffc5105` and not the branch head.** All nine were written on Linux
-against the eight Python checks, a `g++`/ASan/UBSan harness for the parts that
-are pure logic, and reading — no MSVC build and no client launch happened at
-any point.
+**THREE RED ROUNDS GOT THERE AND EACH ONE IS A LESSON THIS FILE ALREADY
+TEACHES.** T1–T7 each went green first round, pushed and checked one at a time.
+T8–T11 went in as one block without a CI answer between them, and cost three:
+
+| Round | What it was |
+|---|---|
+| 1 | `speciesRandom` used without including `Random.h` — a C3861 in a file no Linux harness compiles |
+| 2 | `LNK2019` on `ClientToServer::GetNextLetterSeqID`. Deleting `GetOurIP_Int` cut a RANGE between two function names and took the next function with it. The header still declared it, so every translation unit compiled and only the executable's link step could see it |
+| 3 | 3 of 279 tests. Two were a payload that grew by four bytes and was corrected in the sanitizer harness but not in the suite; one was an assertion that was simply wrong about the protocol — see below |
+
+**The third is the one worth keeping.** A test asserted that a timed-out client
+receives its own `GoodbyeClient`. It does not: it is removed before that tick's
+broadcast, so it is not in the list of recipients — which is correct, since it
+is the client that stopped answering. The letter is for the REST of the session.
+The test was wrong, not the code, and only a running suite could say so.
+
+**This entry warned about an uncompiled block twice and both are now
+discharged.** The nine input tasks written on Linux and the six network tasks
+written on top of them have all been through MSVC in the run above. The
+`network-transport` block came closest to being the exception and is worth
+recording as a method rather than a result: `UdpSocket.cpp` was compiled
+unmodified against a POSIX shim for Winsock's names and exercised over real
+loopback UDP, and the wire codecs were compared byte-for-byte against the
+pre-T1 macro serialisers under ASan and UBSan — every update type, every letter
+type, every truncation of a 63-byte letter, and 20,000 random datagrams. Six
+tasks then went green first round.
+
+**None of it has been in front of a running game.** That is the gap the rest of
+this section is about: two plans' worth of change sit behind a green build and a
+green suite with no Garden run on any of them.
 
 **What that combination can and cannot catch is the standing lesson of this
 repository, and it applied twice in this block.** A Python check cannot see a
@@ -474,9 +497,10 @@ site. What it did catch, both times by asking what a deleted `#include` had been
 through the `<vector>` that T6 removed, and `InputDriverWin32.h` was getting
 `<windows.h>` through the `Win32EventProc.h` that T10 deleted while declaring a
 `WndProc` in terms of `HWND` and `LRESULT`. Both would have been a CI round
-each. **The earlier uncompiled block this entry used to warn about is gone**:
+each. **The earlier uncompiled blocks this entry used to warn about are gone**:
 `strings-modernised` T12, T11, T13, T17 and T9 were the largest ever recorded
-here, and CI has since built all of them.
+here, and CI has since built all of them — as it now has the input and network
+blocks above.
 
 **It took two red rounds to get there, and both were the same mistake.** An
 earlier version of this entry claimed CI had been green on every task landed
@@ -970,6 +994,21 @@ Real, currently true, and worth knowing before you trip over them:
     arguing they were the controller *user interface*; T11 recorded the
     disagreement with the deleted art and refused to resolve it on an agent's
     own authority. The owner resolved it.
+- **REMOTE PLAY WAS BROKEN OUTRIGHT AND IS FIXED, UNTESTED BY ANY HUMAN.**
+  `ProcessServerLetters` decided whether a `TeamAssign` was its own by comparing
+  the letter against `GetOurIP_Int()`, which returned a hard-coded `127.0.0.1`
+  under a "we're not doing networking for now" comment. On any real network
+  every client believed every team assignment was its own.
+  `network-transport` T9 replaced address-based identity with a server-assigned
+  connection id and reply-to-source addressing, which also makes two clients on
+  one host — and therefore two players behind one router — possible for the
+  first time. It has protocol tests and no session between two machines has ever
+  been run.
+- **THE PROTOCOL IS AT VERSION 2 AND DOES NOT INTEROPERATE WITH VERSION 1.**
+  Every datagram carries a four-byte frame — magic, version, kind — and anything
+  else is dropped silently. Deliberate, taken while there are no deployed builds
+  to protect. A pre-2026-08-06 client and a current one cannot talk to each
+  other at all, which is the intended outcome and not a bug to report.
 - **`input-native-events` LEFT TWO THINGS RECORDED AND UNOWNED.** Neither has a
   task; each is a decision rather than a defect.
   - **`ControlMenuClose` has no binding** in any file under `GameData/Input`, so
@@ -1024,10 +1063,17 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, **235** tests as of
-  `input-native-events` T11 (2026-08-06) — 117 `NeuronCoreTests`, 74
-  `NeuronClientTests`, 39 `GameLogicTests`, 5 `NeuronServerTests`. **24 of them
-  have never been compiled by anything**: `input-native-events` T6–T11 were
+- **The test suite is thin, and less thin than it was.** Four projects, **281**
+  tests as of `network-transport` T11 (2026-08-06) — 142 `NeuronCoreTests`, 74
+  `NeuronClientTests`, 39 `GameLogicTests`, 26 `NeuronServerTests`, all green at
+  `5da1e86`. The count should be read off a CI run's *Total tests* line;
+  `git grep -c TEST_METHOD` agrees with it today. **`NeuronServerTests` went
+  from 5 to 26**, and that is
+  the substantive change rather than the number: `ServerProtocolTests` drives a
+  scripted client against a real `Server` over a fake in-memory wire, so join,
+  team assignment, sequencing, acknowledgement, retransmission, the datagram
+  cap, client timeout and history pruning are covered by CI for the first time.
+  The protocol had **never** been exercised by a test before — `input-native-events` T6–T11 were
   written on Linux, and `git grep -c TEST_METHOD` is what counted them.
   The newest are the three lifts that made input testable at all —
   `InputEventTests` over `DeriveFrameState`, `InputRouterTests` over the

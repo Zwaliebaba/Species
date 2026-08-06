@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="NetLibWin32.cpp" />
     <ClCompile Include="TeamControls.cpp" />
     <ClCompile Include="Random.cpp" />
     <ClCompile Include="HiResTime.cpp" />
@@ -32,15 +31,12 @@
     <ClCompile Include="Generic.cpp" />
     <ClCompile Include="NetworkUpdate.cpp" />
     <ClCompile Include="NetLib.cpp" />
-    <ClCompile Include="NetMutexWin32.cpp" />
-    <ClCompile Include="NetSocket.cpp" />
-    <ClCompile Include="NetSocketListener.cpp" />
-    <ClCompile Include="NetThreadWin32.cpp" />
-    <ClCompile Include="NetUdpPacket.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="ServerToClientLetter.cpp" />
+    <ClCompile Include="LoopbackTransport.cpp" />
+    <ClCompile Include="UdpSocket.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ProtocolLimits.h" />
@@ -59,6 +55,9 @@
     <ClInclude Include="Profiler.h" />
     <ClInclude Include="WorldObjectId.h" />
     <ClInclude Include="ByteStream.h" />
+    <ClInclude Include="LoopbackTransport.h" />
+    <ClInclude Include="Transport.h" />
+    <ClInclude Include="UdpSocket.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="FileSys.h" />
     <ClInclude Include="GameTime.h" />
@@ -66,12 +65,6 @@
     <ClInclude Include="NetworkUpdate.h" />
     <ClInclude Include="NetworkUpdate.inc" />
     <ClInclude Include="NetLib.h" />
-    <ClInclude Include="NetLibWin32.h" />
-    <ClInclude Include="NetMutex.h" />
-    <ClInclude Include="NetSocket.h" />
-    <ClInclude Include="NetSocketListener.h" />
-    <ClInclude Include="NetThread.h" />
-    <ClInclude Include="NetUdpPacket.h" />
     <ClInclude Include="NeuronCore.h" />
     <ClInclude Include="NeuronHelper.h" />
     <ClInclude Include="pch.h" />

@@ -1,12 +1,5 @@
 #include "pch.h"
 
-
-#include <string.h>
-
-#include "NetLib.h"
-#include "NetSocket.h"
-
-#include "Debug.h"
 #include "ServerToClient.h"
 
 
@@ -14,21 +7,19 @@ namespace Neuron
 {
 
 
-  ServerToClient::ServerToClient(char* _ip)
-    : m_socket(nullptr)
+  ServerToClient::ServerToClient(Endpoint const& _endpoint, int _connectionId)
+    : m_endpoint(_endpoint),
+      m_connectionId(_connectionId),
+      m_lastKnownSequenceId(-1),
+      m_ticksSinceHeardFrom(0)
   {
-    m_ip = _ip;
-
-    m_socket = new NetSocket();
-    NetRetCode retCode = m_socket->Connect(_ip, 4001);
-    DEBUG_ASSERT(retCode == NetRetCode::NetOk);
-
-    m_lastKnownSequenceId = -1;
+    // Constructing one of these used to open a socket and connect it to the
+    // client, with a DEBUG_ASSERT if that failed. It is two values now.
   }
 
 
-  std::string_view ServerToClient::GetIP() { return m_ip; }
+  Endpoint const& ServerToClient::GetEndpoint() const { return m_endpoint; }
 
 
-  NetSocket* ServerToClient::GetSocket() { return m_socket; }
+  int ServerToClient::GetConnectionId() const { return m_connectionId; }
 } // namespace Neuron
