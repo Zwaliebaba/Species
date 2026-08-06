@@ -216,7 +216,6 @@ void PrefsManager::CreateDefaultValues()
 
   AddLine(std::format("SoundLibrary = {}", GetDefaultSoundLibrary()).c_str());
 
-  AddLine("SoundMixFreq = 22050");
   AddLine("SoundMasterVolume = 255");
   AddLine(std::format("SoundChannels = {}", GetDefaultSoundChannels()).c_str());
   AddLine("SoundSwapStereo = 0");

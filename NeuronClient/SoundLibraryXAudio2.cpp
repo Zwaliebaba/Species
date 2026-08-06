@@ -38,6 +38,10 @@ namespace Neuron
     constexpr int BlocksPerChannel = 6;
     constexpr int BlocksPerSecond = 20;
 
+    // The highest rate any sample in GameData uses. See Initialise for why a
+    // nominal rate still matters when XAudio2 resamples everything anyway.
+    constexpr int NominalSampleRate = 44100;
+
     // The largest pitch multiplier the blueprints ask for is 2.17 (measured over
     // GameData/Sounds.txt), and a voice cannot exceed the ratio it was created
     // with. Four is that with room, and well inside XAUDIO2_MAX_FREQ_RATIO.
@@ -236,17 +240,22 @@ namespace Neuron
   }
 
 
-  void SoundLibraryXAudio2::Initialise(int _mixFreq, int _numChannels, int _mainBufNumSamples, int _musicBufNumSamples)
+  void SoundLibraryXAudio2::Initialise(int _numChannels)
   {
     ASSERT_TEXT(_numChannels > 0, "SoundLibrary3d asked to create too few channels");
 
-    m_sampleRate = _mixFreq;
+    // A NOMINAL rate, not a mix rate, and nothing is resampled to it. XAudio2
+    // converts every voice to whatever the endpoint runs at, so the old
+    // SoundMixFreq preference had nothing left to choose and T8 retired it.
+    // What this number still does is size a block and give a voice its opening
+    // format, and it is the highest rate any sample in the game uses so that a
+    // block is never SHORTER than 50ms once ResetChannel adopts the sample's
+    // own rate — a lower nominal would make the ring shrink in wall-clock
+    // terms for 44kHz samples.
+    m_sampleRate = NominalSampleRate;
     m_numChannels = std::min(_numChannels, GetMaxChannels());
     m_musicChannelId = -1;
 
-    // NOT derived from _mainBufNumSamples or _musicBufNumSamples. Those are the
-    // DirectSound ring sizes — 20,000 and 200,000 samples — and reproducing them
-    // would reproduce the latency they cost. Both are ignored deliberately.
     const int blockSamples = std::max(m_sampleRate / BlocksPerSecond, 1);
 
     // Storage first, and unconditionally: with no device the callbacks still run

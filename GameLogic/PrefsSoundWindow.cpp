@@ -16,7 +16,6 @@
 
 
 #define SOUND_LIBRARY "SoundLibrary"
-#define SOUND_MIXFREQ "SoundMixFreq"
 #define SOUND_CHANNELS "SoundChannels"
 #define SOUND_SWAPSTEREO "SoundSwapStereo"
 #define SOUND_DSPEFFECTS "SoundDSP"
@@ -41,7 +40,6 @@ namespace Species
 
         int oldMemoryUsage = g_prefsManager->GetInt(SOUND_MEMORY);
 
-        g_prefsManager->SetInt(SOUND_MIXFREQ, parent->m_mixFreq);
         g_prefsManager->SetInt(SOUND_CHANNELS, parent->m_numChannels);
         g_prefsManager->SetInt(SOUND_SWAPSTEREO, parent->m_swapStereo);
         g_prefsManager->SetInt(SOUND_DSPEFFECTS, parent->m_dspEffects);
@@ -115,7 +113,6 @@ namespace Species
     SetMenuSize(532, 390);
     SetPosition(g_renderer->ScreenW() / 2 - m_w / 2, g_renderer->ScreenH() / 2 - m_h / 2);
 
-    m_mixFreq = g_prefsManager->GetInt(SOUND_MIXFREQ, 22050);
     m_numChannels = g_prefsManager->GetInt(SOUND_CHANNELS, 16);
     m_swapStereo = g_prefsManager->GetInt(SOUND_SWAPSTEREO, 0);
     m_dspEffects = g_prefsManager->GetInt(SOUND_DSPEFFECTS, 1);
@@ -164,16 +161,6 @@ namespace Species
     soundLib->m_fontSize = fontSize;
     RegisterButton(soundLib);
     m_buttonOrder.push_back(soundLib);
-
-    DropDownMenu* mixFreq = new DropDownMenu();
-    mixFreq->SetShortProperties(LANGUAGEPHRASE("dialog_mixfrequency"), x, y += h, buttonW, buttonH);
-    mixFreq->AddOption(LANGUAGEPHRASE("dialog_11khz"), 11025);
-    mixFreq->AddOption(LANGUAGEPHRASE("dialog_22khz"), 22050);
-    mixFreq->AddOption(LANGUAGEPHRASE("dialog_44khz"), 44100);
-    mixFreq->RegisterInt(&m_mixFreq);
-    mixFreq->m_fontSize = fontSize;
-    RegisterButton(mixFreq);
-    m_buttonOrder.push_back(mixFreq);
 
     DropDownMenu* numChannels = new DropDownMenu();
     numChannels->SetShortProperties(LANGUAGEPHRASE("dialog_numchannels"), x, y += h, buttonW, buttonH);
@@ -248,7 +235,6 @@ void PrefsSoundWindow::Render(bool _hasFocus)
   int size = GetMenuSize(13);
 
   g_editorFont.DrawText2D(x, y += border, size, LANGUAGEPHRASE("dialog_soundlibrary"));
-  g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_mixfrequency"));
   g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_numchannels"));
   g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_memoryusage"));
   g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_swapstereo"));

@@ -509,7 +509,48 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: |
+      Landed 2026-08-06, in the same push as T7.
+
+      Gone: SoundLibrary3dSoftware.{h,cpp} and SoundLibrary2d.{h,cpp}, the
+      per-frame TopupBuffer call in the main loop, the Stop/delete block in
+      Finalise, and the SoundMixFreq preference with its options-window
+      dropdown, label and shipped default. RestartSoundLibrary constructs one
+      backend and reads no SoundLibrary preference at all, because there is
+      nothing left for it to select — a preferences file still naming dsound
+      or software is ignored rather than honoured.
+
+      SoundLibrary3d::Initialise lost every parameter but the channel count.
+      The mix rate had nothing to choose once XAudio2 resamples to the endpoint,
+      and the two ring sizes were DirectSound's and were already ignored.
+
+      A NOMINAL rate replaces the preference INSIDE the backend, and the value
+      is deliberate: 44100, the highest rate any sample in GameData uses. It
+      sizes a block and gives a voice its opening format. Choosing lower would
+      make the ring shrink in wall-clock terms once ResetChannel adopts a
+      44kHz sample's own rate — six blocks sized at 22050 are 150ms of a 44kHz
+      voice, not 300ms.
+
+      TWO AUDITS THE ACCEPTANCE ASKED FOR, both answered NO:
+
+      1. winmm.lib STAYS, and so does waveOut. The acceptance allowed dropping
+         it "if the SystemInfo device enumeration was its last user". It is a
+         user, but a DIFFERENT one: SystemInfo::GetAudioDetails calls
+         waveOutGetNumDevs/waveOutGetDevCaps to enumerate output devices and
+         score them, and PrefsSoundWindow displays the preferred device's name
+         from it. That is enumeration, not output, and deleting the output
+         layer does not make it dead. Replacing it would mean writing WASAPI
+         IMMDeviceEnumerator code, since XAudio2.9 removed device enumeration
+         from the API — a separate task if anyone wants it, not a tidy-up here.
+      2. The grep for waveOut therefore does not reach zero, and cannot while
+         that enumeration stands. It is at 2, both in SystemInfo.cpp.
+
+      FOUND WHILE DOING THIS, and it was a real break in T7: Species/Main.cpp
+      still included SoundLibrary3dDSound.h, a header T7 had deleted. T7's
+      acceptance grep was for the substring DSOUND and the filename spells it
+      DSound, so a case-sensitive search walked straight past it. Fixed here,
+      in the same push, so no pushed commit ever carried it to CI.
     notes: >
       Collides with input-native-events T2/T8 and network-transport T9 over
       Species/Main.cpp - do not run concurrently with them.

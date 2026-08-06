@@ -7,9 +7,10 @@
 // These channels are positioned in the 3D sound
 // stage by means of distance attenuation, panning, low-pass filtering and
 // reverb. Some of these effects may not be available on low end hardware.
-// Currently two implementations are available; one that wraps DirectSound's
-// 3D API and one does all the mixing and positioning itself and sends the
-// output to a SoundLibrary2D implementation.
+// One implementation remains: SoundLibraryXAudio2. The DirectSound wrapper and
+// the software mixer that fed a SoundLibrary2D output layer were deleted by
+// sound-xaudio2 T7 and T8. The interface is still virtual because the seam is
+// what let the replacement be A/B'd against them.
 //*****************************************************************************
 
 
@@ -77,7 +78,7 @@ namespace Neuron
       // which no machine has granted since Vista made DirectSound a software
       // emulation over WASAPI, so the capability it asked about always answered
       // no. XAudio2 has no equivalent question.
-      virtual void Initialise(int _mixFreq, int _numChannels, int _mainBufNumSamples, int _musicBufNumSamples) = 0;
+      virtual void Initialise(int _numChannels) = 0;
       void SetMainCallback(bool (*_callback)(unsigned int, signed short*, unsigned int, int*));
       void SetMusicCallback(bool (*_callback)(signed short*, unsigned int, int*));
       void SetMasterVolume(int _volume);

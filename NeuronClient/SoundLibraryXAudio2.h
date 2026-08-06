@@ -64,7 +64,7 @@ namespace Neuron
       SoundLibraryXAudio2();
       ~SoundLibraryXAudio2() override;
 
-      void Initialise(int _mixFreq, int _numChannels, int _mainBufNumSamples, int _musicBufNumSamples) override;
+      void Initialise(int _numChannels) override;
 
       int GetMaxChannels() override;
       float GetChannelHealth(int _channel) override; // 0.0 = BAD, 1.0 = GOOD
