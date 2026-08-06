@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include <algorithm>
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -17,6 +18,52 @@ using namespace std;
 namespace Neuron
 {
   InputManager* g_inputManager = nullptr;
+
+
+  ControlSubscription::ControlSubscription(InputManager* _owner, unsigned _id)
+    : m_owner(_owner),
+      m_id(_id)
+  {
+  }
+
+
+  ControlSubscription::~ControlSubscription() { reset(); }
+
+
+  ControlSubscription::ControlSubscription(ControlSubscription&& _other) noexcept
+    : m_owner(_other.m_owner),
+      m_id(_other.m_id)
+  {
+    _other.m_owner = nullptr;
+    _other.m_id = 0;
+  }
+
+
+  ControlSubscription& ControlSubscription::operator=(ControlSubscription&& _other) noexcept
+  {
+    if (this != &_other)
+    {
+      // The subscription this token already held goes first. Overwriting it
+      // would leak a handler that nothing can ever cancel.
+      reset();
+
+      m_owner = _other.m_owner;
+      m_id = _other.m_id;
+      _other.m_owner = nullptr;
+      _other.m_id = 0;
+    }
+    return *this;
+  }
+
+
+  void ControlSubscription::reset()
+  {
+    if (m_owner)
+      m_owner->unsubscribe(m_id);
+
+    m_owner = nullptr;
+    m_id = 0;
+  }
 
 
   InputManager::InputManager()
@@ -217,6 +264,63 @@ void InputManager::Advance()
 
   for (unsigned i = 0; i < drivers.size(); ++i)
     drivers[i]->DispatchEvents(m_router);
+
+  // After the dispatch, so a control the UI consumed never reaches a
+  // subscriber either — the two mechanisms answer to the same rule rather than
+  // each having their own.
+  FireSubscriptions();
+}
+
+
+ControlSubscription InputManager::subscribe(ControlType type, std::function<void()> handler)
+{
+  if (!handler)
+    return ControlSubscription();
+
+  const unsigned id = m_nextSubscriptionId++;
+  m_subscriptions.push_back(Subscription{id, type, std::move(handler)});
+  return ControlSubscription(this, id);
+}
+
+
+void InputManager::unsubscribe(unsigned id)
+{
+  std::erase_if(m_subscriptions, [id](Subscription const& _subscription) { return _subscription.m_id == id; });
+}
+
+
+void InputManager::FireSubscriptions()
+{
+  if (m_subscriptions.empty())
+    return;
+
+  // WHICH ONES FIRED IS DECIDED BEFORE ANY HANDLER RUNS, because a handler is
+  // allowed to do both of the things that would otherwise corrupt this walk:
+  // unsubscribe — its token is typically a member of the very object it just
+  // destroyed — and subscribe, which a window opened by this keystroke will do,
+  // and which must not then see the same keystroke.
+  std::vector<unsigned> firing;
+  for (Subscription const& subscription : m_subscriptions)
+  {
+    if (controlEvent(subscription.m_control))
+      firing.push_back(subscription.m_id);
+  }
+
+  for (unsigned const id : firing)
+  {
+    auto const found =
+      std::find_if(m_subscriptions.begin(), m_subscriptions.end(), [id](Subscription const& _subscription) { return _subscription.m_id == id; });
+    if (found == m_subscriptions.end())
+      continue; // an earlier handler cancelled this one
+
+    // A COPY OF THE HANDLER, and it is not defensiveness. The common case for
+    // a window's subscription is a handler that closes that window — which
+    // destroys the token, which erases the std::function the call is executing
+    // inside. Copying it out first means the closure that runs is a local and
+    // the stored one can be destroyed underneath it harmlessly.
+    std::function<void()> const handler = found->m_handler;
+    handler();
+  }
 }
 
 

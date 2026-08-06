@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <optional>
 #include <vector>
 #include <string>
@@ -15,6 +16,65 @@
 
 namespace Neuron
 {
+  class InputManager;
+
+
+  // ===========================================================================
+  // SUBSCRIBING TO A CONTROL
+  // ===========================================================================
+  //
+  // A window or a button says once which control it cares about and is called
+  // when that control fires, instead of asking every frame forever. That is the
+  // shape the owner asked for on 2026-08-06.
+  //
+  // THE RULE THAT GOVERNS WHO MAY USE IT, and a reviewer should reject a change
+  // that breaks it rather than debating it:
+  //
+  //     SIMULATION CODE MUST NOT SUBSCRIBE.
+  //
+  // Multiplayer is deterministic lockstep. Simulation input reaches the wire
+  // only through TeamControls and the 10Hz IAmAlive letter, so every machine
+  // advances from the same orders. A handler that reaches into game state when
+  // a key is pressed runs on ONE client, at a frame boundary the others never
+  // saw, and the result is a desync that every build stays green through. Any
+  // subscriber under GameLogic that touches an entity, a building, a team or
+  // anything reachable from Location::Advance is wrong even if it works.
+  //
+  // Subscriptions are for the UI and for discrete client-local actions -
+  // opening a window, pausing, toggling an overlay. The camera, unit steering
+  // and TeamControls keep reading the per-frame state through controlEvent().
+  //
+  // A subscription must not outlive the InputManager. That is free in practice
+  // - the manager lives for the process - and stated because the token holds a
+  // raw pointer back to it.
+  class ControlSubscription
+  {
+    public:
+      ControlSubscription() = default;
+      ControlSubscription(InputManager* _owner, unsigned _id);
+      ~ControlSubscription();
+
+      // Move-only, because a subscription is a piece of ownership: copying the
+      // token would leave two objects each believing they must unsubscribe, and
+      // the second would cancel somebody else's subscription once the id had
+      // been reused.
+      ControlSubscription(ControlSubscription const&) = delete;
+      ControlSubscription& operator=(ControlSubscription const&) = delete;
+      ControlSubscription(ControlSubscription&& _other) noexcept;
+      ControlSubscription& operator=(ControlSubscription&& _other) noexcept;
+
+      // Unsubscribe early. The destructor does this; call it by hand only when
+      // the subscription has to stop before its owner does.
+      void reset();
+
+      bool active() const { return m_owner != nullptr; }
+
+    private:
+      InputManager* m_owner{nullptr};
+      unsigned m_id{0};
+  };
+
+
   class InputManager
   {
     private:
@@ -29,6 +89,24 @@ namespace Neuron
       // choice.
       InputRouter m_router;
       EclipseInputSink m_eclipseSink;
+
+      struct Subscription
+      {
+          unsigned m_id;
+          ControlType m_control;
+          std::function<void()> m_handler;
+      };
+
+      std::vector<Subscription> m_subscriptions;
+
+      // Never reused and never zero, so a stale token cannot cancel a
+      // subscription that took its slot.
+      unsigned m_nextSubscriptionId{1};
+
+      // Calls the handlers whose control fired this frame. Once per Advance,
+      // after the router has dispatched, so a control the UI consumed does not
+      // reach a subscriber either.
+      void FireSubscriptions();
 
       bool m_idle;
 
@@ -45,10 +123,47 @@ namespace Neuron
       // Parse an input prefs file
       void parseInputPrefs(TextReader& reader, bool replace = false);
 
-      // Return true if a particular control action was triggered this time step
-      // and place any extra information into details.
+      // THE COMPATIBILITY PATH, and new code should use subscribe() instead.
+      //
+      // controlEvent asks, once per caller per frame, whether a control fired -
+      // which means every consumer has to remember to ask, every frame,
+      // forever, and a consumer that forgets simply stops working with nothing
+      // to see. It is reimplemented over the same per-frame state the router
+      // dispatches from, so it and a subscriber agree about what happened; it
+      // stays because 150-odd call sites across 29 files read it, and they
+      // migrate one at a time rather than in one unreviewable diff.
+      //
+      // It is still the RIGHT door for anything that wants a CONTINUOUS answer
+      // - is this held, how far has the mouse moved - and for the camera, unit
+      // steering and TeamControls, which must sample rather than react. See the
+      // rule above ControlSubscription for why.
       bool controlEvent(ControlType type, InputDetails& details);
       bool controlEvent(ControlType type); // Not interested in details
+
+      // Call _handler once each frame the control fires. The returned token
+      // owns the subscription: destroy it and the handler stops being called,
+      // which is what makes a window that subscribes in its constructor safe to
+      // delete without telling anybody.
+      //
+      // WHAT "FIRES" MEANS IS WHATEVER THE BINDING SAYS. A control bound to
+      // `key p down` calls the handler on the press; one bound to `key p
+      // pressed` calls it on EVERY frame the key is held, which is almost never
+      // what a subscriber wants. Subscribe to edges.
+      //
+      // A handler may unsubscribe itself and may destroy the object holding its
+      // own token - closing the window it belongs to is the obvious case - and
+      // may subscribe something new, which will not fire until the next frame.
+      [[nodiscard]] ControlSubscription subscribe(ControlType type, std::function<void()> handler);
+
+      // Cancels a subscription by id. Called by ControlSubscription; there is
+      // no reason to call it directly, because the token is the handle.
+      void unsubscribe(unsigned id);
+
+      // How many subscriptions are live. Nothing in the game asks; it exists so
+      // ControlSubscriptionTests can see that a destroyed token really did
+      // cancel, which is the whole promise of the type and is otherwise
+      // invisible from outside.
+      size_t subscriptionCount() const { return m_subscriptions.size(); }
 
       const std::string& controlIcon(ControlType type) const;
 

@@ -17,6 +17,9 @@
     <ClCompile Include="ControlBindingsTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ControlSubscriptionTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="FileWriterTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -863,8 +863,21 @@ tasks:
       - NeuronClient/InputRouter.h
       - NeuronClient/InputRouter.cpp
       - NeuronClient/Input.h
+      # The token and the subscription table are DEFINED here. Added during the
+      # work, per docs/TASK_DAG.md.
+      - NeuronClient/Input.cpp
+      - Tests/NeuronClientTests/ControlSubscriptionTests.cpp
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj.filters
       - Species/UserInput.cpp
+      # Holds the pilot's token, and declares the one-shot that makes the
+      # subscription - App builds UserInput BEFORE the input manager exists.
+      - Species/UserInput.h
+      # Calls that one-shot, right after InitialiseInputManager. Collides with
+      # sound-xaudio2 T8 and network-transport T9 - see the plan summary.
+      - Species/Main.cpp
       - GameLogic/SpeciesWindow.cpp
+      - GameLogic/SpeciesWindow.h
     acceptance:
       - subscribe(ControlType, handler) returns an RAII token; destruction unsubscribes; edge-type controls fire subscribers from binding evaluation over the event stream
       - At least two real consumers are converted end to end (candidates - the pause request in UserInput::Advance and a menu window's escape handling) and behave identically
@@ -874,7 +887,86 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: |
+      Landed 2026-08-06. Written on Linux: no MSVC build, no vstest run, no
+      running game.
+
+      THE SHAPE. subscribe(ControlType, handler) returns a move-only
+      ControlSubscription; destroying it unsubscribes. Handlers fire once per
+      frame from InputManager::Advance, AFTER the router has dispatched, so a
+      control the UI consumed does not reach a subscriber either - the two
+      mechanisms answer to one rule rather than each having its own. The firing
+      test is controlEvent() over the frame state the events were derived into,
+      which is what makes a subscriber and a poller agree about what happened.
+
+      THREE REENTRANCY CASES THE DESIGN HAD TO SURVIVE, because the obvious
+      subscriber is a window whose handler closes that window:
+
+      1. A handler may destroy the object holding its own token. The stored
+         std::function is therefore COPIED OUT before it is called - otherwise
+         the closure is erased while executing inside it.
+      2. Which subscriptions fire is decided BEFORE any handler runs, and each
+         is then looked up by id. A handler that cancels another one due to fire
+         this frame means that one is simply not found and not called.
+      3. A subscription made DURING a frame does not see that frame. A window
+         opened by a keystroke must not then act on the same keystroke.
+
+      TWO PILOTS, END TO END.
+
+      ControlGamePause, from UserInput::Advance. Bound to `key pause down` and
+      live. The poll ran immediately after g_inputManager->Advance() returned
+      and the handler runs at the end of that same call, with nothing between
+      them that touches the pause, so this is identical rather than merely
+      equivalent.
+
+      SpeciesWindow's MenuActivate and MenuClose. This is the owner-requested
+      shape - a window subscribes to what it cares about - and it is the case
+      the copy-the-handler rule exists for: both handlers can destroy the
+      window, MenuClose by definition. The focus test moved into the handlers
+      rather than being lost; a subscriber is offered the control whether or not
+      its window is in front.
+
+      WHAT DID NOT CONVERT, AND WHY IT IS THE MORE USEFUL HALF OF THE EXAMPLE.
+      MenuUp and MenuDown stayed polled. They set m_buttonChangedThisUpdate,
+      which Update() clears at its own top and SpeciesButton::UpdateButtonHighlight
+      reads during Render; subscriptions fire before Update() runs, so
+      converting them would set the flag and have Update clear it before
+      anything read it. That is a real reason to leave a poll alone, and it is
+      what the compatibility shim is for.
+
+      THREE THINGS MEASURED ALONG THE WAY:
+
+      * m_skipUpdate is NEVER SET TRUE anywhere in the tree. It is initialised
+        false and only ever cleared, so the early return it guards is dead. Not
+        removed here - it is not this task's file - but recorded for T11.
+      * ControlMenuClose HAS NO BINDING in any file under GameData/Input, so the
+        converted escape handler cannot currently fire. The conversion is real
+        code either way, and MenuActivate (`key enter down`) is bound and live,
+        which is what makes the pair a genuine pilot rather than one.
+      * MOVING MenuClose OUT OF Update() FIXES A LATENT BUG. EclUpdate iterates
+        the window vector by index calling Update() on each, and Update() could
+        call EclRemoveWindow, which ERASES FROM THAT VECTOR mid-iteration. The
+        handler now runs before EclUpdate's loop starts.
+
+      The empty-m_buttonOrder case in MenuActivate was indexing out of range
+      before and is checked now. Moving code is a bad moment to carry a latent
+      crash across untouched.
+
+      SubscribeToControls exists because App's constructor builds UserInput
+      several lines before InitialiseInputManager runs, so g_inputManager is
+      null where the subscription naturally belongs. SpeciesWindow's constructor
+      guards on the same pointer for the same reason.
+
+      VERIFIED AS FAR AS LINUX ALLOWS. Nine ControlSubscriptionTests over the
+      token's bookkeeping - subscribe, destroy, move, move-assign over a live
+      token, double reset, default token, null handler - which needs no input at
+      all and so runs in the test DLL. The three reentrancy cases above were
+      transcribed into a standalone g++ program and run under ASan and UBSan,
+      including a window that deletes itself from its own handler. That harness
+      earned itself: its first run failed, and the failure was the TEST
+      re-subscribing every frame and cancelling its own subscription through
+      move-assignment - correct behaviour, badly asked.
 
   - id: T10
     title: Collapse the event-handler layers and pump messages once per frame

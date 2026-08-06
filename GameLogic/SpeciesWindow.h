@@ -14,6 +14,7 @@
 #include <string_view>
 
 #include "Eclipse.h"
+#include "Input.h"
 
 
 namespace Species
@@ -29,6 +30,23 @@ namespace Species
       bool m_buttonChangedThisUpdate;
       bool m_skipUpdate;
 
+    private:
+      // PILOT CONVERSION, input-native-events T9 — the owner-requested shape: a
+      // window says once which controls it cares about instead of asking every
+      // frame. Both handlers can destroy this window, which is exactly why the
+      // tokens are members: the subscription dies with the object without the
+      // object having to remember to say so.
+      //
+      // MenuUp and MenuDown deliberately STAYED in Update(), and the reason is
+      // worth knowing before converting them: they set
+      // m_buttonChangedThisUpdate, which Update() clears at its own top and
+      // SpeciesButton::UpdateButtonHighlight reads during Render. Subscriptions
+      // fire BEFORE Update() runs, so converting those two would set the flag
+      // and then have Update clear it before anything read it. That coupling is
+      // a real reason to leave a poll alone, and the shim exists for it.
+      Neuron::ControlSubscription m_menuActivateSubscription;
+      Neuron::ControlSubscription m_menuCloseSubscription;
+
     public:
       SpeciesWindow(std::string_view name);
       ~SpeciesWindow();
@@ -37,6 +55,11 @@ namespace Species
       void Remove();
       void Render(bool hasFocus);
       void Update();
+
+      // The two converted handlers. Public only because they are what the
+      // constructor's lambdas call; nothing else should.
+      void OnMenuActivate();
+      void OnMenuClose();
 
       // One overload per registerable type, rather than one function taking a type
       // tag and a void*. The void* accepted any pointer at all — passing a

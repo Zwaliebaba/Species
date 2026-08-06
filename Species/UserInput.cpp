@@ -53,6 +53,20 @@ namespace Species
   }
 
 
+  // *** SubscribeToControls
+  void UserInput::SubscribeToControls()
+  {
+    // THE PILOT CONVERSION, and the shape new code should copy: say once what
+    // this cares about, hold the token, and stop asking every frame. The poll
+    // it replaces read ControlGamePause out of the bindings in Advance below.
+    //
+    // Identical in effect and near-identical in time: the poll ran immediately
+    // after g_inputManager->Advance() returned, and the handler runs at the end
+    // of that same call, with nothing in between that touches the pause.
+    m_pauseSubscription = g_inputManager->subscribe(ControlType::ControlGamePause, [] { g_app->m_clientToServer->RequestPause(); });
+  }
+
+
   // *** AdvanceMenus
   void UserInput::AdvanceMenus()
   {
@@ -96,9 +110,8 @@ namespace Species
 
     bool modsEnabled = g_prefsManager->GetInt("ModSystemEnabled", 0) != 0;
 
-
-    if (g_inputManager->controlEvent(ControlType::ControlGamePause))
-      g_app->m_clientToServer->RequestPause();
+    // THE PAUSE POLL THAT USED TO SIT HERE IS A SUBSCRIPTION — see
+    // SubscribeToControls above.
 
 //    if (g_keyDeltas[KEY_F2]) DebugKeyBindings::DebugCameraButton();
 #ifdef LOCATION_EDITOR

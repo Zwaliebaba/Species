@@ -832,6 +832,11 @@ void Initialise()
 
   InitialiseInputManager();
 
+  // AFTER the manager exists, and it has to be: App's constructor built
+  // UserInput several lines ago, when g_inputManager was still null, so the
+  // subscription cannot be made where the object is.
+  TheUserInput()->SubscribeToControls();
+
   g_target = new TargetCursor();
   EntityBlueprint::Initialise();
   g_windowManager->HideMousePointer();

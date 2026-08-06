@@ -2,6 +2,7 @@
 
 #include "NeuronMath.h"
 
+#include "Input.h"
 #include "UserInputAccess.h"
 #include "WorldObject.h"
 #include "WorldPointers.h"
@@ -30,10 +31,21 @@ namespace Species
 
       std::vector<DirectX::XMFLOAT3*> m_mousePosHistory;
 
+      // PILOT CONVERSION, input-native-events T9. Pause used to be a poll in
+      // Advance; it is a subscription now, and this token is what keeps it
+      // alive. Destroying UserInput cancels it without UserInput having to
+      // remember to.
+      Neuron::ControlSubscription m_pauseSubscription;
+
     public:
       UserInput();
       void Advance();
       void Render();
+
+      // Called once, after InitialiseInputManager, because App builds UserInput
+      // BEFORE the input manager exists — g_inputManager is still null in this
+      // class's constructor, so the subscription cannot be made there.
+      void SubscribeToControls();
 
       void RecalcMousePos3d();           // Updates the cached value of m_mousePos3d by doing a ray cast against landscape
       DirectX::XMFLOAT3 GetMousePos3d(); // Returns the cached value "m_mousePos3d"
