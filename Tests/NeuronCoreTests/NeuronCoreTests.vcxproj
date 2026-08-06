@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WorldObjectIdTests.cpp" />
+    <ClCompile Include="Array2DTests.cpp" />
     <ClCompile Include="ByteStreamTests.cpp" />
     <ClCompile Include="GenericTests.cpp" />
     <ClCompile Include="LookupTableTests.cpp" />

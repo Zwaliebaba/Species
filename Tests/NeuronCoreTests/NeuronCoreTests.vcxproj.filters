@@ -12,6 +12,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WorldObjectIdTests.cpp" />
+    <ClCompile Include="Array2DTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="ByteStreamTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
