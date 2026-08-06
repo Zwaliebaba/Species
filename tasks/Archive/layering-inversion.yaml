@@ -467,8 +467,7 @@ tasks:
       Render half working via GameLogic's legal downward reach into
       NeuronClient. Add GameLogic/Landscape.h and GameLogic/Landscape.cpp to
       the touch set when starting.
-    status: abandoned
-    notes: >
+
       ABANDONED 2026-08-02, subsumed by T15. Evidence: after T8 removed the
       g_app reaches, this task's files still include Species headers
       directly — EntityGrid.cpp includes App.h, Location.h and Team.h;
@@ -481,6 +480,7 @@ tasks:
       everything these files reach has been resolved, which is what T14,
       T9 and T10 do — so the move became one task, T15, that runs after
       them.
+    status: abandoned
 
   - id: T8
     title: Give GameLogic its own world access, ending g_app reaches from below

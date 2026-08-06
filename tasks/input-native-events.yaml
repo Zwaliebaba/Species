@@ -224,7 +224,7 @@ tasks:
       rather than deleted. What it and FindsTheFirstGeneratedControlByName pin
       together is that the generated table and the enum agree at both ends; one
       without the other pins nothing. Suite still holds 198 tests.
-    notes: >
+
       Collides with sound-xaudio2 T8 and network-transport T9 over
       Species/Main.cpp - do not run concurrently with them.
 

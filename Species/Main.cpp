@@ -36,6 +36,7 @@
 #include "Server.h"
 #include "ServerToClientLetter.h"
 #include "ServerUpdates.h"
+#include "SoundLibrary3d.h"
 #include "SoundSystem.h"
 #include "StartSequence.h"
 #include "SystemInfo.h"

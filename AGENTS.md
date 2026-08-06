@@ -434,25 +434,42 @@ The game **does** run, so the smoke test is something you can actually perform
 rather than something to wait for. If you are working somewhere that cannot
 launch a Windows client, say so instead of implying you checked.
 
-**WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-06.** CI is green on the
-`sound-xaudio2`/`input-native-events` branch and has been on every task landed
-there, so everything through `input-native-events` T2 compiles, links and
-passes the suite on x64 Debug. **THE UNCOMPILED BLOCK THIS ENTRY USED TO WARN
-ABOUT IS GONE**: `strings-modernised` T12, T11, T13, T17 and T9 were the
-largest ever recorded here, and CI has since built all of them.
+**WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-06.** CI last built this
+branch green at `982e2e2`, which carries everything through `sound-xaudio2` T6
+and `input-native-events` T2 — that much compiles, links and passes the suite on
+x64 Debug. The two commits after it, T7 and T8, each went **red**, and the fix
+for the second is the commit this paragraph lands in, so **the head of this
+branch is not yet known to compile.** Correct this line once CI has answered.
+**THE UNCOMPILED BLOCK THIS ENTRY USED TO WARN ABOUT IS GONE**:
+`strings-modernised` T12, T11, T13, T17 and T9 were the largest ever recorded
+here, and CI has since built all of them.
 
-**Compiled is still not run.** Nothing landed on 2026-08-06 has been in front
-of a running game — see the baseline below, which is unchanged at `acf283b`.
-The two audio backends and the input changes are the kind of work a green
-build says least about: `sound-xaudio2` T5 exists precisely because CI cannot
-hear, and the input work changes what happens on focus loss and on a wheel
-message, neither of which any test exercises.
+**Both red rounds were the same mistake.** An earlier version of this entry
+claimed CI had been green on every task landed here; it had not. Each failure
+was a deleted `#include` taking declarations with it that the deleting task
+never looked for. T7 removed `SoundLibrary3dDSound.h` from disk and left an
+`#include` of it in `Species/Main.cpp`; the fix for that then removed the
+include, and with it the only path by which that file saw `g_soundLibrary3d`,
+which its `Finalise()` deletes. **Deleting a header withdraws everything it
+included, not just what it declared.** Grep for the symbols the survivors still
+use, not for the name of the type you removed.
 
-Those last three are the largest uncompiled block this file has ever recorded:
-127 rewritten format strings, nine members changed from `char*` to
-`std::string`, and four signatures narrowed. **What a Python check cannot see
-is a type that no longer matches its use**, and that is the whole failure mode
-here. Three things were compiled and run with g++ 13 to narrow it — every
+**Compiled is still not run, with one exception.** The XAudio2 backend has been
+heard: the `sound-xaudio2` T5 audio gate below is an owner-reported run on a
+2026-08-06 build, and it exists precisely because CI cannot hear. Nothing else
+from that day has been in front of a running game — not the input changes, and
+not the three tasks that followed the gate — and no seven-step Garden run has
+been done on any of it, so the baseline below is unchanged at `acf283b`. The
+input work is the kind a green build says least about: it changes what happens
+on focus loss and on a wheel message, neither of which any test exercises.
+
+The `strings-modernised` block is worth remembering for what it taught rather
+than for its size, which is why the description stays here now. It was 127
+rewritten format strings, nine members changed from `char*` to `std::string`,
+and four signatures narrowed, all written on Linux against the seven Python
+checks alone. **What a Python check cannot see is a type that no longer matches
+its use**, and that was the whole failure mode. Three things were compiled and
+run with g++ 13 to narrow it before it ever reached MSVC — every
 printf-to-`std::format` spec pair, the old and new `FileWriter::printf` side by
 side on the real call-site formats, and the two non-mechanical rewrites against
 their originals — and all three agree byte for byte. None of that is MSVC, and

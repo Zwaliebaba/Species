@@ -549,9 +549,23 @@ tasks:
       FOUND WHILE DOING THIS, and it was a real break in T7: Species/Main.cpp
       still included SoundLibrary3dDSound.h, a header T7 had deleted. T7's
       acceptance grep was for the substring DSOUND and the filename spells it
-      DSound, so a case-sensitive search walked straight past it. Fixed here,
-      in the same push, so no pushed commit ever carried it to CI.
-    notes: >
+      DSound, so a case-sensitive search walked straight past it.
+
+      THAT FIX WAS INCOMPLETE, and CI caught the remainder on this task's own
+      commit. Deleting the include did not just remove a dead header - it
+      removed the only path by which Species/Main.cpp saw a declaration of
+      g_soundLibrary3d, which Finalise() deletes. Three errors at Main.cpp:840.
+      The include of SoundLibrary3d.h that Main.cpp should always have had is
+      now there directly, and the delete stays: SoundSystem's destructor has
+      the same two lines, but that destructor never runs, because App::~App is
+      unreachable behind Main.cpp's exit(0). Finalise() is the live shutdown of
+      the audio device.
+
+      THE LESSON IS ABOUT THE DELETION, NOT THE GREP. Removing an include
+      withdraws every declaration it carried transitively, and the deleted
+      header included SoundLibrary3d.h. A grep for the deleted TYPE finds
+      nothing when the survivor is a global the header merely passed along.
+
       Collides with input-native-events T2/T8 and network-transport T9 over
       Species/Main.cpp - do not run concurrently with them.
 
