@@ -466,10 +466,25 @@ tasks:
     depends_on: [T5]
     files:
       - NeuronClient/InputDriverWin32.cpp
+      # Holds the per-key text-capture mask, so the driver can answer "the UI
+      # took that key" without reaching outside itself. Added during the work,
+      # per docs/TASK_DAG.md.
+      - NeuronClient/InputDriverWin32.h
       - NeuronClient/Eclipse.h
       - NeuronClient/Eclipse.cpp
       - NeuronClient/EclWindow.h
       - NeuronClient/EclWindow.cpp
+      # The base Char() virtual every widget inherits. The list was written from
+      # where text editing LIVES - InputField - and the work is wherever the
+      # dispatch passes through.
+      - NeuronClient/EclButton.h
+      - NeuronClient/EclButton.cpp
+      # m_chars was T5's placeholder for exactly this task and is retired by it:
+      # characters dispatch from the driver's side-effect walk, in event order
+      # with the key events, which a per-frame collection cannot express.
+      - NeuronClient/InputEvents.h
+      - NeuronClient/InputEvents.cpp
+      - Tests/NeuronClientTests/InputEventTests.cpp
       - GameLogic/InputField.h
       - GameLogic/InputField.cpp
       - Tests/GameLogicTests/InputFieldTests.cpp
@@ -483,7 +498,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: in_progress
 
   - id: T7
     title: Raw Input for relative mouse motion
