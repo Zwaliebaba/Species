@@ -221,7 +221,40 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: |
+      Landed 2026-08-06. CI green at dee5f9d, SECOND round. The first round
+      (dfc2647) failed with exactly one error across roughly 250 lines of
+      unverified COM and DSP code: xaudio2.h keeps its inline helpers behind
+      XAUDIO2_HELPER_FUNCTIONS, so XAudio2CutoffFrequencyToRadians was not
+      declared. Defining it before the include is the fix, and using the SDK's
+      own conversion beats writing the sine out by hand.
+
+      THE LINKER SETTLED THE REMAINING LIBRARY QUESTION: CreateFX with
+      __uuidof(FXEcho), XAudio2CreateReverb and ReverbConvertI3DL2ToNative all
+      resolve from xaudio2.lib alone. No xapofx.lib, no x3daudio.lib. The
+      build-topology change for this whole plan is still just the three
+      AdditionalDependencies lines T1 added.
+
+      Everything else compiled first time: the effect descriptors and
+      SetEffectChain, the I3DL2 parameter block and its field types, the
+      built-in filter type and XAUDIO2_MAX_FILTER_FREQUENCY, and the
+      unique_ptr members inside the channel vector.
+
+      Effect coverage as it now stands, measured against Sounds.txt: 21 of 22
+      usages run on a native XAudio2 mechanism — 19 echoes on FXECHO, 2
+      reverbs on XAUDIO2FX_REVERB — and the 22nd, the single Gargle, runs
+      where it always has. ResonantLowPass and BitCrusher have no usages at
+      all but are implemented, the first on the built-in filter and the second
+      in the fill path.
+
+      DspResLowPass's two parameter remappings are reproduced rather than
+      dropped: the blueprint's "cutoff" is not a frequency until it has been
+      through exp(x/3850 + 4.7), so passing the raw number to XAudio2 would
+      have retuned every sound that uses the filter. Nothing uses it today,
+      which is exactly why that would have gone unnoticed.
+
+      NOT VERIFIED BY ANY OF THIS: what it sounds like. T5 is the first ear.
 
   - id: T4
     title: Migrate Effects.txt and Sounds.txt off the DSound_ effect names
