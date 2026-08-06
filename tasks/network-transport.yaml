@@ -469,7 +469,35 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: >
+      TWELVE FILES, NOT TEN: the acceptance says ten and names NetLib.h and
+      NetLib.cpp among the files, which survive. What went is NetSocket,
+      NetSocketListener, NetUdpPacket, NetThread/NetThreadWin32,
+      NetMutex/NetMutexWin32 and NetLibWin32 - six pairs. NetLib keeps
+      WSAStartup, WSACleanup and NetDebugOut and nothing else; MIN,
+      MAX_HOSTNAME_LEN, NetIpAddress and the whole NetRetCode enum went with the
+      code that used them.
+
+      THE GREPS ARE ZERO IN CODE AND NOT IN COMMENTS, and that is deliberate.
+      Ten comments across UdpSocket, ServerToClient, ClientToServer, Server and
+      NetLib name what was deleted in order to say why the current shape is what
+      it is - "it replaces a NetSocket per client", "NetSocket::Connect resolved
+      it through NetGetHostByName". Rewriting them to dodge a grep would cost
+      the reader the reason. T11's sweep should read these as history rather
+      than as survivors; the check that matters is that no declaration,
+      definition, include or project entry names any of them, and that is true.
+
+      NOT COMPILED. A deletion is the change most likely to break a build in a
+      file nobody touched, and this repository has been red twice for exactly
+      that - see AGENTS.md, "deleting a header withdraws everything it
+      included, not just what it declared". The three things NetLib.h used to
+      supply transitively are winsock2.h and windows.h (through NetLibWin32.h)
+      and the MIN macro. Every survivor that includes NetLib.h - Generic.cpp,
+      Server.cpp, ClientToServer.cpp - includes pch.h first, and NeuronCore.h
+      includes WinSock2.h then Windows.h, so the withdrawal is covered. MIN had
+      one user, NetUdpPacket.cpp, which is gone. That reasoning is what CI will
+      confirm or refute.
 
   - id: T7
     title: Put ITransport behind the endpoints and test the protocol end to end

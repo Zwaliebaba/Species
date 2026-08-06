@@ -34,21 +34,6 @@
     <ClCompile Include="NetLib.cpp">
       <Filter>NetLib</Filter>
     </ClCompile>
-    <ClCompile Include="NetMutexWin32.cpp">
-      <Filter>NetLib</Filter>
-    </ClCompile>
-    <ClCompile Include="NetSocket.cpp">
-      <Filter>NetLib</Filter>
-    </ClCompile>
-    <ClCompile Include="NetSocketListener.cpp">
-      <Filter>NetLib</Filter>
-    </ClCompile>
-    <ClCompile Include="NetThreadWin32.cpp">
-      <Filter>NetLib</Filter>
-    </ClCompile>
-    <ClCompile Include="NetUdpPacket.cpp">
-      <Filter>NetLib</Filter>
-    </ClCompile>
     <ClCompile Include="GameTime.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="FileSys.cpp" />
@@ -59,7 +44,6 @@
     <ClCompile Include="TeamControls.cpp">
       <Filter>Network</Filter>
     </ClCompile>
-    <ClCompile Include="NetLibWin32.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Random.h" />
@@ -85,24 +69,6 @@
       <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="NetLib.h">
-      <Filter>NetLib</Filter>
-    </ClInclude>
-    <ClInclude Include="NetLibWin32.h">
-      <Filter>NetLib</Filter>
-    </ClInclude>
-    <ClInclude Include="NetMutex.h">
-      <Filter>NetLib</Filter>
-    </ClInclude>
-    <ClInclude Include="NetSocket.h">
-      <Filter>NetLib</Filter>
-    </ClInclude>
-    <ClInclude Include="NetSocketListener.h">
-      <Filter>NetLib</Filter>
-    </ClInclude>
-    <ClInclude Include="NetThread.h">
-      <Filter>NetLib</Filter>
-    </ClInclude>
-    <ClInclude Include="NetUdpPacket.h">
       <Filter>NetLib</Filter>
     </ClInclude>
     <ClInclude Include="pch.h" />
