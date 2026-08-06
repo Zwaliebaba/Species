@@ -280,6 +280,38 @@ tasks:
       - Any audible difference from the dsound backend on the same build is recorded in notes as accepted or as a defect with an owning task
     parallel_safe: false
     status: todo
+    notes: |
+      HOW TO RUN IT. The backend is chosen by one line in the profile's
+      preferences.txt (App::GetPreferencesPath - the profile directory, not
+      GameData). Add or change:
+
+          SoundLibrary = xaudio2
+
+      and "dsound" switches back to the old path on the same binary, which is
+      the whole point of gating here rather than after the deletions. The
+      options window still shows only DirectSound; T6 fixes that when the
+      default flips, and editing the file is the intended route until then.
+
+      WHAT TO LISTEN FOR, in the order the differences are most likely:
+
+      1. Panning should follow the camera continuously. The DirectSound path
+         only moved a sound once it had drifted far enough relative to its
+         distance; this one recomputes every tick, so smooth movement where
+         there used to be small steps is the expected improvement, not a bug.
+      2. Sounds should start promptly. The ring is 300ms against DirectSound's
+         ~900ms at the default mix rate.
+      3. Echo events - laser hits and the like - should still carry their
+         echo. Thirteen sounds use the portable Echo and six the DirectSound
+         one; both now drive the same FXECHO.
+      4. Distance attenuation should feel the same. X3DAudio's curve is not
+         bit-identical to DS3D's, so a difference in how quickly things fade
+         with distance is the single most likely honest divergence.
+      5. Music should play and loop. It is still MONO here - that is not a
+         regression, it has always been mono, and T9 is what makes it stereo.
+
+      Volume, pitch and doppler all keep the numbers DirectSound was tuned
+      with, so a difference in any of those three is a defect rather than a
+      taste question.
 
   - id: T6
     title: Make XAudio2 the default sound library

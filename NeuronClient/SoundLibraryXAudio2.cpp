@@ -1,5 +1,10 @@
 #include "pch.h"
 
+// xaudio2.h keeps its inline helpers behind this define — without it
+// XAudio2CutoffFrequencyToRadians, which turns a cutoff in hertz into the
+// units SetFilterParameters wants, is simply not declared.
+#define XAUDIO2_HELPER_FUNCTIONS
+
 #include <xaudio2.h>
 #include <x3daudio.h>
 #include <xaudio2fx.h>
