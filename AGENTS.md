@@ -27,7 +27,7 @@ It is not that yet. The codebase began as the Darwinia source and is partway
 through being reshaped: renamed, relayered, and modernised into something a
 persistent authoritative server can be built on. Roughly 115,000 lines of C++
 across six MSBuild projects. It links only against the OS (OpenGL, GLU, WinMM,
-DirectSound, Winsock) and takes one header-only dependency, **DirectXMath**,
+DirectSound, XAudio2, Winsock) and takes one header-only dependency, **DirectXMath**,
 which ships in the Windows SDK — no library to link and nothing vendored.
 `tasks/Archive/directxmath-migration.yaml` replaced the inherited hand-rolled math with
 it and then deleted it: there is no Neuron vector or matrix type, storage is
@@ -44,8 +44,19 @@ making the existing code capable of supporting it, not by building it alongside.
 
 **Cleanup and modernisation first — and as of 2026-08-05 THE PLANNED
 MODERNISATION IS FINISHED.** Eleven plans, 147 tasks, every one done or
-deliberately abandoned, all of them in `tasks/Archive/`. Nothing is open, and
-`tasks/` holds no plan to pick up.
+deliberately abandoned, all of them in `tasks/Archive/`.
+
+**THREE PLANS ARE OPEN AGAIN, opened 2026-08-06 on the owner's direction**, and
+they are the first work since the modernisation that is not cleanup:
+
+| Plan | What it does | State |
+|---|---|---|
+| [`tasks/sound-xaudio2.yaml`](tasks/sound-xaudio2.yaml) | One native XAudio2 backend — per-channel voices, X3DAudio positioning, effects on XAudio2 — then DirectSound, the software mixer and waveOut are deleted | 3 of 11. **Blocked on the owner**: T5 is an A/B listen |
+| [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse | 3 of 12 |
+| [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | 0 of 12 |
+
+`python3 tools/check_task_dag.py --next tasks/<plan>.yaml` is the authority on
+what can be started; read it rather than this table, which will go stale.
 
 That converted the inherited Darwinia code into Neuron-style C++23 with enforced
 layer boundaries: zero upward includes, standard containers, `std::string` and
@@ -272,8 +283,11 @@ Resource::ListResources
   start from the fact that it has no end.
 - **The real risk was ownership that was already shared.** `g_renderer` and
   `g_taskManagerInterface` are deleted and rebuilt at RUNTIME from GameLogic
-  and `Main.cpp` — on a resolution change and a gamepad switch, paths that
-  really execute. Taking `unique_ptr` ownership without touching those would
+  and `Main.cpp` — on a resolution change and, until 2026-08-06, on a gamepad
+  switch. **Only the resolution change is left**: the gamepad switch was
+  `SwitchTaskManagerForX360Controller`, and `input-native-events` T2 deleted
+  it, because no driver in the tree can report the mode it waited for, so it
+  never actually executed. Taking `unique_ptr` ownership without touching those would
   have left App holding a freed pointer. Replacement now routes through
   `AppCommands`, whose factories install what they build. **Before converting
   a member, grep for who else deletes or reassigns it, not just who reads
@@ -420,12 +434,19 @@ The game **does** run, so the smoke test is something you can actually perform
 rather than something to wait for. If you are working somewhere that cannot
 launch a Windows client, say so instead of implying you checked.
 
-**WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-05.** CI is green at
-`17b0778` — that build carries `language-hygiene` T11 and the whole of
-`namespace-migration`, so the namespaced tree compiles, links and passes the
-suite. **Everything after `17b0778` has NOT been compiled by anyone**: that is
-`strings-modernised` T12, T11, and then the three that closed the plan — T13,
-T17 and T9 — all written on Linux against the seven Python checks alone.
+**WHAT HAS AND HAS NOT BEEN COMPILED, as of 2026-08-06.** CI is green on the
+`sound-xaudio2`/`input-native-events` branch and has been on every task landed
+there, so everything through `input-native-events` T2 compiles, links and
+passes the suite on x64 Debug. **THE UNCOMPILED BLOCK THIS ENTRY USED TO WARN
+ABOUT IS GONE**: `strings-modernised` T12, T11, T13, T17 and T9 were the
+largest ever recorded here, and CI has since built all of them.
+
+**Compiled is still not run.** Nothing landed on 2026-08-06 has been in front
+of a running game — see the baseline below, which is unchanged at `acf283b`.
+The two audio backends and the input changes are the kind of work a green
+build says least about: `sound-xaudio2` T5 exists precisely because CI cannot
+hear, and the input work changes what happens on focus loss and on a wheel
+message, neither of which any test exercises.
 
 Those last three are the largest uncompiled block this file has ever recorded:
 127 rewritten format strings, nine members changed from `char*` to
@@ -619,9 +640,12 @@ The full standard — schema, status semantics, how to write acceptance criteria
 how concurrency works — is [`docs/TASK_DAG.md`](docs/TASK_DAG.md). Read it before
 writing your first plan.
 
-**If you are asking "what should I do next", there is no answer in `tasks/`
-any more — every plan is finished.** The next piece of work needs its own plan
-written before code is written.
+**If you are asking "what should I do next", ask the tool** —
+`python3 tools/check_task_dag.py --next tasks/<plan>.yaml` across the three
+open plans listed under *Current priority*. This paragraph used to say there
+was no answer because every plan was finished; that stopped being true on
+2026-08-06. Work outside those three still needs its own plan written before
+code is written.
 
 [`tasks/_next-batch.md`](tasks/_next-batch.md) is kept as the record of how the
 seven batches were scheduled: what was ready, measured; which ready tasks
@@ -632,18 +656,21 @@ transferable part: a task's declared `files` list is written from where a thing
 is DECLARED and the work is wherever it is NAMED, and eight of the nine lists
 measured against the tree were wrong.
 
-**ELEVEN PLANS ARE COMPLETE AND IN `tasks/Archive/`, AND NOTHING IS OPEN.**
+**ELEVEN PLANS ARE COMPLETE AND IN `tasks/Archive/`. THREE MORE ARE OPEN
+BESIDE THEM** — see *Current priority* for what they are and where they stand.
 `determinism`, `ownership`, `language-hygiene` and `namespace-migration` all
 closed on 2026-08-05, and `strings-modernised` — the last one — closed the same
 day at 20 of 20. T13 narrowed the read-only name parameters to `string_view`,
 T17 replaced `FileWriter::printf` with `std::format` templates, and T9 swept
 the `strcpy`/`sprintf` family to a tree-wide zero and deleted `NewStr` with it.
 
-**There is no ready task anywhere.** `tasks/` holds the reading orders, the
-template and the archive, and nothing else. The next piece of work needs a plan
-written for it before code is written — see *How work is broken down* below and
+**Ready tasks exist again**, in the three plans under *Current priority* —
+`--next` will name them. This paragraph used to say there were none, when
+`tasks/` held only the reading orders, the template and the archive. Work
+outside those three plans still needs a plan written for it before code is
+written — see *How work is broken down* below and
 [`docs/TASK_DAG.md`](docs/TASK_DAG.md). What the closed plans left behind, each
-recorded and unowned, is the honest starting list: the three raw-ownership
+recorded and still unowned, is unchanged by them: the three raw-ownership
 survivors above, the unswept LCG sites below, entity and building behaviour
 having no tests, and `GlobalWorld` not being constructible in a test DLL.
 
@@ -657,8 +684,11 @@ there is nothing to schedule against.
 for the game to reach the main menu after each of its four commits, and that
 check was NOT performed; CI compiled them and nothing more. See its notes for
 what a smoke test can and cannot say about it — the destructor it rewrote is
-unreachable code, and the two runtime paths it did change need a resolution
-change and a gamepad switch to reach, neither of which is a Garden step.
+unreachable code, and of the two runtime paths it did change, one needs a
+resolution change to reach and is not a Garden step, while the other, the
+gamepad switch, turned out to be unreachable in any case and was deleted by
+`input-native-events` T2 on 2026-08-06. So T6 is now MORE doubtful, not less:
+half of what it changed can never have run.
 
 The two older reading orders are still there and still worth reading, but
 neither answers "what next" any more:
@@ -745,6 +775,19 @@ Real, currently true, and worth knowing before you trip over them:
     CI evidence alone; CI then caught two real compile errors a name-keyed
     sweep had missed, and the owner's run afterwards is the only thing that
     says the tree still plays. Neither check substitutes for the other.
+- **BOTH LEGACY SOUND BACKENDS READ PAST THE END OF `SoundSystem::m_channels`,
+  once per audio tick.** That array is sized from `GetNumMainChannels()`, which
+  is `m_numChannels - 1`, but `SoundLibrary3dDSound` and
+  `SoundLibrary3dSoftware` both pump channels up to `m_numChannels` and hand
+  the index straight to the main callback, which subscripts the array with it.
+  It is benign in practice — the garbage `SoundInstanceId` fails a
+  bounds-checked slot map lookup and that channel writes silence — but it is
+  real UB in the path that ships today, since DirectSound is still the default.
+  Found while writing `sound-xaudio2` T1, which sizes the new backend's channel
+  vector from `GetNumMainChannels()` so the callback can only ever be given an
+  index the array holds. **The legacy files are deliberately NOT fixed**: T7
+  and T8 delete both, and a fix would have to be justified against a smoke test
+  nobody will run on code that is going away.
 - **THERE ARE TWO RANDOM STREAMS, AND THE DOCUMENTATION SAID THERE WAS ONE.**
   This is the correction that retired the two determinism bullets that used to
   stand here, and it is the thing to know before reading any RNG call in this

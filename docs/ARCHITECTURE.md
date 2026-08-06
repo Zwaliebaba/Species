@@ -90,10 +90,17 @@ Presentation and platform services for a graphical client.
 
 - **Rendering:** OpenGL, `Shape`/`ShapeFragment` model system, `Texture`,
   `Bitmap`, sprites, text renderers, `OGLExtensions`.
-- **Sound:** `SoundSystem`, `SoundLibrary2d`, `SoundLibrary3dDSound` and a
-  software mixer fallback, `SoundInstance`, `SoundParameter`.
-- **Input:** a composable driver stack — `InputDriverSimple`, `Chord`, `Conjoin`,
-  `Alias`, `Invert`, `Pipe`, `Idle`, `Prefs` — resolving to `ControlTypes`.
+- **Sound:** `SoundSystem`, `SoundInstance`, `SoundParameter` above a
+  `SoundLibrary3d` backend. THREE backends exist during the `sound-xaudio2`
+  migration and one will survive it: `SoundLibraryXAudio2` (per-channel source
+  voices, X3DAudio positioning, effects on XAudio2 — the target, opt-in by the
+  `SoundLibrary` preference), `SoundLibrary3dDSound` (DirectSound, still the
+  default) and `SoundLibrary3dSoftware` over `SoundLibrary2d`'s WinMM output.
+  The plan deletes the last two once the owner has A/B'd the first.
+- **Input:** a composable driver stack — `InputDriverSimple`, `Chord`,
+  `Conjoin`, `Invert`, `Idle` — resolving to `ControlTypes`. `Alias`, `Pipe`
+  and `Prefs` were deleted by `input-native-events` T1: no binding data used
+  them and `Pipe` was never even registered.
 - **UI:** the **Eclipse** toolkit (`Eclipse`, `EclWindow`, `EclButton`), which
   every in-game window derives from.
 - **Networking:** `ClientToServer`, the client's endpoint — inbox, outbox,
