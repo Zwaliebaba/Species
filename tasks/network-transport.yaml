@@ -536,7 +536,7 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: in_progress
 
   - id: T8
     title: Frame every datagram - magic, version, kind - and bump to protocol v2
