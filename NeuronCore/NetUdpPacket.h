@@ -6,6 +6,7 @@
 // ****************************************************************************
 
 #include "NetLib.h"
+#include "ProtocolLimits.h"
 
 
 class NetUdpPacket
@@ -16,7 +17,7 @@ public:
 	int 			m_sockfd;
 	int 			m_length;
 	NetIpAddress	m_clientAddress;
-	char 			m_data[MAX_PACKET_SIZE];
+  char m_data[MaxDatagramSize];
 };
 
 

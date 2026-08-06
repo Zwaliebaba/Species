@@ -3,9 +3,7 @@
 #include <vector>
 #include "NeuronMath.h"
 #include "NetworkUpdate.h"
-
-
-#define SERVERTOCLIENTLETTER_BYTESTREAMSIZE 1024
+#include "ProtocolLimits.h"
 
 
 // ****************************************************************************
@@ -44,6 +42,16 @@ class ServerToClientLetter
     int m_clientId; // An index into the server's slot map of ServerToClient objects
     int m_sequenceId;
 
+    // Running total of what m_updates costs on the wire, so the cap can be
+    // checked before an update is committed rather than after the buffer has
+    // already been written past.
+    int m_updateBytes;
+
+    // The bytes this letter's type costs before any updates. Kept in step with
+    // Serialise by TheSerialisedSizeMatchesWhatSerialiseWrites, which is the
+    // only thing stopping the two drifting apart.
+    [[nodiscard]] int HeaderSize() const;
+
   public:
     ServerToClientLetter();
     // _len is the datagram's real length, and it is now consulted: a letter that
@@ -61,7 +69,17 @@ class ServerToClientLetter
     int GetClientId() const;
     int GetSequenceId() const;
 
-    void AddUpdate(NetworkUpdate const& _update);
+    // Returns false if the update did not fit, having added nothing. A letter
+    // has to fit in one datagram — see MaxDatagramSize — and the caller keeps
+    // what did not fit for the next one rather than dropping it.
+    //
+    // This is a runtime refusal, in Release as well as Debug. What it replaces
+    // was a DEBUG_ASSERT after the fact, which in Release let the letter
+    // overrun its buffer and in Debug only said so once the damage was done.
+    [[nodiscard]] bool AddUpdate(NetworkUpdate const& _update);
+
+    // How many bytes this letter would occupy on the wire right now.
+    [[nodiscard]] int SerialisedSize() const;
 
     // False for anything that did not parse: a truncated datagram, a letter type
     // this build does not know, or an update count the datagram cannot back up.

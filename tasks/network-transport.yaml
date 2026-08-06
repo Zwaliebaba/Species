@@ -257,7 +257,50 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: >
+      1024, NOT 512, and the reason is arithmetic rather than taste: a full tick
+      of 48 SelectUnits is 1020 bytes with its header, so 512 would have made
+      spillover the normal case rather than the overflow case. The upper bound
+      is one un-fragmented IP datagram - 1500 MTU less 20 IP and 8 UDP - so
+      there is room above 1024 but nothing to buy with it.
+
+      THE SPILLOVER NEEDED A LIFT, and it is the same shape input-native-events
+      used for DeriveFrameState. Server::Advance cannot be called in a test: it
+      locks a mutex Initialise creates, drains an inbox a listen thread fills,
+      and reads g_prefsManager. So the decision it makes - which updates go in
+      this letter and which are carried - moved into FillLetter, a free function
+      over a letter and a queue, and THAT is what NeuronServerTests drives. The
+      loop in Advance now queues into m_pendingUpdates and calls it once.
+
+      Two things about that queue are load-bearing and both are asserted:
+      updates carried from a full tick go at the FRONT of the next letter, and
+      the first refusal ends the fill. "Add everything that fits" would let a
+      small update overtake the large one that did not, and the order updates
+      are broadcast in is the order every client applies them in - so that is a
+      desync, not a cosmetic difference.
+
+      SerialisedSize IS A SECOND PLACE THE LAYOUT IS WRITTEN DOWN. The cap has
+      to be checked before an update is committed, and Serialise only answers
+      after writing, so HeaderSize computes the per-type header independently.
+      TheSerialisedSizeMatchesWhatSerialiseWrites is the only thing stopping the
+      two drifting - it is the test that will fail when T8 adds a frame header
+      to one and not the other, which is the intended way to find out.
+
+      AddUpdate IS [[nodiscard]] because a caller that ignores the refusal has
+      silently dropped a player's order.
+
+      THE FILES LIST WAS SHORT BY THREE: NeuronCore/NetUdpPacket.h and .cpp both
+      sized themselves from MAX_PACKET_SIZE, and Tests/NeuronServerTests is
+      where the spillover test had to go.
+
+      NOT COMPILED BY MSVC AND NOT RUN AS A SUITE. The harness was extended:
+      60 updates spill across two letters at 1020 and 264 bytes, in order, and
+      the capped letter round trips through the parser. FillLetter's five lines
+      are TRANSCRIBED into the harness rather than compiled from Server.cpp,
+      which cannot build here - so the cap itself is real code under test and
+      the loop around it is not. The byte-identity comparison against the pre-T1
+      macro serialisers still passes for every type.
 
   - id: T4
     title: Introduce UdpSocket and poll it from the server tick

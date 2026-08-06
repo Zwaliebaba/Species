@@ -13,7 +13,8 @@ ServerToClientLetter::ServerToClientLetter()
     m_sequenceId(0),
     m_teamId(0),
     m_teamType(0),
-    m_ip(0)
+    m_ip(0),
+    m_updateBytes(0)
 {
 }
 
@@ -25,7 +26,8 @@ ServerToClientLetter::ServerToClientLetter(char const* _byteStream, int _len)
     m_sequenceId(0),
     m_teamId(0),
     m_teamType(0),
-    m_ip(0)
+    m_ip(0),
+    m_updateBytes(0)
 {
   ByteReader reader(_byteStream, _len > 0 ? static_cast<size_t>(_len) : 0);
 
@@ -61,13 +63,19 @@ ServerToClientLetter::ServerToClientLetter(char const* _byteStream, int _len)
 
     for (int i = 0; i < numUpdates; ++i)
     {
-      // Read into a local and pushed only once it is whole, so a half-read
+      // Read into a local and added only once it is whole, so a half-read
       // update never reaches the letter.
       NetworkUpdate update;
       if (!update.ReadByteStream(reader))
         return; // fewer updates than the header claimed: the letter is a lie
 
-      m_updates.push_back(update);
+      // Through AddUpdate rather than push_back, so the running size stays
+      // right — and so a datagram longer than one is allowed to be is refused
+      // on the way in as well as on the way out. It cannot arrive over a socket
+      // sized to MaxDatagramSize; it can arrive from a caller with a longer
+      // buffer, which is exactly what a test is.
+      if (!AddUpdate(update))
+        return;
     }
     break;
   }
@@ -119,10 +127,53 @@ int ServerToClientLetter::GetSequenceId() const { return m_sequenceId; }
 // *** SetIp
 void ServerToClientLetter::SetIp(int ip) { m_ip = ip; }
 
+// *** HeaderSize
+int ServerToClientLetter::HeaderSize() const
+{
+  switch (m_type)
+  {
+  case LetterType::HelloClient:
+  case LetterType::GoodbyeClient:
+    return 3 * static_cast<int>(sizeof(int)); // type, sequence id, ip
+
+  case LetterType::TeamAssign:
+    return 3 * static_cast<int>(sizeof(int)) + 2 * static_cast<int>(sizeof(unsigned char)); // ...plus team id and type
+
+  case LetterType::Update:
+    return 3 * static_cast<int>(sizeof(int)); // type, sequence id, update count
+
+  case LetterType::Invalid:
+    break;
+  }
+
+  return 2 * static_cast<int>(sizeof(int)); // type and sequence id, which every letter carries
+}
+
+// *** SerialisedSize
+int ServerToClientLetter::SerialisedSize() const { return HeaderSize() + m_updateBytes; }
+
 // *** AddUpdate
-// The letter takes a copy, as it always did. What is gone is the copy being
-// made by hand out of a raw new and a memcpy.
-void ServerToClientLetter::AddUpdate(NetworkUpdate const& _update) { m_updates.push_back(_update); }
+// The letter takes a copy, as it always did. What is gone is the copy being made
+// by hand out of a raw new and a memcpy — and what is new is that it can refuse.
+bool ServerToClientLetter::AddUpdate(NetworkUpdate const& _update)
+{
+  // Pushed first and popped back off if it does not fit, because measuring an
+  // update means serialising it and NetworkUpdate serialises into a buffer of
+  // its own — which the caller's const reference does not give access to.
+  m_updates.push_back(_update);
+
+  int updateSize = 0;
+  m_updates.back().GetByteStream(&updateSize);
+
+  if (SerialisedSize() + updateSize > MaxDatagramSize)
+  {
+    m_updates.pop_back();
+    return false;
+  }
+
+  m_updateBytes += updateSize;
+  return true;
+}
 
 // *** Serialise
 int ServerToClientLetter::Serialise(char* _buffer, int _capacity)

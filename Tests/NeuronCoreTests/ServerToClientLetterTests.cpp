@@ -50,7 +50,7 @@ namespace NeuronCoreTests
         letter.SetSequenceId(0x21436587);
         letter.SetIp(0x0100007F);
 
-        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        char datagram[MaxDatagramSize];
         const int length = letter.Serialise(datagram, static_cast<int>(sizeof(datagram)));
         ByteReader reader(datagram, length);
 
@@ -75,7 +75,7 @@ namespace NeuronCoreTests
         letter.SetTeamType(1);
         letter.SetIp(0x0100007F);
 
-        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        char datagram[MaxDatagramSize];
         const int length = letter.Serialise(datagram, static_cast<int>(sizeof(datagram)));
         ByteReader reader(datagram, length);
 
@@ -103,10 +103,10 @@ namespace NeuronCoreTests
 
         NetworkUpdate first = MakeSelectUnit(1, 11);
         NetworkUpdate second = MakeSelectUnit(2, 22);
-        letter.AddUpdate(first);
-        letter.AddUpdate(second);
+        Assert::IsTrue(letter.AddUpdate(first), L"the update should fit");
+        Assert::IsTrue(letter.AddUpdate(second), L"the update should fit");
 
-        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        char datagram[MaxDatagramSize];
         const int length = letter.Serialise(datagram, static_cast<int>(sizeof(datagram)));
         ByteReader reader(datagram, length);
 
@@ -129,9 +129,9 @@ namespace NeuronCoreTests
         sent.SetSequenceId(42);
 
         NetworkUpdate update = MakeSelectUnit(3, 77);
-        sent.AddUpdate(update);
+        Assert::IsTrue(sent.AddUpdate(update), L"the update should fit");
 
-        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        char datagram[MaxDatagramSize];
         const int length = sent.Serialise(datagram, static_cast<int>(sizeof(datagram)));
 
         ServerToClientLetter received(datagram, length);
@@ -152,7 +152,7 @@ namespace NeuronCoreTests
         sent.SetType(ServerToClientLetter::LetterType::Update);
         sent.SetSequenceId(101);
 
-        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        char datagram[MaxDatagramSize];
         const int length = sent.Serialise(datagram, static_cast<int>(sizeof(datagram)));
 
         ServerToClientLetter received(datagram, length);
@@ -176,7 +176,7 @@ namespace NeuronCoreTests
         original.SetClientId(3);
 
         NetworkUpdate update = MakeSelectUnit(1, 55);
-        original.AddUpdate(update);
+        Assert::IsTrue(original.AddUpdate(update), L"the update should fit");
 
         ServerToClientLetter copy(original);
 
@@ -196,7 +196,7 @@ namespace NeuronCoreTests
         letter.SetType(ServerToClientLetter::LetterType::Update);
 
         NetworkUpdate update = MakeSelectUnit(1, 55);
-        letter.AddUpdate(update);
+        Assert::IsTrue(letter.AddUpdate(update), L"the update should fit");
         update.SetUnitId(999);
 
         Assert::AreEqual(55, letter.m_updates[0].m_unitId);
@@ -213,7 +213,7 @@ namespace NeuronCoreTests
         original.SetClientId(1);
 
         NetworkUpdate update = MakeSelectUnit(1, 55);
-        original.AddUpdate(update);
+        Assert::IsTrue(original.AddUpdate(update), L"the update should fit");
 
         ServerToClientLetter copy(original);
         copy.SetClientId(2);
@@ -237,13 +237,76 @@ namespace NeuronCoreTests
         for (int i = 0; i < 48; ++i)
         {
           NetworkUpdate update = MakeSelectUnit(static_cast<unsigned char>(i % NUM_TEAMS), i);
-          letter.AddUpdate(update);
+          Assert::IsTrue(letter.AddUpdate(update), L"the update should fit");
         }
 
-        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        char datagram[MaxDatagramSize];
         const int length = letter.Serialise(datagram, static_cast<int>(sizeof(datagram)));
 
-        Assert::IsTrue(length < SERVERTOCLIENTLETTER_BYTESTREAMSIZE);
+        Assert::IsTrue(length <= MaxDatagramSize);
+      }
+
+      TEST_METHOD(TheUpdateThatWouldNotFitIsRefusedRatherThanWritten)
+      {
+        // The whole point of the cap. A 12-byte header plus 21 bytes per
+        // SelectUnit means 48 fit in 1024 bytes and the 49th does not, so the
+        // 49th has to be turned away — in Release as well as Debug. What stood
+        // here was a DEBUG_ASSERT after Serialise had already written, which in
+        // Release meant a letter longer than any datagram the receiver would
+        // take, and therefore a sequence id no client could ever acknowledge.
+        ServerToClientLetter letter;
+        letter.SetType(ServerToClientLetter::LetterType::Update);
+        letter.SetSequenceId(1);
+
+        int accepted = 0;
+        for (int i = 0; i < 60; ++i)
+        {
+          NetworkUpdate update = MakeSelectUnit(static_cast<unsigned char>(i % NUM_TEAMS), i);
+          if (!letter.AddUpdate(update))
+            break;
+          ++accepted;
+        }
+
+        Assert::AreEqual(48, accepted);
+        Assert::AreEqual(48, static_cast<int>(letter.m_updates.size()));
+
+        char datagram[MaxDatagramSize];
+        const int length = letter.Serialise(datagram, static_cast<int>(sizeof(datagram)));
+        Assert::AreEqual(12 + 48 * 21, length);
+        Assert::IsTrue(length <= MaxDatagramSize);
+      }
+
+      TEST_METHOD(TheSerialisedSizeMatchesWhatSerialiseWrites)
+      {
+        // SerialisedSize is what the cap is checked against, and it computes the
+        // header from the letter's type rather than by serialising. That is a
+        // second place the layout is written down, so it is worth one test that
+        // fails the moment the two disagree — including when T8 adds a frame
+        // header to Serialise and not to HeaderSize.
+        char datagram[MaxDatagramSize];
+
+        ServerToClientLetter hello;
+        hello.SetType(ServerToClientLetter::LetterType::HelloClient);
+        Assert::AreEqual(hello.Serialise(datagram, static_cast<int>(sizeof(datagram))), hello.SerialisedSize());
+
+        ServerToClientLetter goodbye;
+        goodbye.SetType(ServerToClientLetter::LetterType::GoodbyeClient);
+        Assert::AreEqual(goodbye.Serialise(datagram, static_cast<int>(sizeof(datagram))), goodbye.SerialisedSize());
+
+        ServerToClientLetter assign;
+        assign.SetType(ServerToClientLetter::LetterType::TeamAssign);
+        Assert::AreEqual(assign.Serialise(datagram, static_cast<int>(sizeof(datagram))), assign.SerialisedSize());
+
+        ServerToClientLetter update;
+        update.SetType(ServerToClientLetter::LetterType::Update);
+        Assert::AreEqual(update.Serialise(datagram, static_cast<int>(sizeof(datagram))), update.SerialisedSize());
+
+        for (int i = 0; i < 5; ++i)
+        {
+          NetworkUpdate one = MakeSelectUnit(1, i);
+          Assert::IsTrue(update.AddUpdate(one), L"the update should fit");
+          Assert::AreEqual(update.Serialise(datagram, static_cast<int>(sizeof(datagram))), update.SerialisedSize());
+        }
       }
 
       // ------------------------------------------------------------------
@@ -282,9 +345,9 @@ namespace NeuronCoreTests
         sent.SetSequenceId(31);
 
         NetworkUpdate update = MakeSelectUnit(1, 5);
-        sent.AddUpdate(update);
+        Assert::IsTrue(sent.AddUpdate(update), L"the update should fit");
 
-        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        char datagram[MaxDatagramSize];
         const int length = sent.Serialise(datagram, static_cast<int>(sizeof(datagram)));
 
         Assert::AreEqual(12 + 21, length);
@@ -369,10 +432,10 @@ namespace NeuronCoreTests
 
         NetworkUpdate first = MakeSelectUnit(1, 11);
         NetworkUpdate second = MakeSelectUnit(2, 22);
-        sent.AddUpdate(first);
-        sent.AddUpdate(second);
+        Assert::IsTrue(sent.AddUpdate(first), L"the update should fit");
+        Assert::IsTrue(sent.AddUpdate(second), L"the update should fit");
 
-        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        char datagram[MaxDatagramSize];
         const int length = sent.Serialise(datagram, static_cast<int>(sizeof(datagram)));
         Assert::AreEqual(12 + 21 + 21, length);
 

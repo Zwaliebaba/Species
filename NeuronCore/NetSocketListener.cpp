@@ -7,6 +7,7 @@
 #include "NetSocketListener.h"
 #include "NetThread.h"
 #include "NetUdpPacket.h"
+#include "ProtocolLimits.h"
 
 
 NetSocketListener::NetSocketListener(unsigned short port)
@@ -79,13 +80,13 @@ NetRetCode NetSocketListener::StartListening(NetCallBack functionPointer)
   }
 
   int datasize = 0;
-  char buf[MAX_PACKET_SIZE];
+  char buf[MaxDatagramSize];
   NetSocketLenType cliLen = sizeof(clientaddr);
 
   while (m_listening)
   {
-    memset(buf, 0, MAX_PACKET_SIZE * sizeof(char));
-    datasize = recvfrom(m_sockfd, buf, MAX_PACKET_SIZE, 0, (struct sockaddr*)&clientaddr, &cliLen);
+    memset(buf, 0, MaxDatagramSize * sizeof(char));
+    datasize = recvfrom(m_sockfd, buf, MaxDatagramSize, 0, (struct sockaddr*)&clientaddr, &cliLen);
 
     // StopListening shuts the socket down to break us out of the recvfrom
     // above, so test before doing anything with what it returned.
@@ -93,7 +94,7 @@ NetRetCode NetSocketListener::StartListening(NetCallBack functionPointer)
       break;
 
     // A failed receive leaves datasize at -1, which used to go straight into
-    // the packet, where MIN(-1, MAX_PACKET_SIZE) picked -1 and turned the
+    // the packet, where MIN(-1, MaxDatagramSize) picked -1 and turned the
     // memcpy into one of SIZE_MAX bytes. Neither an oversized datagram nor
     // the stale ICMP unreachable Windows reports on a bound UDP socket is a
     // reason to stop listening, so those two just cost us the packet.

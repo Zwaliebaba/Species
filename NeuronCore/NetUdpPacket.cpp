@@ -13,7 +13,7 @@ NetUdpPacket::NetUdpPacket(int sockfd, NetIpAddress *clientAddress, char *buf, i
   // MIN is signed, so a negative length passes straight through and becomes an
   // enormous size_t at the memcpy. Callers are not supposed to hand us one,
   // but the cost of surviving it is a comparison.
-  m_length = MIN(len, MAX_PACKET_SIZE);
+  m_length = MIN(len, MaxDatagramSize);
   if (m_length < 0)
     m_length = 0;
 

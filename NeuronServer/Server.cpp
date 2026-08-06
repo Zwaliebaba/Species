@@ -299,7 +299,7 @@ namespace Neuron
         // The buffer is this loop's, not the letter's: serialising used to
         // write into one file-scope array shared by every letter in the
         // process.
-        char datagram[SERVERTOCLIENTLETTER_BYTESTREAMSIZE];
+        char datagram[MaxDatagramSize];
         const int linearSize = letter->Serialise(datagram, static_cast<int>(sizeof(datagram)));
         if (linearSize > 0)
         {
@@ -317,6 +317,19 @@ namespace Neuron
     {
       //        SET_PROFILE(m_profiler,  "#Server Send", (double) bytesSentThisFrame );
     }
+  }
+
+  void FillLetter(ServerToClientLetter& _letter, std::vector<NetworkUpdate>& _pending)
+  {
+    size_t taken = 0;
+    while (taken < _pending.size() && _letter.AddUpdate(_pending[taken]))
+      ++taken;
+
+    // The first refusal ends it. Skipping the one that did not fit and
+    // continuing with the next — which is what "add everything that fits"
+    // would mean — would reorder what the clients apply, and every client
+    // advances its own copy of the world from that order.
+    _pending.erase(_pending.begin(), _pending.begin() + static_cast<std::ptrdiff_t>(taken));
   }
 
   void Server::Advance()
@@ -390,11 +403,12 @@ namespace Neuron
         }
       }
       else if (incoming->m_teamId != 255)
-        // A copy, not a move: AddUpdate copies the update into the letter's own
-        // vector, so ownership of `incoming` stays here. The reassignment at the
-        // bottom of this loop frees it, which is what `delete incoming` used to
-        // do.
-        letter->AddUpdate(*incoming);
+        // Queued rather than added to the letter here. Whether it fits is a
+        // question about the whole tick, and answering it one update at a time
+        // inside this loop is what made an over-full letter possible: the
+        // updates that did not fit have to go to the NEXT letter, in order,
+        // which cannot be decided until the loop has finished.
+        m_pendingUpdates.push_back(*incoming);
 
       int clientId = GetClientId(incoming->m_clientIp);
       if (clientId != -1)
@@ -407,6 +421,7 @@ namespace Neuron
       incoming = GetNextLetter();
     }
 
+    FillLetter(*letter, m_pendingUpdates);
     SendLetter(std::move(letter));
 
     //
