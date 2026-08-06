@@ -1,0 +1,427 @@
+# Schema: docs/TASK_DAG.md    Validate: python3 tools/check_task_dag.py
+
+plan: network-transport
+title: Session-grade UDP - bounded wire reads, one polled socket, real identity, liveness
+summary: >
+  The Winsock2/UDP layer is Darwinia's NetLib essentially unchanged - correct in
+  shape (sequence-numbered letters, server-side history retransmission) and
+  carrying defects at every level. Found by reading the whole layer on
+  2026-08-06, each with a file anchor:
+
+  Wire safety: a letter over 512 bytes is sent (send buffer is 1024,
+  ServerToClientLetter.h:8) and dropped at the receiver (recv buffer is 512,
+  NetLib.h:36; WSAEMSGSIZE discarded at NetSocketListener.cpp:100-104), and
+  because the client then can never ack that sequence id, the server
+  retransmits the same oversized letter forever - a permanent stall.
+  Deserialisation trusts the datagram: ServerToClientLetter(char*,int) reads
+  numUpdates from the wire and parses past the end of the buffer
+  (ServerToClientLetter.cpp:76-84; the length parameter is never consulted).
+  Every Update letter leaks: m_updates is a vector of raw owning pointers and
+  the class has no destructor.
+
+  Transport: NetSocket carries TCP-inherited dead code - a connect retry loop
+  meaningless for UDP (NetSocket.cpp:135-164), a select-plus-partial-send loop
+  that cannot happen for datagrams (NetSocket.cpp:170-243), a Flush() that
+  hands a SOCKET to _fdopen and has zero callers, and select timeout math off
+  by 10x (divisor 100000, NetSocket.cpp:182). Both endpoints run blocking
+  listener threads that are never joined; ~ClientToServer opens with an
+  unsynchronised spin-wait (ClientToServer.cpp:89) and then destroys the
+  listener the thread is still executing inside. Both inboxes are only DRAINED
+  at tick cadence, so the threads buy zero latency - polling the socket from
+  Advance() deletes the threads, both mutexes, and every cross-thread hazard.
+
+  Identity: clients are keyed by source-IP string and replied to on fixed port
+  4001, so one client per host, no NAT - and remote play is broken outright
+  today, because ProcessServerLetters decides "is this TeamAssign mine?" by
+  comparing against GetOurIP_Int(), which is hard-stubbed to 127.0.0.1
+  (Species/Main.cpp:188, ClientToServer.cpp:147). Identity must stop being an
+  address: the server assigns a connection id and replies to the datagram's
+  source address.
+
+  Liveness: none. The server never times out a silent client (RemoveClient
+  fires only on graceful ClientLeave), so a crashed client is retransmitted-to
+  forever while m_history grows without bound. The two lockstep tripwires -
+  sync mismatch (NeuronServer/Server.cpp:369) and team capacity
+  (Server.cpp:187) - are DEBUG_ASSERTs, so release builds desync silently.
+
+  Deliberate design calls, so nobody relitigates them mid-task: the transport
+  stays a SINGLE non-blocking socket polled from the tick - IOCP/RIO earn their
+  complexity at thousands of sockets and a UDP game server is one socket at any
+  client count; ITransport is the seam where a fancier implementation would
+  slot in later with zero protocol change. Single player STAYS real UDP over
+  loopback (recorded stance, NeuronServer/Server.h:55); the loopback transport
+  introduced here is a TEST seam, not a runtime shortcut. Payload encodings
+  stay byte-identical until T8 bumps the protocol version deliberately, in its
+  own commit, with the old-vs-new bytes visible in the pinning tests.
+
+  ORDERING vs THE OTHER TWO PLANS: no blocked_by edges - nothing here is
+  gated by them. But T9 touches Species/Main.cpp, which input-native-events
+  (T2, T8) and sound-xaudio2 (T8) also name. Do not run those tasks
+  concurrently with T9; grep the other plans' files lists before starting.
+  Recommended overall order across the three plans: input dead-code first,
+  sound second, this plan third - it has the largest blast radius and, thanks
+  to T7's loopback seam, the strongest CI safety net once it lands.
+
+tasks:
+  - id: T1
+    title: Replace the ByteStream macros with a bounded reader and writer
+    intent: >
+      Any datagram can currently crash either endpoint, because reads are
+      cast-and-advance macros with no notion of where the buffer ends. A small
+      span-style reader/writer with explicit bounds makes truncation and hostile
+      counts return an invalid letter instead of reading out of bounds - and the
+      existing pinning tests prove the emitted bytes do not change.
+    project: NeuronCore
+    depends_on: []
+    files:
+      - NeuronCore/ByteStream.h
+      - NeuronCore/NetworkUpdate.h
+      - NeuronCore/NetworkUpdate.cpp
+      - NeuronCore/ServerToClientLetter.h
+      - NeuronCore/ServerToClientLetter.cpp
+      - Tests/NeuronCoreTests/NetworkUpdateTests.cpp
+      - Tests/NeuronCoreTests/ServerToClientLetterTests.cpp
+    acceptance:
+      - The READ_/WRITE_ macro family is gone from ByteStream.h and has zero users tree-wide (90 uses across NetworkUpdate.cpp and ServerToClientLetter.cpp today; READ_WORLDOBJECTID already has none)
+      - Reads are bounds-checked against the real buffer length; the length parameter of ServerToClientLetter(char*, int) is finally consulted
+      - Existing round-trip and pinned-value tests pass UNCHANGED - the bytes on the wire are identical
+      - New tests cover a truncated buffer, a numUpdates larger than the buffer can hold, and a negative numUpdates - each yields an empty or invalid letter, never a crash
+      - Unaligned access goes through memcpy, not pointer casts
+    verify:
+      - python3 tools/check_format.py
+      - python3 tools/check_hygiene.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T2
+    title: Give ServerToClientLetter value semantics and end the update leak
+    intent: >
+      m_updates is a vector of raw owning NetworkUpdate* with no destructor -
+      every Update letter the client receives and every history copy the server
+      makes leaks all its updates. NetworkUpdate is 88 trivially copyable bytes;
+      holding them by value deletes the leak, the new-plus-memcpy copy
+      constructor, and the "remember to update the copy constructor" comment in
+      one move.
+    project: NeuronCore
+    depends_on: [T1]
+    files:
+      - NeuronCore/ServerToClientLetter.h
+      - NeuronCore/ServerToClientLetter.cpp
+      - NeuronServer/Server.cpp
+      - Species/ServerUpdates.cpp
+      - Tests/NeuronCoreTests/ServerToClientLetterTests.cpp
+    acceptance:
+      - m_updates is std::vector of NetworkUpdate by value; AddUpdate takes a const reference and copies no bytes by hand
+      - The hand-written copy constructor and its memcpy are gone; the deep-copy test now asserts value copies instead of distinct pointers
+      - grep "new NetworkUpdate" returns nothing outside tests
+      - The static s_byteStream in ServerToClientLetter.cpp is replaced by a caller-owned or member buffer
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T3
+    title: One datagram size, enforced at both ends, with per-letter spillover
+    intent: >
+      The 512-versus-1024 mismatch is the permanent-stall bug. One
+      MaxDatagramSize constant in ProtocolLimits.h, used by the send path, the
+      receive buffer, and a serialisation-time cap that spills excess updates
+      into the next tick's letter, makes the failure impossible rather than
+      merely unlikely.
+    project: NeuronCore
+    depends_on: [T2]
+    files:
+      - NeuronCore/ProtocolLimits.h
+      - NeuronCore/NetLib.h
+      - NeuronCore/NetSocketListener.cpp
+      - NeuronCore/ServerToClientLetter.h
+      - NeuronCore/ServerToClientLetter.cpp
+      - NeuronServer/Server.cpp
+      - Tests/NeuronCoreTests/ServerToClientLetterTests.cpp
+      - Tests/NeuronServerTests/ServerTests.cpp
+    acceptance:
+      - ProtocolLimits.h defines the single maximum datagram size; MAX_PACKET_SIZE (512) and SERVERTOCLIENTLETTER_BYTESTREAMSIZE (1024) no longer disagree
+      - A letter that would serialise past the limit stops accepting updates at runtime, in release builds too - not a DEBUG_ASSERT
+      - Server::Advance carries updates that did not fit into the next tick's letter instead of dropping or overflowing
+      - A test fills a letter past the cap and shows the remainder arriving in the following letter
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T4
+    title: Introduce UdpSocket and poll it from the server tick
+    intent: >
+      One non-blocking socket class - Open, SendTo, TryReceive - replaces the
+      NetSocket/NetSocketListener split on the server. Server::Advance drains
+      the socket at tick start, which deletes the listener thread, the inbox
+      mutex and the file-scope callback plumbing, with no observable timing
+      change because the inbox was only ever read at tick time anyway.
+    project: NeuronServer
+    depends_on: [T3]
+    files:
+      - NeuronCore/UdpSocket.h
+      - NeuronCore/UdpSocket.cpp
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - NeuronServer/Server.h
+      - NeuronServer/Server.cpp
+      - NeuronServer/ServerToClient.h
+      - NeuronServer/ServerToClient.cpp
+      - Tests/NeuronServerTests/ServerTests.cpp
+    acceptance:
+      - Server owns one UdpSocket bound to the server port; Advance drains it non-blocking before compiling the tick's letter
+      - The server listener thread, ListenThread, ListenCallback and the inbox NetMutex are gone from NeuronServer
+      - Sends still target each client's address on port 4001 - identity does not change in this task
+      - Server.exe --ticks 20 still advances the sequence id (CI runs it on every push)
+      - Errors are reported through std::system_category, not bare WSAGetLastError ints
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T5
+    title: Poll the client socket from the frame loop and fix shutdown
+    intent: >
+      Same conversion for ClientToServer - and with the listen thread gone, the
+      destructor's unsynchronised spin-wait on m_outbox, the use-after-free on
+      the listener object, and the listen-thread call into g_inputManager
+      (ClientToServer.cpp:233) all cease to exist rather than being patched.
+    project: NeuronClient
+    depends_on: [T4]
+    files:
+      - NeuronClient/ClientToServer.h
+      - NeuronClient/ClientToServer.cpp
+    acceptance:
+      - ClientToServer owns a UdpSocket bound to 4001 and drains it at the top of Advance; no thread, no mutexes
+      - The destructor sends what the outbox holds and closes - the "while (!m_outbox.empty()) {}" spin-wait is gone
+      - m_startTime is a plain member again, with the unsynchronised-access comment deleted because both accesses are now the main thread
+      - The debug packet-drop hook runs on the main thread
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T6
+    title: Delete the legacy transport files
+    intent: >
+      NetSocket, NetSocketListener, NetUdpPacket, the thread and mutex wrappers
+      and the Win32 macro sheet exist only to serve code T4 and T5 removed.
+      Deleting them removes the _fdopen-on-a-SOCKET Flush, the dead connect
+      retry loop, the broken timeout math and the global MIN macro in one
+      commit.
+    project: NeuronCore
+    depends_on: [T5]
+    files:
+      - NeuronCore/NetSocket.h
+      - NeuronCore/NetSocket.cpp
+      - NeuronCore/NetSocketListener.h
+      - NeuronCore/NetSocketListener.cpp
+      - NeuronCore/NetUdpPacket.h
+      - NeuronCore/NetUdpPacket.cpp
+      - NeuronCore/NetThread.h
+      - NeuronCore/NetThreadWin32.cpp
+      - NeuronCore/NetMutex.h
+      - NeuronCore/NetMutexWin32.cpp
+      - NeuronCore/NetLibWin32.h
+      - NeuronCore/NetLibWin32.cpp
+      - NeuronCore/NetLib.h
+      - NeuronCore/NetLib.cpp
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+    acceptance:
+      - The ten legacy transport files are gone from disk and from the vcxproj; NetLib keeps only WSAStartup/WSACleanup and NetDebugOut
+      - grep for NetSocketListener, NetUdpPacket, NetStartThread, NetMutex, NetGetHostByName and _fdopen returns nothing
+      - The MIN macro no longer exists in any header
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T7
+    title: Put ITransport behind the endpoints and test the protocol end to end
+    intent: >
+      The protocol has never once been exercised by CI - the tests cover
+      encodings, not conversations. A two-method transport interface with a
+      loopback implementation lets NeuronServerTests drive a scripted fake
+      client through join, hello, team assignment, sequenced updates, acks and
+      the retransmission window. This seam is what makes every task after this
+      one verifiable by CI instead of by hope.
+    project: NeuronCore
+    depends_on: [T6]
+    files:
+      - NeuronCore/Transport.h
+      - NeuronCore/LoopbackTransport.h
+      - NeuronCore/LoopbackTransport.cpp
+      - NeuronCore/UdpSocket.h
+      - NeuronCore/UdpSocket.cpp
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - NeuronServer/Server.h
+      - NeuronServer/Server.cpp
+      - NeuronClient/ClientToServer.h
+      - NeuronClient/ClientToServer.cpp
+      - Tests/NeuronServerTests/ServerProtocolTests.cpp
+      - Tests/NeuronServerTests/NeuronServerTests.vcxproj
+      - Tests/NeuronServerTests/NeuronServerTests.vcxproj.filters
+    acceptance:
+      - Server and ClientToServer send and receive through ITransport; the game injects UdpTransport, so runtime behaviour is unchanged and single player still runs real loopback UDP
+      - ServerProtocolTests drives a scripted client over LoopbackTransport - join produces HelloClient, RequestTeam produces TeamAssign, updates come back sequenced, an unacked letter is retransmitted, an acked one is not
+      - The new test file is in the vcxproj (check_project_files is the guard) and runs in CI
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T8
+    title: Frame every datagram - magic, version, kind - and bump to protocol v2
+    intent: >
+      Today the first byte of a random datagram is interpreted as a message
+      type. A four-byte header (magic, version, kind) lets both ends drop
+      foreign or stale traffic on the floor, and gives the identity change in
+      T9 a version to ride on. This is the deliberate compatibility break;
+      there are zero deployed builds to protect, and there will never be a
+      cheaper moment.
+    project: NeuronCore
+    depends_on: [T7]
+    files:
+      - NeuronCore/ProtocolLimits.h
+      - NeuronCore/NetworkUpdate.cpp
+      - NeuronCore/ServerToClientLetter.cpp
+      - NeuronClient/ClientToServer.cpp
+      - NeuronServer/Server.cpp
+      - Tests/NeuronCoreTests/NetworkUpdateTests.cpp
+      - Tests/NeuronCoreTests/ServerToClientLetterTests.cpp
+      - Tests/NeuronServerTests/ServerProtocolTests.cpp
+    acceptance:
+      - Every datagram begins with the magic, a version byte (2), and a kind byte; receivers silently drop anything that does not match, and a test proves it
+      - The pinned-bytes tests are updated in the same commit, so the review shows the old and new layouts side by side
+      - The commit message states plainly that v2 does not interoperate with v1
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T9
+    title: Server-assigned connection ids and reply-to-source addressing
+    intent: >
+      Identity stops being an IP string and a fixed reply port. The server keys
+      clients by the (address, port) each datagram arrives from, assigns a
+      connection id in HelloClient, and addresses TeamAssign by that id -
+      which fixes remote team assignment (broken today via the stubbed
+      GetOurIP_Int), allows any number of clients per host, removes the
+      client's second socket and port 4001, and works through ordinary NAT.
+    project: NeuronServer
+    depends_on: [T8]
+    files:
+      - NeuronCore/ServerToClientLetter.h
+      - NeuronCore/ServerToClientLetter.cpp
+      - NeuronServer/Server.h
+      - NeuronServer/Server.cpp
+      - NeuronServer/ServerToClient.h
+      - NeuronServer/ServerToClient.cpp
+      - NeuronClient/ClientToServer.h
+      - NeuronClient/ClientToServer.cpp
+      - Species/Main.cpp
+      - Tests/NeuronCoreTests/ServerToClientLetterTests.cpp
+      - Tests/NeuronServerTests/ServerProtocolTests.cpp
+    acceptance:
+      - The server replies to the source address of the datagram; ServerToClient holds an endpoint and a connection id, not a socket and an IP string
+      - HelloClient carries the assigned connection id; the client stores it and ProcessServerLetters matches TeamAssign by id - the m_ip field and GetOurIP_Int (with its notes-by-John block) are deleted
+      - The client no longer binds port 4001; the constant exists nowhere outside tasks/Archive
+      - ServerProtocolTests joins TWO scripted clients from the same address on different ports and both receive their own TeamAssign
+    verify:
+      - python3 tools/check_format.py
+      - python3 tools/check_layering.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+    notes: >
+      Collides with input-native-events T2/T8 and sound-xaudio2 T8 over
+      Species/Main.cpp - do not run concurrently with them.
+
+  - id: T10
+    title: Liveness, history pruning, and runtime lockstep guards
+    intent: >
+      A server that never forgets a dead client and never prunes history cannot
+      run longer than its memory, and a desync that only trips a DEBUG_ASSERT
+      is a desync release builds play through silently. Timeouts, pruning below
+      the minimum acked sequence id, and runtime responses turn all three into
+      observable, bounded behaviour.
+    project: NeuronServer
+    depends_on: [T9]
+    files:
+      - NeuronCore/ProtocolLimits.h
+      - NeuronServer/Server.h
+      - NeuronServer/Server.cpp
+      - NeuronServer/ServerToClient.h
+      - NeuronClient/ClientToServer.h
+      - NeuronClient/ClientToServer.cpp
+      - Tests/NeuronServerTests/ServerProtocolTests.cpp
+    acceptance:
+      - A client silent for the timeout (default ten times IAMALIVE_PERIOD, named in ProtocolLimits.h) is removed with a GoodbyeClient; a test proves it
+      - m_history is pruned below the minimum acked sequence id across live clients; a test shows history size bounded over a long scripted run
+      - A sync-value mismatch logs the sequence id and disconnects the offending client at runtime; the team-capacity check refuses at runtime; neither is a DEBUG_ASSERT any more
+      - The client exposes a server-silent-for-too-long state instead of simulating forward on an empty inbox indefinitely
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T11
+    title: Closing sweep - greps at zero, constants named, checks green
+    intent: >
+      The plan is not finished while a legacy name or magic number survives.
+      Every grep here was run the day this node was written, with the baseline
+      recorded, per docs/TASK_DAG.md.
+    depends_on: [T10]
+    files:
+      - NeuronCore/ProtocolLimits.h
+    acceptance:
+      - grep for READ_INT and WRITE_INT over *.h and *.cpp returns nothing (baseline 2026-08-06 - 90 uses in 2 files)
+      - grep for NetSocketListener, NetUdpPacket, NetStartThread and NetMutex returns nothing outside tasks/Archive (baseline - 5 implementation files plus users)
+      - grep for 4001 over *.cpp and *.h returns nothing (baseline - 3 source files)
+      - Both ports, the timeout, and the datagram size are named constants in ProtocolLimits.h and nowhere else
+      - All seven tools/ checks pass, the x64 Debug build is green, and the full test suite passes
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+      - python3 tools/check_task_dag.py
+      - python3 tools/check_containers.py
+      - python3 tools/check_math_types.py
+      - python3 tools/check_format.py
+      - python3 tools/check_hygiene.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T12
+    title: Owner-run Garden smoke test on the v2 transport
+    intent: >
+      Single player runs the whole join, assign, update, sync conversation over
+      real loopback UDP, so the Garden run exercises the new transport end to
+      end in a way CI cannot. Step 7 - the sync assert staying quiet - is the
+      one that vouches for the lockstep path.
+    depends_on: [T11]
+    acceptance:
+      - Owner-reported Garden run, all seven steps, on a build containing T1-T11
+      - Step 7 explicitly confirmed - GenerateSyncValue trips nothing in a full session including entering and leaving the location
+      - The result is recorded in AGENTS.md "What working looks like", per that file's standing instruction
+    parallel_safe: false
+    status: todo
+    notes: >
+      Nothing in this plan changes what the simulation computes - letters carry
+      the same payloads in the same order - so a desync here means a transport
+      bug, not an accepted cost. That is the difference from determinism/T6.

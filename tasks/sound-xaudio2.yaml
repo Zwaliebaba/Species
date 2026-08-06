@@ -1,0 +1,351 @@
+# Schema: docs/TASK_DAG.md    Validate: python3 tools/check_task_dag.py
+
+plan: sound-xaudio2
+title: One native XAudio2 backend - X3DAudio positioning, XAPO effects, both legacy paths deleted
+summary: >
+  Three audio paths are compiled in today and two of them are legacy shims: the
+  default 1270-line DirectSound backend (DirectSound has been a software
+  emulation over WASAPI since Vista - its hardware-3D caps path reports zero
+  buffers on every modern machine), a 553-line software mixer, and a WinMM
+  waveOut output layer that is created EVEN WHEN DirectSound is active
+  (SoundSystem.cpp:283 constructs SoundLibrary2d before choosing a backend), so
+  the default configuration opens two audio devices and pumps one of them with
+  silence. Latency rides a 20000-sample (~0.9s at 22kHz) cursor-chased ring.
+  SetListenerPosition and CommitChanges QueryInterface the 3D listener on every
+  call and never Release it (SoundLibrary3dDSound.cpp:671-696); every HRESULT
+  is a fatal assert, so a busy or vanishing audio device kills the game.
+
+  The owner directed the target on 2026-08-06: one native XAudio2 backend with
+  X3DAudio positioning and the DSP filters carried by XAudio2's effect
+  machinery, DirectSound AND the software mixer AND waveOut deleted. XAudio2.9
+  ships in Windows 10+ and is first-class on ARM64, the primary dev platform.
+
+  The upper layers do not move: SoundSystem's channel allocation and priority
+  stealing, SoundInstance's ADSR and parameters, SampleCache, the blueprints
+  and Sounds.txt all sit above the SoundLibrary3d seam, which is already in
+  the right place. The pull-callback contract survives - the backend fills
+  fixed blocks through the existing m_mainCallback/m_musicCallback from the
+  main thread by polling BuffersQueued, so no new threading is introduced.
+
+  Effect inventory measured from GameData (2026-08-06): Sounds.txt uses Echo
+  x13 and Gargle x1 (portable filters in SoundFilter.cpp), and DSound_Echo x6,
+  DSound_I3DL2Reverb x1, DSound_WavesReverb x1 (DirectX8 DMO effects). The
+  mapping: ResonantLowPass becomes the built-in per-voice biquad
+  (XAUDIO2_VOICE_USEFILTER - no effect object at all); Echo becomes FXECHO
+  (parameters match DspEcho one for one); the I3DL2 reverb converts losslessly
+  via ReverbConvertI3DL2ToNative; Gargle and BitCrusher run verbatim inside
+  one generic XAPO adapter hosting the existing DspEffect classes. The
+  frequency data peaks at 2.17x (measured), so voices are created with
+  MaxFrequencyRatio 4.0 - the default is 2.0 and would clamp.
+
+  BUILD TOPOLOGY NOTE, per AGENTS.md "ask before changing build topology": T1
+  adds xaudio2.lib to the link lines of Species and both test projects that
+  link NeuronClient, and T7 removes dsound.lib and dxguid.lib. This was
+  authorised by the owner's direction of 2026-08-06 (this plan's brief); it is
+  recorded here rather than re-asked per task.
+
+  DETERMINISM NOTE: sound consumes only the cosmetic LCG stream (established
+  by determinism T3/T4 - do not reopen). Nothing in this plan touches
+  Location::Advance or the synchronised stream, so no task here is gated on a
+  desync argument; the two owner gates exist because NOTHING in CI can hear.
+
+  ORDERING vs THE OTHER PLANS: no blocked_by edges. T8 touches
+  Species/Main.cpp, which input-native-events T2/T8 and network-transport T9
+  also name - do not run those concurrently.
+
+tasks:
+  - id: T1
+    title: Build the XAudio2 backend skeleton behind an opt-in preference
+    intent: >
+      A working SoundLibraryXAudio2 - engine, mastering voice, per-channel mono
+      source voices, music voice, streaming and volume - selectable with
+      SoundLibrary=xaudio2 while dsound stays the default, so the new backend
+      can be A/B'd against the old one on the same build before anything is
+      deleted.
+    project: NeuronClient
+    depends_on: []
+    files:
+      - NeuronClient/SoundLibraryXAudio2.h
+      - NeuronClient/SoundLibraryXAudio2.cpp
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
+      - NeuronClient/SoundSystem.cpp
+      - Species/Species.vcxproj
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj
+      - Tests/GameLogicTests/GameLogicTests.vcxproj
+    acceptance:
+      - Setting the SoundLibrary preference to xaudio2 selects the new backend; dsound remains the default in this task
+      - Each channel is a mono source voice; refill happens on the main thread when GetState().BuffersQueued drops below the block count, through the EXISTING m_mainCallback/m_musicCallback - no new threads, no XAudio2 callbacks required
+      - Channel restart goes through FlushSourceBuffers plus SetSourceSampleRate to the sample's native rate; SetChannelFrequency maps to SetFrequencyRatio; voices are created with MaxFrequencyRatio 4.0 (blueprint data peaks at 2.17)
+      - Volume converts the existing hundredths-of-a-decibel master value to amplitude once; no per-backend duplicate curve
+      - A failed device or engine creation yields a silent, playable game - not an assert; there is no SOUNDASSERT equivalent in the new file
+      - xaudio2.lib is on the three link lines; dsound.lib stays until T7
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - python3 tools/check_hygiene.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T2
+    title: Position voices with X3DAudio, including doppler
+    intent: >
+      Replaces DS3D. X3DAudioCalculate produces the mono-to-stereo output
+      matrix and a doppler factor per positioned channel from exactly the data
+      the game already sends - listener from SetListenerPosition, emitter from
+      SetChannelPosition, min distance as the curve scaler - so no caller above
+      the backend changes.
+    project: NeuronClient
+    depends_on: [T1]
+    files:
+      - NeuronClient/SoundLibraryXAudio2.h
+      - NeuronClient/SoundLibraryXAudio2.cpp
+    acceptance:
+      - Mode3dPositioned channels get SetOutputMatrix from X3DAudioCalculate at the SoundSystem tick cadence; ModeMono and head-relative channels get an identity matrix and skip the calculation
+      - DopplerScaler is 0.1, matching the DirectSound SetDopplerFactor call it replaces, and the doppler term multiplies into the frequency ratio alongside the game's pitch parameter
+      - CurveDistanceScaler comes from SetChannelMinDistance, reproducing the inverse-distance attenuation the game was tuned against
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T3
+    title: Carry the DSP effects on XAudio2 - built-in filter, stock XAPOs, one adapter
+    intent: >
+      Every effect the data uses gets a native home. ResonantLowPass costs
+      nothing (the per-voice biquad); Echo maps parameter-for-parameter onto
+      FXECHO; the I3DL2 reverb converts losslessly; Gargle and BitCrusher keep
+      their exact sound by running the existing DspEffect code inside one
+      generic XAPO adapter. Enable/Update/DisableDspFX keep their signatures.
+    project: NeuronClient
+    # T2 in the edge is file-collision serialisation over SoundLibraryXAudio2,
+    # not a logical dependency; the real prerequisite is T1.
+    depends_on: [T1, T2]
+    files:
+      - NeuronClient/SoundLibraryXAudio2.h
+      - NeuronClient/SoundLibraryXAudio2.cpp
+      - NeuronClient/DspEffectXapo.h
+      - NeuronClient/DspEffectXapo.cpp
+      - NeuronClient/SoundFilter.h
+      - NeuronClient/SoundFilter.cpp
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
+    acceptance:
+      - DSP_RESONANTLOWPASS uses the built-in voice filter (XAUDIO2_VOICE_USEFILTER at creation, SetFilterParameters on update) - no effect object
+      - DSP_ECHO and the DSound_Echo data entries drive one echo implementation (FXECHO or the adapter hosting DspEcho - decided in-task and recorded in notes)
+      - The two reverb data entries drive XAUDIO2FX_REVERB, the I3DL2 one through ReverbConvertI3DL2ToNative
+      - DspGargle and DspBitCrusher run inside DspEffectXapo (CXAPOParametersBase) unmodified in behaviour
+      - Effect chains attach at the StartPlaying boundary while the voice is flushed - the same moment the DirectSound path stopped and restarted its buffer - and UpdateDspFX maps to SetEffectParameters/SetFilterParameters
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T4
+    title: Migrate Effects.txt and Sounds.txt off the DSound_ effect names
+    intent: >
+      The filter-blueprint slot index is positional against Effects.txt, so the
+      enum in SoundLibrary3d.h and the file must move together, in one commit.
+      Eight data usages (six DSound_Echo, one DSound_I3DL2Reverb, one
+      DSound_WavesReverb) remap onto the surviving set; the DirectX8-only rows
+      disappear.
+    project: GameData
+    depends_on: [T3]
+    files:
+      - GameData/Effects.txt
+      - GameData/Sounds.txt
+      - NeuronClient/SoundLibrary3d.h
+      - NeuronClient/SoundSystem.cpp
+    acceptance:
+      - Effects.txt no longer contains DSound_ rows; the FX enum and the file are still positionally aligned and LoadtimeVerify passes
+      - The 8 DSound_ usages in Sounds.txt are remapped (echoes to Echo, reverbs to the reverb effect); grep DSound_ over GameData returns nothing
+      - The sound editor still lists and edits the surviving effects
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T5
+    title: Owner A/B gate - Garden run on the XAudio2 backend
+    intent: >
+      CI cannot hear. Before the default flips or anything is deleted, the
+      owner runs the Garden on SoundLibrary=xaudio2 and compares against
+      dsound on the same build - that A/B is only possible while both backends
+      exist, which is why this gate sits here and not at the end.
+    depends_on: [T2, T3, T4]
+    acceptance:
+      - Owner-reported Garden run with SoundLibrary=xaudio2 - all seven steps pass
+      - Audio checklist reported alongside - effects audible and positioned (pan follows the camera), laser/echo events carry their effect, music plays and loops, the volume slider works
+      - Any audible difference from the dsound backend on the same build is recorded in notes as accepted or as a defect with an owning task
+    parallel_safe: false
+    status: todo
+
+  - id: T6
+    title: Make XAudio2 the default sound library
+    intent: >
+      After the gate, the default flips and the options window stops offering
+      a choice that no longer means anything. The dsound and software code
+      paths still exist for one more task so a regression found late can be
+      stepped back to without a revert war.
+    project: NeuronCore
+    depends_on: [T5]
+    files:
+      - NeuronCore/Preferences.cpp
+      - GameLogic/PrefsSoundWindow.cpp
+    acceptance:
+      - GetDefaultSoundLibrary returns xaudio2; a fresh preferences file gets the new default
+      - The sound options window shows the XAudio2 library (and no dsound entry)
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T7
+    title: Delete the DirectSound backend and everything that only served it
+    intent: >
+      1270 lines of cursor chasing, buffer-lost handling, COM leaks and dead
+      hardware-3D capability plumbing go, along with the HAVE_DSOUND define,
+      the SoundHW3D preference, and the dsound/dxguid link lines.
+    project: NeuronClient
+    depends_on: [T6]
+    files:
+      - NeuronClient/SoundLibrary3dDSound.h
+      - NeuronClient/SoundLibrary3dDSound.cpp
+      - NeuronClient/SoundLibrary3d.h
+      - NeuronClient/SoundLibrary3d.cpp
+      - NeuronClient/SoundSystem.cpp
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
+      - NeuronCore/NeuronCore.h
+      - NeuronCore/Preferences.cpp
+      - GameLogic/PrefsSoundWindow.cpp
+      - Species/Species.vcxproj
+      - Tests/NeuronClientTests/NeuronClientTests.vcxproj
+      - Tests/GameLogicTests/GameLogicTests.vcxproj
+    acceptance:
+      - SoundLibrary3dDSound files are gone from disk and vcxproj; HAVE_DSOUND is gone from NeuronCore.h and both ifdef sites
+      - The SoundHW3D preference, Hardware3DSupport, GetCPUOverhead-from-caps and m_hw3dDesired plumbing are gone from the SoundLibrary3d interface
+      - dsound.lib and dxguid.lib are off all three link lines
+      - grep for IDirectSound and DSOUND over *.h and *.cpp returns nothing (baseline 2026-08-06 - 9 files)
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T8
+    title: Delete the software mixer and the waveOut output layer
+    intent: >
+      With XAudio2 the only backend, the software mixer has no output device
+      and SoundLibrary2d has no caller. This also ends the two-devices-open
+      state - the unconditional waveOut creation and the per-frame TopupBuffer
+      pump in the main loop - and retires the SoundMixFreq preference, since
+      XAudio2 resamples to the device rate.
+    project: NeuronClient
+    # T7 in the edge is file-collision serialisation over SoundSystem.cpp, the
+    # NeuronClient vcxproj pair and PrefsSoundWindow.cpp; the real
+    # prerequisite is T6.
+    depends_on: [T6, T7]
+    files:
+      - NeuronClient/SoundLibrary3dSoftware.h
+      - NeuronClient/SoundLibrary3dSoftware.cpp
+      - NeuronClient/SoundLibrary2d.h
+      - NeuronClient/SoundLibrary2d.cpp
+      - NeuronClient/SoundSystem.cpp
+      - NeuronClient/SystemInfo.cpp
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
+      - Species/Main.cpp
+      - GameLogic/PrefsSoundWindow.cpp
+      - NeuronCore/Preferences.cpp
+    acceptance:
+      - SoundLibrary3dSoftware and SoundLibrary2d are gone from disk and vcxproj; RestartSoundLibrary constructs exactly one backend
+      - The TopupBuffer call at Species/Main.cpp:584 and the Stop/delete block in Finalise are gone
+      - The SoundMixFreq preference and its options-window dropdown are retired
+      - grep for waveOut returns nothing; winmm.lib is dropped from the link lines if the SystemInfo device enumeration was its last user (audit in-task, record in notes)
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+    notes: >
+      Collides with input-native-events T2/T8 and network-transport T9 over
+      Species/Main.cpp - do not run concurrently with them.
+
+  - id: T9
+    title: Give music a stereo voice
+    intent: >
+      The music channel has been silently mono since Darwinia - the DirectSound
+      secondary buffer was created with one channel even though the decoder
+      reads stereo WAVs. A stereo music voice and an interleaved music callback
+      are the first audible improvement the new backend unlocks, and the
+      mono-only rule correctly remains enforced for positional effect samples.
+    project: NeuronClient
+    depends_on: [T7, T8]
+    files:
+      - NeuronClient/SoundLibraryXAudio2.h
+      - NeuronClient/SoundLibraryXAudio2.cpp
+      - NeuronClient/SoundLibrary3d.h
+      - NeuronClient/SoundSystem.h
+      - NeuronClient/SoundSystem.cpp
+    acceptance:
+      - The music voice is stereo; a stereo WAV plays with both channels distinct, a mono one plays centred
+      - The music callback carries interleaved frames with an explicit channel count; effect channels are unchanged
+      - LoadtimeVerify still rejects non-mono EFFECT samples (SoundSourceNotMono), and a note records that music files are exempt
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T10
+    title: Device-loss resilience and the last dead code
+    intent: >
+      An audio device unplugged mid-game must mean silence, then recovery on
+      restart of the library - never a crash. And the file-level archaeology
+      goes - the hundred commented lines of the legacy Advance, the dead
+      recording API, the waveOut device census in SystemInfo.
+    project: NeuronClient
+    # T9 in the edge is file-collision serialisation over SoundLibraryXAudio2
+    # and SoundSystem.cpp; the real prerequisites are T7 and T8.
+    depends_on: [T7, T8, T9]
+    files:
+      - NeuronClient/SoundLibraryXAudio2.h
+      - NeuronClient/SoundLibraryXAudio2.cpp
+      - NeuronClient/SoundLibrary3d.h
+      - NeuronClient/SoundSystem.cpp
+      - NeuronClient/SystemInfo.h
+      - NeuronClient/SystemInfo.cpp
+    acceptance:
+      - OnCriticalError parks the backend in a silent state without touching game logic; RestartSoundLibrary recovers when a device is available again
+      - No HRESULT anywhere in the backend is a fatal assert
+      - The commented-out legacy SoundSystem::Advance block and StartRecordToFile/EndRecordToFile are gone
+      - GetCPUOverhead is served by GetPerformanceData or the readout is deleted (decide in-task, record which)
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: todo
+
+  - id: T11
+    title: Owner final gate - Garden on the default configuration
+    intent: >
+      The first gate heard the new backend as an option; this one hears it as
+      the only path on a tree where the legacy code no longer exists to fall
+      back to. It is the run that lets the plan archive.
+    depends_on: [T9, T10]
+    acceptance:
+      - Owner-reported Garden run on a default (no preference overrides) build containing T1-T10 - all seven steps pass
+      - Audio checklist reported - positioned effects, echo events, stereo music, volume slider
+      - Unplugging or switching the audio device mid-run leaves the game running (silence is acceptable, a crash is not)
+      - The result is recorded in AGENTS.md "What working looks like"
+    parallel_safe: false
+    status: todo
