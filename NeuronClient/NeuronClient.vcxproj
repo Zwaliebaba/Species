@@ -79,6 +79,7 @@
     <ClCompile Include="SoundLibrary3d.cpp" />
     <ClCompile Include="SoundLibrary3dDSound.cpp" />
     <ClCompile Include="SoundLibrary3dSoftware.cpp" />
+    <ClCompile Include="SoundLibraryXAudio2.cpp" />
     <ClCompile Include="SoundParameter.cpp" />
     <ClCompile Include="SoundStreamDecoder.cpp" />
     <ClCompile Include="SphereRenderer.cpp" />
@@ -158,6 +159,7 @@
     <ClInclude Include="SoundLibrary3d.h" />
     <ClInclude Include="SoundLibrary3dDSound.h" />
     <ClInclude Include="SoundLibrary3dSoftware.h" />
+    <ClInclude Include="SoundLibraryXAudio2.h" />
     <ClInclude Include="SoundParameter.h" />
     <ClInclude Include="SoundStreamDecoder.h" />
     <ClInclude Include="SphereRenderer.h" />

@@ -21,6 +21,7 @@
 #include "SoundStreamDecoder.h"
 #include "SoundLibrary3dDSound.h"
 #include "SoundLibrary3dSoftware.h"
+#include "SoundLibraryXAudio2.h"
 
 #include "GameTime.h"
 
@@ -283,8 +284,14 @@ void SoundSystem::RestartSoundLibrary()
   g_soundLibrary2d = new SoundLibrary2d;
   g_soundLibrary3d = nullptr;
 
+  // The native backend, opt-in by preference until sound-xaudio2 T6 makes it the
+  // default. It does not use SoundLibrary2d at all — that object is still built
+  // above because the software mixer needs it, and sound-xaudio2 T8 removes both.
+  if (stricmp(libName, "xaudio2") == 0)
+    g_soundLibrary3d = new SoundLibraryXAudio2();
+
 #ifdef HAVE_DSOUND
-  if (stricmp(libName, "dsound") == 0)
+  if (!g_soundLibrary3d && stricmp(libName, "dsound") == 0)
     g_soundLibrary3d = new SoundLibrary3dDirectSound();
 #endif
   if (!g_soundLibrary3d)
