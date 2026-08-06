@@ -25,9 +25,10 @@
 
 namespace Neuron
 {
-  // Defined in the .cpp, so xaudio2.h stays out of every file that includes
-  // this header. Same shape as the DirectSoundData it replaces.
+  // Both defined in the .cpp, so xaudio2.h stays out of every file that
+  // includes this header. Same shape as the DirectSoundData it replaces.
   class XAudio2Data;
+  class XAudio2Voice;
 
   class SoundLibraryXAudio2 : public SoundLibrary3d
   {
@@ -37,8 +38,8 @@ namespace Neuron
       // Both return nullptr for a channel index this library does not have,
       // which is what makes every entry point below safe to call before
       // Initialise and after a failed device open.
-      class XAudio2Voice* GetVoice(int _channel);
-      class XAudio2Voice const* GetVoice(int _channel) const;
+      XAudio2Voice* GetVoice(int _channel);
+      XAudio2Voice const* GetVoice(int _channel) const;
 
       // Fills every block a voice is not currently playing, submitting each in
       // turn. With no device it consumes exactly one block per call so that

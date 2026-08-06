@@ -86,7 +86,48 @@ tasks:
       - python3 tools/check_hygiene.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: |
+      Landed 2026-08-06. CI green at 9abbf02, FIRST ROUND — static checks, the
+      x64 Debug build, the unit suite and the headless server tick. The build
+      and test verify commands were run by CI rather than locally, which is the
+      honest reading of "every verify command passes" for an agent on Linux;
+      nothing here has been HEARD by anyone, and cannot be until T5.
+
+      THE SDK QUESTION IS ANSWERED, and it was the one real unknown: xaudio2.h
+      resolves to the in-box XAudio 2.9 and xaudio2.lib links from the Windows
+      SDK with no DirectX SDK, no redistributable and no toolset change. The
+      build-topology change is therefore exactly the three AdditionalDependencies
+      lines and nothing else. X3DAudio in T2 needs no further lib — the Windows
+      SDK exports it from the same import library.
+
+      FOUND WHILE WRITING THIS, and deliberately not inherited: both legacy
+      backends read one element PAST THE END of SoundSystem::m_channels on every
+      audio tick. SoundSystem sizes that array from GetNumMainChannels(), which
+      is m_numChannels - 1, but DirectSound and the software mixer both pump
+      channels up to m_numChannels and hand the index straight to the main
+      callback, which subscripts the array with it. It is benign in practice —
+      the garbage SoundInstanceId fails a bounds-checked slot map lookup and the
+      channel writes silence — but it is real UB in the shipping default path.
+      This backend sizes its channel vector from GetNumMainChannels() so the
+      callback can only be given an index the array holds. The legacy files are
+      NOT fixed: T7 and T8 delete them, and a fix would have to be justified
+      against a smoke test that will never be run on code that is going away.
+
+      Still true after this task, both by design: the waveOut device is opened
+      even under xaudio2 because SoundLibrary2d is constructed unconditionally
+      (T8 removes it), and effects are no-ops with positioning recorded but not
+      applied (T3 and T2). So xaudio2 output today is centred and dry — the A/B
+      at T5 is not meaningful until those two land.
+
+      One deliberate deviation from the acceptance wording: SetSourceSampleRate
+      adopts the frequency the game last ASKED for at reset, not a rate the
+      backend reads off the sample, because SoundLibrary3d never sees the
+      sample — it is handed nativeFreq * pitchParam through SetChannelFrequency.
+      Adopting that value as the source rate and expressing every later call as
+      a ratio against it is the same arithmetic (sourceRate * ratio equals the
+      requested Hz either way) and keeps the ratio near 1.0, which is what makes
+      MaxFrequencyRatio 4.0 sufficient.
 
   - id: T2
     title: Position voices with X3DAudio, including doppler
