@@ -647,6 +647,31 @@ tasks:
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
     status: todo
+    notes: |
+      NOT THIS TASK'S WORK, but it lands in this task's territory and the sweep
+      needs to know. The owner deleted the 22 gamepad button BMPs under
+      GameData/Icons on 2026-08-06 (commit ca1a5c5), finishing what T2 started
+      when it removed the 18 gamepad glyph LINES from InputPreferences.txt.
+
+      VERIFIED SAFE before this note was written, because live code still names
+      those files: ControlHelp.cpp builds HelpIcons for them in
+      InitialiseIcons, and TaskManagerInterfaceIcons.cpp calls RenderIcon on
+      two of them. Neither loads anything. HelpIcon's constructor only stores
+      the filename strings; the GetTexture call is at ControlHelp.cpp:206, on a
+      render path that returns early unless getInputMode() is
+      INPUT_MODE_GAMEPAD, and both TaskManagerInterfaceIcons sites sit behind a
+      render360Controls flag with the same condition. No driver produces that
+      mode, so none of the loads is reachable.
+
+      WHAT IT CHANGES ABOUT T2'S DECISION, and this is the part worth reading.
+      T2 deliberately KEPT the twenty INPUT_MODE_GAMEPAD consumers, arguing
+      that they are the controller user interface and deleting them would turn
+      re-introducing a gamepad into a UI rewrite rather than a new driver. That
+      argument still holds for the CODE. It no longer holds for the ART: the
+      icons a re-introduced controller would render are gone from the tree and
+      would have to come back with it. Decide in this task whether the UI code
+      follows the art out, or whether the art is restored — do not leave the
+      two disagreeing.
 
   - id: T12
     title: Owner-run Garden smoke test on the event-driven input
