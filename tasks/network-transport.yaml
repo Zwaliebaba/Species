@@ -683,10 +683,11 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: in_progress
     notes: >
       Collides with input-native-events T2/T8 and sound-xaudio2 T8 over
-      Species/Main.cpp - do not run concurrently with them.
+      Species/Main.cpp - do not run concurrently with them. Both plans are
+      finished, so there is nothing to collide with today.
 
   - id: T10
     title: Liveness, history pruning, and runtime lockstep guards
