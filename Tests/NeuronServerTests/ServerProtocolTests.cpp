@@ -529,12 +529,43 @@ namespace NeuronServerTests
 
         Assert::AreEqual(0, server.m_clients.NumUsed(), L"and gone at it");
 
-        // And everyone is told, which is what GoodbyeClient is for.
-        bool sawGoodbye = false;
-        for (ServerToClientLetter const& letter : client.Collect())
-          sawGoodbye = sawGoodbye || letter.m_type == ServerToClientLetter::LetterType::GoodbyeClient;
+        // NOT asserted here: that the client is told. It is removed before the
+        // tick's broadcast, so it is not in the list of recipients — which is
+        // right, since it is the client that stopped answering. Who hears the
+        // GoodbyeClient is the NEXT test, and it took a red CI run to notice
+        // that a one-client session has nobody left to tell.
+      }
 
-        Assert::IsTrue(sawGoodbye, L"a timed-out client is announced like any other departure");
+      TEST_METHOD(TheOtherClientsAreToldWhenOneTimesOut)
+      {
+        // GoodbyeClient exists so the rest of the session learns that somebody
+        // left. A timed-out client is announced exactly like a graceful one.
+        Neuron::LoopbackNetwork network;
+        const Neuron::Endpoint serverAddress(0x0100007F, ServerPort);
+
+        Server server;
+        server.Initialise(s_profiler, std::make_unique<Neuron::LoopbackTransport>(network, serverAddress));
+
+        ScriptedClient talker(network, 45001);
+        ScriptedClient silent(network, 45002);
+
+        talker.SendJoin(serverAddress);
+        silent.SendJoin(serverAddress);
+        server.Advance();
+        talker.Collect();
+
+        bool sawGoodbye = false;
+        for (int tick = 0; tick < ClientTimeoutTicks + 2; ++tick)
+        {
+          talker.SendSelectUnit(serverAddress, server.m_sequenceId - 1, 1, tick);
+          server.Advance();
+
+          for (ServerToClientLetter const& letter : talker.Collect())
+            sawGoodbye = sawGoodbye || letter.m_type == ServerToClientLetter::LetterType::GoodbyeClient;
+        }
+
+        Assert::AreEqual(1, server.m_clients.NumUsed(), L"the one that kept talking is still here");
+        Assert::IsTrue(sawGoodbye, L"and was told about the one that did not");
       }
 
       TEST_METHOD(AClientThatKeepsTalkingIsNotDisconnected)

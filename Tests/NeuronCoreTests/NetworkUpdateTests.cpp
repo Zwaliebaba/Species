@@ -57,9 +57,11 @@ namespace NeuronCoreTests
       TEST_METHOD(TheHeaderIsATypeThenASequenceId)
       {
         // Every type shares this prefix, so two builds that disagree about it
-        // disagree about every packet.
+        // disagree about every packet. ClientLeave is used because it is the
+        // prefix and nothing else — ClientJoin gained a join token in
+        // network-transport T9 and is pinned by AJoinCarriesItsToken below.
         NetworkUpdate update;
-        update.SetType(NetworkUpdate::UpdateType::ClientJoin);
+        update.SetType(NetworkUpdate::UpdateType::ClientLeave);
         update.SetLastSequenceId(0x11223344);
 
         int length = 0;
@@ -69,9 +71,34 @@ namespace NeuronCoreTests
         const int type = reader.Read<int>();
         const int sequenceId = reader.Read<int>();
 
-        Assert::AreEqual(static_cast<int>(NetworkUpdate::UpdateType::ClientJoin), type);
+        Assert::AreEqual(static_cast<int>(NetworkUpdate::UpdateType::ClientLeave), type);
         Assert::AreEqual(0x11223344, sequenceId);
         Assert::AreEqual(8, length);
+      }
+
+      TEST_METHOD(AJoinCarriesItsToken)
+      {
+        // The only client-chosen value in the protocol, and the only field a
+        // join carries. The server echoes it in HelloClient so the joining
+        // client can pick its own welcome out of a stream every client
+        // receives — see ServerToClientLetter.h.
+        NetworkUpdate update;
+        update.SetType(NetworkUpdate::UpdateType::ClientJoin);
+        update.SetLastSequenceId(7);
+        update.SetJoinToken(0x0BADF00D);
+
+        int length = 0;
+        char* stream = update.GetByteStream(&length);
+        ByteReader reader(stream, length);
+
+        const int type = reader.Read<int>();
+        const int sequenceId = reader.Read<int>();
+        const int joinToken = reader.Read<int>();
+
+        Assert::AreEqual(static_cast<int>(NetworkUpdate::UpdateType::ClientJoin), type);
+        Assert::AreEqual(7, sequenceId);
+        Assert::AreEqual(0x0BADF00D, joinToken);
+        Assert::AreEqual(12, length, L"eight bytes of header and the token");
       }
 
       TEST_METHOD(SelectUnitCarriesTeamUnitEntityAndBuilding)
@@ -454,7 +481,7 @@ namespace NeuronCoreTests
         char datagram[MaxDatagramSize];
         const int length = update.SerialiseDatagram(datagram, static_cast<int>(sizeof(datagram)));
 
-        Assert::AreEqual(4 + 8, length);
+        Assert::AreEqual(4 + 12, length);
         Assert::AreEqual(static_cast<char>('S'), datagram[0]);
         Assert::AreEqual(static_cast<char>('P'), datagram[1]);
         Assert::AreEqual(static_cast<char>(2), datagram[2]);
@@ -464,7 +491,7 @@ namespace NeuronCoreTests
         // v2 adds a header and changes nothing else.
         int payloadSize = 0;
         char const* payload = update.GetByteStream(&payloadSize);
-        Assert::AreEqual(8, payloadSize);
+        Assert::AreEqual(12, payloadSize);
         Assert::AreEqual(0, memcmp(datagram + 4, payload, static_cast<size_t>(payloadSize)));
       }
 
