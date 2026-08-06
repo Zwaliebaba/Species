@@ -87,8 +87,9 @@ class ServerToClientLetter
     // sequence id.
     [[nodiscard]] bool IsValid() const { return m_type != LetterType::Invalid; }
 
-    // Writes the letter into _buffer as one datagram and returns how many bytes
-    // it used, or 0 if it did not fit.
+    // Writes the letter into _buffer as one datagram — the four-byte frame,
+    // then the payload — and returns how many bytes it used, or 0 if it did not
+    // fit.
     //
     // The buffer belongs to the caller. It used to be one file-scope
     // char[1024] shared by every letter in the process, so the bytes a letter

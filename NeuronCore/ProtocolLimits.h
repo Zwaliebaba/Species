@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ByteStream.h"
+
 // Constants both sides of the wire must agree on.
 //
 // These lived in Species/Globals.h beside the renderer's frame budget and the
@@ -41,3 +43,63 @@ inline constexpr int MaxDatagramSize = 1024;
 // the datagram actually came from.
 inline constexpr unsigned short ServerPort = 4000;
 inline constexpr unsigned short ClientPort = 4001;
+
+// ****************************************************************************
+//  THE DATAGRAM FRAME. Four bytes in front of everything that goes out.
+// ****************************************************************************
+//
+// Without it, the first four bytes of ANY datagram arriving on the port are
+// read as a message type. A stray packet, a port scan, a client from a
+// different build or a reply that outlived the session it belonged to all get
+// interpreted rather than dropped, and the bounded reader added in T1 is what
+// stops that being a crash rather than what stops it happening.
+//
+// PROTOCOL 2 DOES NOT INTEROPERATE WITH PROTOCOL 1. That is the point of doing
+// it now: there are no deployed builds to protect, and there will never be a
+// cheaper moment to spend the compatibility break.
+//
+// The kind byte says which direction the datagram is going. It costs nothing
+// and it means a server handed a server-to-client letter — which is what
+// happens the moment somebody points two servers at each other, or a client at
+// itself — drops it instead of parsing a letter type as an update type.
+
+inline constexpr unsigned char ProtocolMagic0 = 'S';
+inline constexpr unsigned char ProtocolMagic1 = 'P';
+inline constexpr unsigned char ProtocolVersion = 2;
+
+enum class DatagramKind : unsigned char
+{
+  Invalid = 0,
+  ClientUpdate = 1, // one NetworkUpdate, client to server
+  ServerLetter = 2  // one ServerToClientLetter, server to client
+};
+
+inline constexpr int DatagramHeaderSize = 4;
+
+inline void WriteDatagramHeader(Neuron::ByteWriter& _writer, DatagramKind _kind)
+{
+  _writer.Write<unsigned char>(ProtocolMagic0);
+  _writer.Write<unsigned char>(ProtocolMagic1);
+  _writer.Write<unsigned char>(ProtocolVersion);
+  _writer.Write<unsigned char>(static_cast<unsigned char>(_kind));
+}
+
+// Returns the kind the datagram claims to be, or Invalid for anything that is
+// not this protocol at this version. Silent by design: a receiver that logged
+// every foreign datagram would hand anyone who can reach the port a way to
+// fill a disk.
+[[nodiscard]] inline DatagramKind ReadDatagramHeader(Neuron::ByteReader& _reader)
+{
+  const unsigned char magic0 = _reader.Read<unsigned char>();
+  const unsigned char magic1 = _reader.Read<unsigned char>();
+  const unsigned char version = _reader.Read<unsigned char>();
+  const unsigned char kind = _reader.Read<unsigned char>();
+
+  if (!_reader.Ok() || magic0 != ProtocolMagic0 || magic1 != ProtocolMagic1 || version != ProtocolVersion)
+    return DatagramKind::Invalid;
+
+  if (kind != static_cast<unsigned char>(DatagramKind::ClientUpdate) && kind != static_cast<unsigned char>(DatagramKind::ServerLetter))
+    return DatagramKind::Invalid;
+
+  return static_cast<DatagramKind>(kind);
+}

@@ -117,9 +117,12 @@ namespace Neuron
       DEBUG_ASSERT(letter);
 
       {
-        int letterSize = 0;
-        char const* byteStream = letter->GetByteStream(&letterSize);
-        const std::error_code failure = m_transport->Send(m_serverEndpoint, byteStream, letterSize);
+        // The whole datagram, frame included. GetByteStream would give the
+        // payload alone, which is what a letter carries nested and NOT what a
+        // client sends.
+        char datagram[MaxDatagramSize];
+        const int letterSize = letter->SerialiseDatagram(datagram, static_cast<int>(sizeof(datagram)));
+        const std::error_code failure = letterSize > 0 ? m_transport->Send(m_serverEndpoint, datagram, letterSize) : std::error_code();
         if (!failure)
           bytesSentThisFrame += letterSize;
         // reset() rather than letting the scope end it: the old code deleted

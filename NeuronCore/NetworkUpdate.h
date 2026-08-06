@@ -72,10 +72,11 @@ class NetworkUpdate
 
   public:
     NetworkUpdate();
-    // _len is the number of bytes the datagram actually carries. An update that
-    // does not fit inside it comes back Invalid; nothing here trusts what the
-    // sender wrote about its own size.
-    NetworkUpdate(char const* _byteStream, int _len);
+    // From a whole DATAGRAM: the four-byte frame, then the payload. _len is the
+    // number of bytes the datagram actually carries, and an update that does
+    // not fit inside it — or that is not this protocol at this version, or is
+    // going the wrong way — comes back Invalid.
+    NetworkUpdate(char const* _datagram, int _len);
 
     void SetType(UpdateType _type);
     void SetClientIp(std::string_view ip);
@@ -108,7 +109,16 @@ class NetworkUpdate
     // unrecognised update; the reader's cursor is then not to be trusted, so a
     // caller reading a sequence of them stops at the first false.
     bool ReadByteStream(Neuron::ByteReader& _reader);
+
+    // The PAYLOAD, unframed. This is what a letter carries several of, so the
+    // frame is deliberately not here: an update nested inside a letter is not a
+    // datagram and does not get a datagram's header.
     char* GetByteStream(int* _linearSize);
+
+    // The whole datagram — frame and payload — into the caller's buffer.
+    // Returns the bytes written, or 0 if it did not fit. This is what the
+    // client actually sends.
+    [[nodiscard]] int SerialiseDatagram(char* _buffer, int _capacity);
 
     [[nodiscard]] bool IsValid() const { return m_type != UpdateType::Invalid; }
 

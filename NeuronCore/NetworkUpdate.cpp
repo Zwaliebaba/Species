@@ -6,6 +6,7 @@
 
 #include "ByteStream.h"
 #include "NetworkUpdate.h"
+#include "ProtocolLimits.h"
 
 
 NetworkUpdate::NetworkUpdate()
@@ -21,15 +22,40 @@ NetworkUpdate::NetworkUpdate()
 {
 }
 
-NetworkUpdate::NetworkUpdate(char const* _byteStream, int _len)
+NetworkUpdate::NetworkUpdate(char const* _datagram, int _len)
   : NetworkUpdate()
 {
   // Delegating rather than repeating the member initialisers, which the old
   // stream constructor did not run at all: an update parsed off the wire left
   // every field its type does not carry — m_radius, m_yaw, m_program — reading
   // whatever the stack held.
-  ByteReader reader(_byteStream, _len > 0 ? static_cast<size_t>(_len) : 0);
+  ByteReader reader(_datagram, _len > 0 ? static_cast<size_t>(_len) : 0);
+
+  // The frame first, and nothing else is read if it is not ours. A datagram
+  // carrying a SERVER letter is refused here too: the kinds are separate so
+  // that a letter's type field can never be read as an update's.
+  if (ReadDatagramHeader(reader) != DatagramKind::ClientUpdate)
+  {
+    m_type = UpdateType::Invalid;
+    return;
+  }
+
   ReadByteStream(reader);
+}
+
+int NetworkUpdate::SerialiseDatagram(char* _buffer, int _capacity)
+{
+  ByteWriter writer(_buffer, _capacity > 0 ? static_cast<size_t>(_capacity) : 0);
+  WriteDatagramHeader(writer, DatagramKind::ClientUpdate);
+
+  int payloadSize = 0;
+  char const* payload = GetByteStream(&payloadSize);
+  writer.WriteBytes(payload, static_cast<size_t>(payloadSize));
+
+  if (!writer.Ok())
+    return 0;
+
+  return static_cast<int>(writer.BytesWritten());
 }
 
 bool NetworkUpdate::ReadByteStream(ByteReader& _reader)

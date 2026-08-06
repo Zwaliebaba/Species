@@ -57,9 +57,13 @@ namespace NeuronServerTests
 
           void Send(NetworkUpdate& _update, Neuron::Endpoint const& _server)
           {
-            int length = 0;
-            char const* bytes = _update.GetByteStream(&length);
-            Assert::IsFalse(static_cast<bool>(m_transport.Send(_server, bytes, length)), L"the scripted client should be able to send");
+            // A framed datagram, because that is what a client sends since T8 —
+            // GetByteStream alone is the payload a letter carries nested, and
+            // the server drops it as not being this protocol.
+            char datagram[MaxDatagramSize];
+            const int length = _update.SerialiseDatagram(datagram, static_cast<int>(sizeof(datagram)));
+            Assert::IsTrue(length > 0, L"the scripted client should be able to serialise");
+            Assert::IsFalse(static_cast<bool>(m_transport.Send(_server, datagram, length)), L"the scripted client should be able to send");
           }
 
           void SendJoin(Neuron::Endpoint const& _server)

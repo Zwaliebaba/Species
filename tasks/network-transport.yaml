@@ -611,7 +611,44 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: >
+      THE FRAME IS ON THE DATAGRAM, NOT ON THE PAYLOAD, and that distinction is
+      the whole design. A NetworkUpdate is serialised in TWO situations - as a
+      datagram the client sends, and nested inside a letter that carries several
+      of them - so putting the header in GetByteStream would have stamped it on
+      every nested update as well. GetByteStream stays the unframed payload;
+      SerialiseDatagram is new and writes frame plus payload; the (char*, int)
+      constructor now expects a whole datagram. The letter is only ever a
+      datagram, so Serialise and its parse constructor just gained the header.
+
+      FOUR BYTES: 'S', 'P', version 2, kind. The kind is the part that was not
+      asked for and earns its byte - LetterType and UpdateType overlap
+      numerically (LetterType::Update is 4, UpdateType::Alive is 4), so without
+      it a letter looped back to the server parses as a plausible update rather
+      than being dropped. Verified in the harness by flipping the kind byte on a
+      real datagram in each direction.
+
+      THE PAYLOAD DID NOT CHANGE, and the harness proves it rather than the
+      commit message asserting it: every update type and every letter type is
+      still compared byte-for-byte against the PRE-T1 macro serialisers, now as
+      "the payload is identical and the frame is in front of it". All twelve
+      update payloads and all four letter payloads match at their original
+      lengths.
+
+      HeaderSize GAINED THE FRAME TOO. It is what the datagram cap is checked
+      against, and leaving the four bytes out of it would have let a letter be
+      built four bytes too long to send - the exact class of bug T3 exists to
+      remove. The 48-update tick now comes to 1024 bytes precisely, which is the
+      cap; 49 is refused as before.
+
+      COMPILED AND RUN under ASan and UBSan against the POSIX shim: the frame
+      accepted, wrong magic refused, version 1 refused, wrong kind refused in
+      both directions, an unframed v1 datagram refused (its first four bytes are
+      a valid UpdateType, so this is the case that would otherwise parse
+      cleanly), every truncation from 0 to 4 bytes refused, and the 20,000
+      random datagrams re-run. What is not compiled here is the three test files
+      and the client's send path.
 
   - id: T9
     title: Server-assigned connection ids and reply-to-source addressing

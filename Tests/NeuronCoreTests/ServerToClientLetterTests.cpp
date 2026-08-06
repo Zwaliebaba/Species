@@ -53,6 +53,7 @@ namespace NeuronCoreTests
         char datagram[MaxDatagramSize];
         const int length = letter.Serialise(datagram, static_cast<int>(sizeof(datagram)));
         ByteReader reader(datagram, length);
+        Assert::AreEqual(static_cast<int>(DatagramKind::ServerLetter), static_cast<int>(ReadDatagramHeader(reader)), L"every letter is framed");
 
         const int type = reader.Read<int>();
         const int sequenceId = reader.Read<int>();
@@ -61,7 +62,7 @@ namespace NeuronCoreTests
         Assert::AreEqual(static_cast<int>(ServerToClientLetter::LetterType::HelloClient), type);
         Assert::AreEqual(0x21436587, sequenceId);
         Assert::AreEqual(0x0100007F, ip);
-        Assert::AreEqual(12, length);
+        Assert::AreEqual(4 + 12, length, L"the frame, then the twelve-byte payload");
       }
 
       TEST_METHOD(TeamAssignCarriesTeamIdTypeAndAddress)
@@ -78,6 +79,7 @@ namespace NeuronCoreTests
         char datagram[MaxDatagramSize];
         const int length = letter.Serialise(datagram, static_cast<int>(sizeof(datagram)));
         ByteReader reader(datagram, length);
+        Assert::AreEqual(static_cast<int>(DatagramKind::ServerLetter), static_cast<int>(ReadDatagramHeader(reader)), L"every letter is framed");
 
         const int type = reader.Read<int>();
         const int sequenceId = reader.Read<int>();
@@ -90,7 +92,7 @@ namespace NeuronCoreTests
         Assert::AreEqual(static_cast<unsigned char>(2), teamId);
         Assert::AreEqual(static_cast<unsigned char>(1), teamType);
         Assert::AreEqual(0x0100007F, ip);
-        Assert::AreEqual(14, length);
+        Assert::AreEqual(4 + 14, length, L"the frame, then the fourteen-byte payload");
       }
 
       TEST_METHOD(AnUpdateLetterCountsItsUpdatesBeforeCarryingThem)
@@ -109,6 +111,7 @@ namespace NeuronCoreTests
         char datagram[MaxDatagramSize];
         const int length = letter.Serialise(datagram, static_cast<int>(sizeof(datagram)));
         ByteReader reader(datagram, length);
+        Assert::AreEqual(static_cast<int>(DatagramKind::ServerLetter), static_cast<int>(ReadDatagramHeader(reader)), L"every letter is framed");
 
         const int type = reader.Read<int>();
         const int sequenceId = reader.Read<int>();
@@ -118,8 +121,8 @@ namespace NeuronCoreTests
         Assert::AreEqual(9, sequenceId);
         Assert::AreEqual(2, numUpdates);
 
-        // Header is 12 bytes, each SelectUnit is 21 — see NetworkUpdateTests.
-        Assert::AreEqual(12 + 21 + 21, length);
+        // Frame is 4, header is 12, each SelectUnit is 21 — see NetworkUpdateTests.
+        Assert::AreEqual(4 + 12 + 21 + 21, length);
       }
 
       TEST_METHOD(AnUpdateLetterSurvivesARoundTrip)
@@ -272,7 +275,7 @@ namespace NeuronCoreTests
 
         char datagram[MaxDatagramSize];
         const int length = letter.Serialise(datagram, static_cast<int>(sizeof(datagram)));
-        Assert::AreEqual(12 + 48 * 21, length);
+        Assert::AreEqual(4 + 12 + 48 * 21, length);
         Assert::IsTrue(length <= MaxDatagramSize);
       }
 
@@ -326,8 +329,9 @@ namespace NeuronCoreTests
 
       TEST_METHOD(ATruncatedHeaderYieldsAnInvalidLetter)
       {
-        // Five bytes: enough for the type, not for the sequence id.
-        const char truncated[5] = {4, 0, 0, 0, 9};
+        // Nine bytes: the frame, the letter type, and one byte of the sequence
+        // id.
+        const char truncated[9] = {'S', 'P', 2, 2, 4, 0, 0, 0, 9};
 
         const ServerToClientLetter letter(truncated, static_cast<int>(sizeof(truncated)));
 
@@ -350,10 +354,11 @@ namespace NeuronCoreTests
         char datagram[MaxDatagramSize];
         const int length = sent.Serialise(datagram, static_cast<int>(sizeof(datagram)));
 
-        Assert::AreEqual(12 + 21, length);
+        Assert::AreEqual(4 + 12 + 21, length);
 
-        // Keep the 12-byte header, drop all but four bytes of the 21-byte update.
-        const ServerToClientLetter received(datagram, 16);
+        // Keep the frame and the 12-byte header, drop all but four bytes of the
+        // 21-byte update.
+        const ServerToClientLetter received(datagram, 20);
 
         Assert::IsFalse(received.IsValid());
       }
@@ -363,8 +368,9 @@ namespace NeuronCoreTests
         // The count is a claim, not a fact. 100,000 updates in a 12-byte
         // datagram used to be 100,000 iterations of reading 8+ bytes each from
         // wherever the receive buffer sat in memory.
-        char datagram[12] = {};
+        char datagram[16] = {};
         ByteWriter writer(datagram, sizeof(datagram));
+        WriteDatagramHeader(writer, DatagramKind::ServerLetter);
         writer.Write<int>(static_cast<int>(ServerToClientLetter::LetterType::Update));
         writer.Write<int>(77);
         writer.Write<int>(100000);
@@ -380,8 +386,9 @@ namespace NeuronCoreTests
         // A DEBUG_ASSERT stood here, which is not a check: in Release the loop
         // ran with a negative bound, and in Debug a hostile datagram could stop
         // the build a developer was running.
-        char datagram[12] = {};
+        char datagram[16] = {};
         ByteWriter writer(datagram, sizeof(datagram));
+        WriteDatagramHeader(writer, DatagramKind::ServerLetter);
         writer.Write<int>(static_cast<int>(ServerToClientLetter::LetterType::Update));
         writer.Write<int>(77);
         writer.Write<int>(-1);
@@ -399,8 +406,9 @@ namespace NeuronCoreTests
         // magic and version that let a receiver tell this protocol from the
         // rest of the internet; until then, an unrecognised type must at least
         // not be acted on.
-        char datagram[12] = {};
+        char datagram[16] = {};
         ByteWriter writer(datagram, sizeof(datagram));
+        WriteDatagramHeader(writer, DatagramKind::ServerLetter);
         writer.Write<int>(4242);
         writer.Write<int>(1);
         writer.Write<int>(0);
@@ -437,10 +445,10 @@ namespace NeuronCoreTests
 
         char datagram[MaxDatagramSize];
         const int length = sent.Serialise(datagram, static_cast<int>(sizeof(datagram)));
-        Assert::AreEqual(12 + 21 + 21, length);
+        Assert::AreEqual(4 + 12 + 21 + 21, length);
 
         // Everything is present in the buffer; only _len says otherwise.
-        const ServerToClientLetter received(datagram, 12 + 21);
+        const ServerToClientLetter received(datagram, 4 + 12 + 21);
 
         Assert::IsFalse(received.IsValid());
       }
@@ -451,8 +459,9 @@ namespace NeuronCoreTests
         // update inside it is not. Fewer updates arriving than the count
         // promised means the rest of the datagram cannot be located, so the
         // letter goes rather than arriving short.
-        char datagram[20] = {};
+        char datagram[24] = {};
         ByteWriter writer(datagram, sizeof(datagram));
+        WriteDatagramHeader(writer, DatagramKind::ServerLetter);
         writer.Write<int>(static_cast<int>(ServerToClientLetter::LetterType::Update));
         writer.Write<int>(5);
         writer.Write<int>(1);

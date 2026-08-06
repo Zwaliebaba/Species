@@ -2,6 +2,7 @@
 
 #include "ByteStream.h"
 #include "NetworkUpdate.h"
+#include "ProtocolLimits.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -324,10 +325,10 @@ namespace NeuronCoreTests
         sent.SetProgram(5);
         sent.SetWorldPos(DirectX::XMFLOAT3(10.25f, -0.5f, 300.0f));
 
-        int length = 0;
-        char* stream = sent.GetByteStream(&length);
+        char datagram[MaxDatagramSize];
+        const int length = sent.SerialiseDatagram(datagram, static_cast<int>(sizeof(datagram)));
 
-        NetworkUpdate received(stream, length);
+        NetworkUpdate received(datagram, length);
 
         Assert::AreEqual(static_cast<int>(NetworkUpdate::UpdateType::TargetProgram), static_cast<int>(received.m_type));
         Assert::AreEqual(77, received.m_lastSequenceId);
@@ -374,10 +375,10 @@ namespace NeuronCoreTests
         sent.SetWorldPos(sentControls.m_mousePos);
         sent.SetSync(7);
 
-        int length = 0;
-        char* stream = sent.GetByteStream(&length);
+        char datagram[MaxDatagramSize];
+        const int length = sent.SerialiseDatagram(datagram, static_cast<int>(sizeof(datagram)));
 
-        NetworkUpdate received(stream, length);
+        NetworkUpdate received(datagram, length);
 
         Assert::AreEqual(0x01FF, static_cast<int>(received.m_teamControls.GetFlags()));
         Assert::IsTrue(received.m_teamControls.m_endSetTarget == 1, L"m_endSetTarget is the bit that used to be dropped");
@@ -395,8 +396,8 @@ namespace NeuronCoreTests
 
       TEST_METHOD(ATruncatedUpdateIsInvalid)
       {
-        // A SelectUnit header with only part of its payload. The bytes after it
-        // in a real receive buffer are the previous datagram.
+        // A SelectUnit datagram with only part of its payload. The bytes after
+        // it in a real receive buffer are the previous datagram.
         NetworkUpdate sent;
         sent.SetType(NetworkUpdate::UpdateType::SelectUnit);
         sent.SetLastSequenceId(1);
@@ -405,19 +406,20 @@ namespace NeuronCoreTests
         sent.SetEntityId(3);
         sent.SetBuildingID(4);
 
-        int length = 0;
-        char* stream = sent.GetByteStream(&length);
-        Assert::AreEqual(21, length);
+        char datagram[MaxDatagramSize];
+        const int length = sent.SerialiseDatagram(datagram, static_cast<int>(sizeof(datagram)));
+        Assert::AreEqual(4 + 21, length, L"the frame is four bytes in front of the payload");
 
-        const NetworkUpdate received(stream, 12);
+        const NetworkUpdate received(datagram, 16);
 
         Assert::IsFalse(received.IsValid());
       }
 
       TEST_METHOD(AnUpdateTypeThisBuildDoesNotKnowIsInvalid)
       {
-        char datagram[8] = {};
+        char datagram[12] = {};
         ByteWriter writer(datagram, sizeof(datagram));
+        WriteDatagramHeader(writer, DatagramKind::ClientUpdate);
         writer.Write<int>(31337);
         writer.Write<int>(0);
 
@@ -435,6 +437,84 @@ namespace NeuronCoreTests
         Assert::IsFalse(received.IsValid());
       }
 
+      // ------------------------------------------------------------------
+      // The frame, which is protocol 2 and does not interoperate with 1.
+      //
+      // Before it, the first four bytes of ANY datagram arriving on the port
+      // were read as an update type. These four tests are what "receivers
+      // silently drop anything that does not match" means in practice.
+      // ------------------------------------------------------------------
+
+      TEST_METHOD(AFramedUpdateBeginsWithTheMagicVersionAndKind)
+      {
+        NetworkUpdate update;
+        update.SetType(NetworkUpdate::UpdateType::ClientJoin);
+        update.SetLastSequenceId(0x11223344);
+
+        char datagram[MaxDatagramSize];
+        const int length = update.SerialiseDatagram(datagram, static_cast<int>(sizeof(datagram)));
+
+        Assert::AreEqual(4 + 8, length);
+        Assert::AreEqual(static_cast<char>('S'), datagram[0]);
+        Assert::AreEqual(static_cast<char>('P'), datagram[1]);
+        Assert::AreEqual(static_cast<char>(2), datagram[2]);
+        Assert::AreEqual(static_cast<char>(1), datagram[3]); // ClientUpdate
+
+        // The payload behind the frame is byte-for-byte what it always was —
+        // v2 adds a header and changes nothing else.
+        int payloadSize = 0;
+        char const* payload = update.GetByteStream(&payloadSize);
+        Assert::AreEqual(8, payloadSize);
+        Assert::AreEqual(0, memcmp(datagram + 4, payload, static_cast<size_t>(payloadSize)));
+      }
+
+      TEST_METHOD(ADatagramWithTheWrongMagicIsDropped)
+      {
+        NetworkUpdate update;
+        update.SetType(NetworkUpdate::UpdateType::ClientJoin);
+        update.SetLastSequenceId(1);
+
+        char datagram[MaxDatagramSize];
+        const int length = update.SerialiseDatagram(datagram, static_cast<int>(sizeof(datagram)));
+
+        datagram[0] = 'X';
+        Assert::IsFalse(NetworkUpdate(datagram, length).IsValid());
+      }
+
+      TEST_METHOD(ADatagramFromProtocolOneIsDropped)
+      {
+        // What a v1 client actually sends: the payload with no frame at all. Its
+        // first four bytes are an update type — ClientJoin is 1 — so without the
+        // frame this parses cleanly as a join.
+        NetworkUpdate update;
+        update.SetType(NetworkUpdate::UpdateType::ClientJoin);
+        update.SetLastSequenceId(1);
+
+        int payloadSize = 0;
+        char const* payload = update.GetByteStream(&payloadSize);
+
+        char asVersionOne[MaxDatagramSize];
+        memcpy(asVersionOne, payload, static_cast<size_t>(payloadSize));
+
+        Assert::IsFalse(NetworkUpdate(asVersionOne, payloadSize).IsValid(), L"v2 does not interoperate with v1, deliberately");
+      }
+
+      TEST_METHOD(AServerLetterArrivingAtTheServerIsDropped)
+      {
+        // The kind byte. A letter's first payload field is a LetterType, and
+        // those numbers overlap the UpdateTypes — LetterType::Update is 4 and
+        // UpdateType::Alive is 4 — so without the kind, a letter looped back to
+        // the server parses as a plausible update.
+        char datagram[16] = {};
+        ByteWriter writer(datagram, sizeof(datagram));
+        WriteDatagramHeader(writer, DatagramKind::ServerLetter);
+        writer.Write<int>(4);
+        writer.Write<int>(0);
+        writer.Write<int>(0);
+
+        Assert::IsFalse(NetworkUpdate(datagram, static_cast<int>(sizeof(datagram))).IsValid());
+      }
+
       TEST_METHOD(PauseStillParsesFromItsHeaderAlone)
       {
         // Pause carries no payload, and it used to work by falling out of the
@@ -446,11 +526,13 @@ namespace NeuronCoreTests
         sent.SetType(NetworkUpdate::UpdateType::Pause);
         sent.SetLastSequenceId(6);
 
-        int length = 0;
-        char* stream = sent.GetByteStream(&length);
-        Assert::AreEqual(8, length);
+        int payloadSize = 0;
+        sent.GetByteStream(&payloadSize);
+        Assert::AreEqual(8, payloadSize);
 
-        const NetworkUpdate received(stream, length);
+        char datagram[MaxDatagramSize];
+        const int length = sent.SerialiseDatagram(datagram, static_cast<int>(sizeof(datagram)));
+        const NetworkUpdate received(datagram, length);
 
         Assert::IsTrue(received.IsValid());
         Assert::AreEqual(static_cast<int>(NetworkUpdate::UpdateType::Pause), static_cast<int>(received.m_type));

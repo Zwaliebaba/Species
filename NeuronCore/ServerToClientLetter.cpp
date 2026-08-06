@@ -31,6 +31,11 @@ ServerToClientLetter::ServerToClientLetter(char const* _byteStream, int _len)
 {
   ByteReader reader(_byteStream, _len > 0 ? static_cast<size_t>(_len) : 0);
 
+  // The frame first. Anything that is not this protocol at this version, or is
+  // travelling the wrong way, is dropped without reading a byte of payload.
+  if (ReadDatagramHeader(reader) != DatagramKind::ServerLetter)
+    return;
+
   const int rawType = reader.Read<int>();
   m_sequenceId = reader.Read<int>();
 
@@ -130,23 +135,26 @@ void ServerToClientLetter::SetIp(int ip) { m_ip = ip; }
 // *** HeaderSize
 int ServerToClientLetter::HeaderSize() const
 {
+  // The datagram frame is part of what a letter costs on the wire, so it is
+  // part of what the cap is checked against. Leaving it out here would let a
+  // letter be built four bytes too long to send.
   switch (m_type)
   {
   case LetterType::HelloClient:
   case LetterType::GoodbyeClient:
-    return 3 * static_cast<int>(sizeof(int)); // type, sequence id, ip
+    return DatagramHeaderSize + 3 * static_cast<int>(sizeof(int)); // type, sequence id, ip
 
   case LetterType::TeamAssign:
-    return 3 * static_cast<int>(sizeof(int)) + 2 * static_cast<int>(sizeof(unsigned char)); // ...plus team id and type
+    return DatagramHeaderSize + 3 * static_cast<int>(sizeof(int)) + 2 * static_cast<int>(sizeof(unsigned char)); // ...plus team id and type
 
   case LetterType::Update:
-    return 3 * static_cast<int>(sizeof(int)); // type, sequence id, update count
+    return DatagramHeaderSize + 3 * static_cast<int>(sizeof(int)); // type, sequence id, update count
 
   case LetterType::Invalid:
     break;
   }
 
-  return 2 * static_cast<int>(sizeof(int)); // type and sequence id, which every letter carries
+  return DatagramHeaderSize + 2 * static_cast<int>(sizeof(int)); // type and sequence id, which every letter carries
 }
 
 // *** SerialisedSize
@@ -179,6 +187,7 @@ bool ServerToClientLetter::AddUpdate(NetworkUpdate const& _update)
 int ServerToClientLetter::Serialise(char* _buffer, int _capacity)
 {
   ByteWriter writer(_buffer, _capacity > 0 ? static_cast<size_t>(_capacity) : 0);
+  WriteDatagramHeader(writer, DatagramKind::ServerLetter);
 
   writer.Write<int>(static_cast<int>(m_type));
   writer.Write<int>(m_sequenceId);
