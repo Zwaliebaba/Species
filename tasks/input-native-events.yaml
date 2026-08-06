@@ -1362,6 +1362,108 @@ tasks:
       needed no repointing: MenuLeft is still the first row and
       IconsTaskManagerQuickUnitRight still the last, because the deletions were
       all interior.
+  - id: T14
+    title: Delete INPUT_MODE_GAMEPAD, and everything only it could reach
+    intent: >
+      Directed by the owner on 2026-08-06, closing the decision T11 recorded
+      rather than took. T2 kept twenty INPUT_MODE_GAMEPAD consumers on the
+      argument that they are the controller user interface and deleting them
+      turns a future controller into a UI rewrite; the owner then deleted the 22
+      button BMPs those consumers render, and has now directed that the code
+      follows the art. That settles it in the direction T11 said it could not
+      settle on its own authority.
+
+      THE ENUM GOES WITH THE VALUE, and that is a widening of the obvious scope
+      rather than a drift past it. With INPUT_MODE_GAMEPAD removed, InputMode
+      holds NONE and KEYBOARD, no driver can report NONE, and every remaining
+      test on it is a comparison whose answer is written at compile time - the
+      "prefers the Gamepad" arbitration in InputManager::Advance, the per-mode
+      language table, and a debug readout with one thing to say. A two-valued
+      mode nothing can vary is the same lesson T1 deleted the Pipe driver over.
+    project: NeuronClient
+    depends_on: []
+    files:
+      - NeuronClient/InputTypes.h
+      - NeuronClient/InputDriver.h
+      - NeuronClient/InputDriver.cpp
+      - NeuronClient/InputDriverWin32.h
+      - NeuronClient/InputDriverWin32.cpp
+      - NeuronClient/Input.h
+      - NeuronClient/Input.cpp
+      # The per-mode phrase table and the _xin half of the language data.
+      - NeuronClient/LanguageTable.h
+      - NeuronClient/LanguageTable.cpp
+      - NeuronClient/SepulvedaStrings.cpp
+      - GameData/Language/English.txt
+      - GameData/Language/French.txt
+      - GameData/Language/German.txt
+      - GameData/Language/Italian.txt
+      - GameData/Language/Spanish.txt
+      # ControlHelpSystem is gamepad-only BY CONSTRUCTION - both its Advance and
+      # its Render early-return unless the mode is gamepad - so the whole
+      # overlay goes, and with it the interface the lower layers reach it by.
+      - Species/ControlHelp.h
+      - Species/ControlHelp.cpp
+      - NeuronClient/ControlHelpAccess.h
+      - NeuronClient/AppState.h
+      - NeuronClient/AppState.cpp
+      - NeuronClient/TargetCursor.cpp
+      - GameLogic/Team.cpp
+      - Species/App.h
+      - Species/App.cpp
+      - Species/Main.cpp
+      - Species/Renderer.h
+      - Species/Renderer.cpp
+      - Species/Camera.cpp
+      - Species/GameCursor.cpp
+      - Species/TaskManagerInterface.cpp
+      - Species/TaskManagerInterfaceIcons.cpp
+      - GameLogic/TaskManager.cpp
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
+      - Species/Species.vcxproj
+      - Species/Species.vcxproj.filters
+    acceptance:
+      - grep INPUT_MODE_GAMEPAD and InputMode return nothing outside tasks/ (baseline 2026-08-06 - 22 and 40 sites)
+      - Every `!= INPUT_MODE_GAMEPAD` test keeps its body and loses its condition; every `== INPUT_MODE_GAMEPAD` branch is deleted - the two are opposites and getting one backwards is silent
+      - ControlHelpSystem, ControlHelpAccess, HelpIcon and HelpIconSet are gone from disk and from both vcxproj files; RecordCondUsed has no callers left
+      - The _xin phrases are gone from all five language files that have them (baseline - 70 each); the _kbd mechanism and its 120 phrases per file STAY, because those are the live ones
+      - Russian.txt is untouched and the notes say why
+      - check_project_files and check_layering pass
+    verify:
+      - python3 tools/check_project_files.py
+      - python3 tools/check_layering.py
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: in_progress
+
+  - id: T15
+    title: Delete the controlIcon plumbing, which has neither consumer nor data
+    intent: >
+      Directed by the owner on 2026-08-06 alongside T14. T2 found that nothing
+      in the tree renders a control icon and recorded it; T11 confirmed it and
+      left it unowned. It is dead at both ends - InputManager::controlIcon has
+      no caller anywhere, and the `~` icon lines that fed it are at ZERO in
+      GameData/Input, because the eighteen T2 removed were all of them. So the
+      parser branch reads a syntax no file uses into a map nothing asks about.
+    project: NeuronClient
+    depends_on: []
+    files:
+      - NeuronClient/ControlBindings.h
+      - NeuronClient/ControlBindings.cpp
+      - NeuronClient/Input.h
+      - NeuronClient/Input.cpp
+    acceptance:
+      - controlIcon, getIcon, setIcon and the icons array are gone; grep returns nothing
+      - The `~` icon-line branch is gone from parseInputPrefs, and a `~` line in a user's own prefs file is reported as an unparseable line rather than silently stored
+      - ControlBindingsTests still passes untouched - it covers the name lookup, not the icons
+    verify:
+      - python3 tools/check_format.py
+      - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\*Tests.dll
+    status: in_progress
+
   - id: T12
     title: Owner-run Garden smoke test on the event-driven input
     intent: >
@@ -1369,9 +1471,13 @@ tasks:
       the Task Manager opens and its buttons work - and creating a profile
       exercises InputField typing through the new Char path. Camera movement
       through a whole session vouches for the sampled view.
-    depends_on: [T11]
+    # T14 and T15 joined this edge when the owner directed them on 2026-08-06.
+    # They are deletions of unreachable code and change nothing the seven steps
+    # exercise, but they are IN the build the owner will run, and a gate that
+    # names a build it is not being run on is worth nothing.
+    depends_on: [T11, T14, T15]
     acceptance:
-      - Owner-reported Garden run, all seven steps, on a build containing T1-T11
+      - Owner-reported Garden run, all seven steps, on a build containing every code node of this plan
       - Typing a profile name works, including a shifted character; reported explicitly
       - Camera control feels unchanged, and rotation continues at screen edges (the Raw Input improvement), reported explicitly
       - The result is recorded in AGENTS.md "What working looks like"
