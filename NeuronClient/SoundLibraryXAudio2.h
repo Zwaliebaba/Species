@@ -58,6 +58,11 @@ namespace Neuron
       // otherwise erase the other.
       void ApplyFrequencyRatio(XAudio2Voice& _voice);
 
+      // Releases every device handle and leaves the library in the silent state
+      // Initialise produces when there is no audio device. Shutdown uses it, and
+      // so does Advance when the engine reports a critical error.
+      void TearDownDevice();
+
       void Shutdown();
 
     public:
@@ -86,5 +91,6 @@ namespace Neuron
                                DirectX::XMFLOAT3 const& _vel) override;
 
       void Advance() override;
+      bool HasOutputDevice() const override;
   };
 } // namespace Neuron

@@ -812,6 +812,69 @@ tasks:
       # endpoint regardless, so the name has no relationship to what comes out
       # of the speakers. A wrong device name is worse than none.
       - The waveOut device census, AudioInfo and the options-window device name are gone; winmm.lib leaves every link line
+    notes: |
+      Landed 2026-08-06.
+
+      DEVICE LOSS IS HANDLED IN TWO HALVES, split across the thread boundary
+      because that is where the constraint is. IXAudio2EngineCallback's
+      OnCriticalError runs on XAudio2's own audio thread, so it does one thing:
+      store an atomic flag. Advance, on the game thread, sees the flag and runs
+      TearDownDevice — voices destroyed, mastering voice destroyed, callbacks
+      unregistered, engine released — which leaves the library in EXACTLY the
+      state Initialise produces on a machine with no audio device. Every entry
+      point in the file already handles that state, so nothing else needed a
+      new branch. Sounds keep starting, ending and releasing on schedule
+      because TopUpChannel's no-device path still consumes one block per call.
+
+      RECOVERY IS A LEVEL, NOT AN EDGE, and getting that wrong is a bug I wrote
+      and then caught before pushing. The first version asked the backend
+      DeviceLost() — did you lose a device — and retried while it was true.
+      That breaks on the second failure: RestartSoundLibrary DESTROYS the
+      backend, so a rebuild that also fails produces a fresh one that has lost
+      nothing, reports false, and stops the retries dead. Unplug, wait, plug
+      back in, silence forever. The interface now asks HasOutputDevice(), a
+      level, and SoundSystem remembers in m_hadOutputDevice that one has been
+      seen working — which is why that flag lives in SoundSystem and not in the
+      backend it keeps rebuilding. A machine that never had a device never
+      retries; one that had a device retries every five seconds until it comes
+      back.
+
+      TRACED RATHER THAN ASSUMED, since no test can unplug a sound card: the
+      state machine was lifted verbatim into a standalone g++ program and driven
+      through six scenarios under ASan and UBSan — no hardware at all, lost and
+      still gone, lost with a FAILED retry and then replugged, recovered, and
+      healthy. All pass. Scenario three is the one the edge-based version failed.
+
+      NO HRESULT IN THE BACKEND IS A FATAL ASSERT, and this was already true
+      rather than fixed here. The three asserts in SoundLibraryXAudio2.cpp check
+      arguments — a channel count, a volume range, a filter count — and every
+      HRESULT path traces and continues. Recorded because the criterion asked.
+
+      DELETED: the 246-line commented-out legacy SoundSystem::Advance, which
+      still called CommitChanges, a method the interface no longer has;
+      StartRecordToFile and EndRecordToFile, virtual no-ops with no caller and
+      no implementor; the SoundLibrary preference along with its dropdown, its
+      three scoped constants, the four language strings in all six files, and
+      its default line; SoundBufferSize, which T8's Initialise change left with
+      no reader; and the waveOut census with AudioInfo and winmm.lib.
+
+      THE CENSUS WENT AGAINST T8's AUDIT, and the claim commit records why in
+      full: GetAudioDetails never updates bestScore inside its loop, so
+      m_preferredDevice is the LAST device enumerated rather than the best, and
+      XAudio2's mastering voice follows the Windows default endpoint regardless.
+      The options window was displaying a name unrelated to what you hear.
+
+      GetCPUOverhead needed no decision: T7 had already deleted it. The options
+      window's CPU readout is the profiler's own and is untouched.
+
+      Documentation corrected alongside, all of it stale rather than newly
+      wrong: ARCHITECTURE's sound section still described three backends and the
+      SoundLibrary preference, BUILD's OS row still named DirectSound and its
+      dependency row still listed dsound/dxguid/winmm, AGENTS' link list said
+      WinMM and DirectSound, its plan table said 3 of 11 blocked on T5, and the
+      Known issue about the legacy backends' out-of-bounds read described files
+      that no longer exist — kept as a resolved-by-deletion entry rather than
+      dropped, because the shape recurs.
       # GetCPUOverhead was already deleted by T7 -- it had zero callers -- so
       # the criterion that asked what to do about it has nothing left to decide.
       # The options window's CPU readout is the profiler's, not the backend's.
@@ -819,7 +882,7 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
 
   - id: T11
     title: Owner final gate - Garden on the default configuration

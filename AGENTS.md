@@ -26,8 +26,8 @@ survive persistently.
 It is not that yet. The codebase began as the Darwinia source and is partway
 through being reshaped: renamed, relayered, and modernised into something a
 persistent authoritative server can be built on. Roughly 115,000 lines of C++
-across six MSBuild projects. It links only against the OS (OpenGL, GLU, WinMM,
-DirectSound, XAudio2, Winsock) and takes one header-only dependency, **DirectXMath**,
+across six MSBuild projects. It links only against the OS (OpenGL, GLU,
+XAudio2, Winsock) and takes one header-only dependency, **DirectXMath**,
 which ships in the Windows SDK — no library to link and nothing vendored.
 `tasks/Archive/directxmath-migration.yaml` replaced the inherited hand-rolled math with
 it and then deleted it: there is no Neuron vector or matrix type, storage is
@@ -51,7 +51,7 @@ they are the first work since the modernisation that is not cleanup:
 
 | Plan | What it does | State |
 |---|---|---|
-| [`tasks/sound-xaudio2.yaml`](tasks/sound-xaudio2.yaml) | One native XAudio2 backend — per-channel voices, X3DAudio positioning, effects on XAudio2 — then DirectSound, the software mixer and waveOut are deleted | 3 of 11. **Blocked on the owner**: T5 is an A/B listen |
+| [`tasks/sound-xaudio2.yaml`](tasks/sound-xaudio2.yaml) | One native XAudio2 backend — per-channel voices, X3DAudio positioning, effects on XAudio2 — with DirectSound, the software mixer and waveOut deleted | 10 of 11. **Blocked on the owner**: T11 is a Garden run |
 | [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse | 3 of 12 |
 | [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | 0 of 12 |
 
@@ -810,19 +810,20 @@ Real, currently true, and worth knowing before you trip over them:
     CI evidence alone; CI then caught two real compile errors a name-keyed
     sweep had missed, and the owner's run afterwards is the only thing that
     says the tree still plays. Neither check substitutes for the other.
-- **BOTH LEGACY SOUND BACKENDS READ PAST THE END OF `SoundSystem::m_channels`,
-  once per audio tick.** That array is sized from `GetNumMainChannels()`, which
+- **RESOLVED BY DELETION, and recorded because the shape recurs:** both legacy
+  sound backends read one element past the end of `SoundSystem::m_channels`
+  once per audio tick. That array is sized from `GetNumMainChannels()`, which
   is `m_numChannels - 1`, but `SoundLibrary3dDSound` and
-  `SoundLibrary3dSoftware` both pump channels up to `m_numChannels` and hand
-  the index straight to the main callback, which subscripts the array with it.
-  It is benign in practice — the garbage `SoundInstanceId` fails a
-  bounds-checked slot map lookup and that channel writes silence — but it is
-  real UB in the path that ships today, since DirectSound is still the default.
-  Found while writing `sound-xaudio2` T1, which sizes the new backend's channel
-  vector from `GetNumMainChannels()` so the callback can only ever be given an
-  index the array holds. **The legacy files are deliberately NOT fixed**: T7
-  and T8 delete both, and a fix would have to be justified against a smoke test
-  nobody will run on code that is going away.
+  `SoundLibrary3dSoftware` both pumped channels up to `m_numChannels` and
+  handed the index straight to the main callback, which subscripts the array
+  with it. Benign in practice — the garbage `SoundInstanceId` failed a
+  bounds-checked slot map lookup and that channel wrote silence — but real UB
+  in the path that shipped. It was deliberately NOT fixed when found, because
+  `sound-xaudio2` T7 and T8 were going to delete both files and a fix would
+  have needed justifying against a smoke test nobody would run on code that was
+  going away. They are gone, and `SoundLibraryXAudio2` sizes its channel vector
+  from `GetNumMainChannels()` so the callback can only ever be handed an index
+  the array holds.
 - **THERE ARE TWO RANDOM STREAMS, AND THE DOCUMENTATION SAID THERE WAS ONE.**
   This is the correction that retired the two determinism bullets that used to
   stand here, and it is the thing to know before reading any RNG call in this

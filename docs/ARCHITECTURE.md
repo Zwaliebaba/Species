@@ -91,12 +91,17 @@ Presentation and platform services for a graphical client.
 - **Rendering:** OpenGL, `Shape`/`ShapeFragment` model system, `Texture`,
   `Bitmap`, sprites, text renderers, `OGLExtensions`.
 - **Sound:** `SoundSystem`, `SoundInstance`, `SoundParameter` above a
-  `SoundLibrary3d` backend. THREE backends exist during the `sound-xaudio2`
-  migration and one will survive it: `SoundLibraryXAudio2` (per-channel source
-  voices, X3DAudio positioning, effects on XAudio2 — the target, opt-in by the
-  `SoundLibrary` preference), `SoundLibrary3dDSound` (DirectSound, still the
-  default) and `SoundLibrary3dSoftware` over `SoundLibrary2d`'s WinMM output.
-  The plan deletes the last two once the owner has A/B'd the first.
+  `SoundLibrary3d` backend. ONE backend remains: `SoundLibraryXAudio2` — a mono
+  source voice per channel plus a stereo one for music, X3DAudio positioning and
+  doppler, the resonant low pass on XAudio2's own per-voice biquad, echo on
+  FXECHO and reverb on XAUDIO2FX. `SoundLibrary3dDSound`,
+  `SoundLibrary3dSoftware` and `SoundLibrary2d`'s WinMM output layer were
+  deleted by `sound-xaudio2` T7 and T8, and the `SoundLibrary` preference that
+  chose between them by T10. The seam stays virtual because it is what let the
+  replacement be A/B'd against them. A device that disappears mid-game is
+  reported through `IXAudio2EngineCallback::OnCriticalError`, which parks the
+  backend silent; `SoundSystem::Advance` then rebuilds it every five seconds
+  until a device comes back.
 - **Input:** a composable driver stack — `InputDriverSimple`, `Chord`,
   `Conjoin`, `Invert`, `Idle` — resolving to `ControlTypes`. `Alias`, `Pipe`
   and `Prefs` were deleted by `input-native-events` T1: no binding data used

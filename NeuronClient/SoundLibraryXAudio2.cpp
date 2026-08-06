@@ -11,6 +11,7 @@
 #include <xapofx.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <memory>
 #include <vector>
@@ -169,12 +170,43 @@ namespace Neuron
   // Class XAudio2Data
   //*****************************************************************************
 
+  // XAudio2 calls this ON ITS OWN AUDIO THREAD, which is the whole reason it is
+  // shaped this way: it sets one atomic flag and returns. Everything that
+  // actually reacts — destroying voices, releasing the engine, telling
+  // SoundSystem — happens on the game thread in Advance, where all the rest of
+  // this backend already lives.
+  //
+  // The engine is unusable after OnCriticalError. It is not an error to
+  // recover from in place; the only route back is a new IXAudio2, which is what
+  // SoundSystem::RestartSoundLibrary builds.
+  class XAudio2EngineCallback : public IXAudio2EngineCallback
+  {
+    public:
+      std::atomic<bool> m_deviceLost{false};
+
+      void STDMETHODCALLTYPE OnProcessingPassStart() noexcept override {}
+      void STDMETHODCALLTYPE OnProcessingPassEnd() noexcept override {}
+
+      void STDMETHODCALLTYPE OnCriticalError(HRESULT _error) noexcept override
+      {
+        m_deviceLost.store(true, std::memory_order_relaxed);
+        (void)_error;
+      }
+  };
+
+
   class XAudio2Data
   {
     public:
       IXAudio2* m_engine = nullptr;
       IXAudio2MasteringVoice* m_masteringVoice = nullptr;
       bool m_ownsCom = false;
+
+      XAudio2EngineCallback m_engineCallback;
+
+      // Set on the game thread once the flag above has been acted on, so the
+      // teardown runs once rather than on every tick that follows.
+      bool m_deviceTornDown = false;
 
       // X3DAudio replaces DS3D. The instance is a plain byte array holding the
       // speaker geometry, computed once from the endpoint's channel mask.
@@ -206,7 +238,12 @@ namespace Neuron
   SoundLibraryXAudio2::~SoundLibraryXAudio2() { Shutdown(); }
 
 
-  void SoundLibraryXAudio2::Shutdown()
+  // Everything that owns a device handle, released in the one order that is
+  // legal. Shutdown calls it on the way out and the device-loss path calls it
+  // mid-game; what is left afterwards is exactly the state Initialise leaves
+  // when there is no audio device at all — blocks allocated, every m_voice
+  // null — which every entry point in this file already handles.
+  void SoundLibraryXAudio2::TearDownDevice()
   {
     if (!m_data)
       return;
@@ -238,9 +275,22 @@ namespace Neuron
 
     if (m_data->m_engine)
     {
+      // Before the Release, so the audio thread cannot be inside a callback on
+      // an object that is about to go. UnregisterForCallbacks waits for one in
+      // flight to finish.
+      m_data->m_engine->UnregisterForCallbacks(&m_data->m_engineCallback);
       m_data->m_engine->Release();
       m_data->m_engine = nullptr;
     }
+  }
+
+
+  void SoundLibraryXAudio2::Shutdown()
+  {
+    if (!m_data)
+      return;
+
+    TearDownDevice();
 
     // Balanced against the CoInitializeEx in Initialise, and only when that call
     // is the one that initialised COM on this thread. The DirectSound backend
@@ -324,6 +374,11 @@ namespace Neuron
       m_data->m_engine = nullptr;
       return;
     }
+
+    // The only way to hear about a device that goes away. Without it an
+    // unplugged headset leaves every voice queued forever, the game silent, and
+    // nothing anywhere aware that anything happened.
+    m_data->m_engine->RegisterForCallbacks(&m_data->m_engineCallback);
 
     // Device defaults throughout: XAudio2 resamples every voice to whatever the
     // endpoint runs at, so there is no mix rate for us to choose or for the
@@ -513,6 +568,19 @@ namespace Neuron
   {
     if (!m_data)
       return;
+
+    // THE DEVICE-LOSS REACTION, and it is here rather than in the callback
+    // because this is the game thread. Everything below carries on afterwards:
+    // TopUpChannel's no-device path still consumes one block per call, so every
+    // sound still starts, ends and releases on the schedule it would have had.
+    // A lost device makes the game silent, not different — the same contract
+    // Initialise honours when there was never a device to begin with.
+    if (m_data->m_engineCallback.m_deviceLost.load(std::memory_order_relaxed) && !m_data->m_deviceTornDown)
+    {
+      DebugTrace("SOUND : the audio device reported a critical error; going silent and retrying\n");
+      TearDownDevice();
+      m_data->m_deviceTornDown = true;
+    }
 
     // Positioning first, so a block filled below is mixed with the panning that
     // matches where the listener is this tick rather than the previous one.
@@ -1027,6 +1095,17 @@ namespace Neuron
     voice->m_voice->GetState(&state, XAUDIO2_VOICE_NOSAMPLESPLAYED);
 
     return std::clamp(static_cast<float>(state.BuffersQueued) / static_cast<float>(BlocksPerChannel), 0.0f, 1.0f);
+  }
+
+
+  // The mastering voice is the honest test: Initialise leaves it null when there
+  // is no device or opening one failed, and the device-loss teardown in Advance
+  // destroys it. The flag is read as well, so the tick between OnCriticalError
+  // firing on the audio thread and Advance reacting on this one does not report
+  // a device that has already gone.
+  bool SoundLibraryXAudio2::HasOutputDevice() const
+  {
+    return m_data && m_data->m_masteringVoice != nullptr && !m_data->m_engineCallback.m_deviceLost.load(std::memory_order_relaxed);
   }
 
 

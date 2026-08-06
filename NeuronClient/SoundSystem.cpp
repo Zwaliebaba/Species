@@ -33,14 +33,20 @@ namespace Neuron
 
 #define SOUNDSYSTEM_UPDATEPERIOD 0.05f
 
-//*****************************************************************************
-// Class SoundEventBlueprint
-//*****************************************************************************
+  // How long to wait between attempts to rebuild the sound library after the
+  // audio device has gone. Long enough that a machine left with a dead device is
+  // not rebuilding it constantly, short enough that plugging a headset back in
+  // brings sound back before anyone reaches for the options window.
+  constexpr float DeviceRetryPeriod = 5.0f;
+
+  //*****************************************************************************
+  // Class SoundEventBlueprint
+  //*****************************************************************************
 
   SoundEventBlueprint::SoundEventBlueprint()
     : m_instance(nullptr)
   {
-}
+  }
 
 void SoundEventBlueprint::SetEventName(const char* _name) { m_eventName = _name ? _name : ""; }
 
@@ -1345,6 +1351,37 @@ void SoundSystem::Advance()
   {
     m_timeSync -= SOUNDSYSTEM_UPDATEPERIOD;
 
+    // DEVICE RECOVERY. A backend with no output device gets one rebuild attempt
+    // every DeviceRetryPeriod seconds, for as long as it has none.
+    // RestartSoundLibrary is the same call the options window's Apply button
+    // makes, so a mid-game rebuild is a supported thing to do rather than a new
+    // risk taken here.
+    //
+    // m_hadOutputDevice is what stops that from being a busy loop on a machine
+    // with no sound card: retries begin only once a device has been seen
+    // working at least once. It is remembered HERE rather than asked of the
+    // backend because RestartSoundLibrary destroys the backend — a rebuilt one
+    // that also fails has no memory of anything having worked, and the retries
+    // would stop on the first failed attempt, which is exactly the case they
+    // exist for.
+    if (g_soundLibrary3d)
+    {
+      if (g_soundLibrary3d->HasOutputDevice())
+      {
+        m_hadOutputDevice = true;
+        m_deviceRetryTimer = 0.0f;
+      }
+      else if (m_hadOutputDevice)
+      {
+        m_deviceRetryTimer += SOUNDSYSTEM_UPDATEPERIOD;
+        if (m_deviceRetryTimer >= DeviceRetryPeriod)
+        {
+          m_deviceRetryTimer = 0.0f;
+          RestartSoundLibrary();
+        }
+      }
+    }
+
     START_PROFILE(g_profiler, "Advance SoundSystem");
 
     //
@@ -1560,253 +1597,6 @@ void SoundSystem::Advance()
     END_PROFILE(g_profiler, "Advance SoundSystem");
   }
 }
-
-/*
-void SoundSystem::Advance()
-{
-
-  if (g_requestQuit && !m_quitWithoutSave)
-  {
-    if (AreBlueprintsModified())
-    {
-      g_requestQuit = false;
-    }
-  }
-
-    if( !m_channels ) return;
-
-#ifdef PROFILER_ENABLED
-    m_mainProfiler->Advance();
-    m_eventProfiler->Advance();
-#endif
-
-    m_timeSync += g_advanceTime;
-    if( m_timeSync >= SOUNDSYSTEM_UPDATEPERIOD )
-    {
-        m_timeSync -= SOUNDSYSTEM_UPDATEPERIOD;
-
-        START_PROFILE(g_profiler, "Advance SoundSystem");
-
-        //
-        // Resync with blueprints (changed by editor)
-
-        START_PROFILE(g_profiler,  "Propagate Blueprints" );
-        if( m_propagateBlueprints )
-        {
-            PropagateBlueprints();
-        }
-        END_PROFILE(g_profiler,  "Propagate Blueprints" );
-
-
-        //
-        // Build a list of change requests, ordered on priority
-
-        START_PROFILE(g_profiler,  "HandleRequests" );
-
-        int maxChannelChanges = 1;
-        int numChannelChanges = 0;
-
-        std::vector<int> newRequests;                           // Indexes of the channels
-
-        for( int i = 0; i < m_numChannels; ++i )
-        {
-            SoundChannel *channel = &m_channels[i];
-            SoundInstance *requestedSound = GetSoundInstance( channel->m_requestedSound );
-
-            if( requestedSound )
-            {
-                bool inserted = false;
-                for( int x = 0; x < static_cast<int>(newRequests.size()); ++x )
-                {
-                    if( x > maxChannelChanges ) break;
-                    int channelIndex = newRequests[x];
-                    SoundChannel *thisChannel = &m_channels[channelIndex];
-                    SoundInstance *thisRequestedSound = GetSoundInstance( thisChannel->m_requestedSound );
-                    DEBUG_ASSERT( thisRequestedSound );
-                    if( requestedSound->m_calculatedPriority > thisRequestedSound->m_calculatedPriority )
-                    {
-                        newRequests.insert( newRequests.begin() + x, i );
-                        inserted = true;
-                        break;
-                    }
-                }
-                if( !inserted && static_cast<int>(newRequests.size()) < maxChannelChanges )
-                {
-                    newRequests.push_back( i );
-                }
-            }
-        }
-
-        END_PROFILE(g_profiler,  "HandleRequests" );
-
-
-        //
-        // Start the highest priority new requests
-
-        START_PROFILE(g_profiler,  "StartNewSound" );
-
-        while( !newRequests.empty() &&
-               numChannelChanges < maxChannelChanges )
-        {
-            int channelIndex = newRequests[0];
-            newRequests.erase( newRequests.begin() );
-
-            SoundChannel *channel = &m_channels[channelIndex];
-            SoundInstance *currentSound = GetSoundInstance( channel->m_currentSound );
-            if( currentSound && !currentSound->m_loopType )
-            {
-                ShutdownSound( currentSound );
-            }
-            else if( currentSound )
-            {
-                currentSound->StopPlaying();
-            }
-            channel->m_currentSound.SetInvalid();
-
-            SoundInstance *requestedSound = GetSoundInstance( channel->m_requestedSound );
-            bool success = requestedSound->StartPlaying( channelIndex );
-            if( success )
-            {
-                channel->m_currentSound = channel->m_requestedSound;
-            }
-            else
-            {
-                // This is fairly bad, the sound failed to play
-                // Which means it failed to load, or to go into a channel
-                ShutdownSound( requestedSound );
-            }
-            channel->m_requestedSound.SetInvalid();
-
-            g_soundLibrary3d->ResetChannel( channelIndex );
-            numChannelChanges++;
-
-        }
-
-        END_PROFILE(g_profiler,  "StartNewSound" );
-
-
-        //
-        // Advance all our channels
-        // Clear out all the sound requests that have failed to start
-
-        START_PROFILE(g_profiler,  "Advance Channels" );
-
-        for( int i = 0; i < m_numChannels; ++i )
-        {
-            SoundChannel *channel = &m_channels[i];
-
-            SoundInstance *currentSound = GetSoundInstance( channel->m_currentSound );
-            if( currentSound )
-            {
-                bool amIDone = currentSound->Advance();
-                if( amIDone )
-                {
-                    ShutdownSound( currentSound );
-                }
-            }
-
-            SoundInstance *requestedSound = GetSoundInstance( channel->m_requestedSound );
-            channel->m_requestedSound.SetInvalid();
-            if(  requestedSound &&
-                !requestedSound->m_loopType &&
-                 requestedSound->m_restartAttempts <= 0 )
-            {
-                ShutdownSound( requestedSound );
-            }
-        }
-
-        END_PROFILE(g_profiler,  "Advance Channels" );
-
-
-        //
-        // Recalculate all sound priorities
-        // If we're attached to a bogus object then give up trying
-
-        START_PROFILE(g_profiler,  "UpdatePriority" );
-
-        for( int i = 0; i < m_sounds.Size(); ++i )
-        {
-            if( m_sounds.ValidIndex(i) )
-            {
-                SoundInstance* instance = m_sounds[i].get();
-                instance->RecalculatePriority();
-
-                if( instance->m_positionType == SoundInstance::Type3DAttachedToObject &&
-                    !instance->ResolveAttachedObject() )
-                {
-                    ShutdownSound( instance );
-                }
-            }
-        }
-
-        END_PROFILE(g_profiler,  "UpdatePriority" );
-
-
-        //
-        // If we're a looping sound and we're not playing, try to start us playing now
-        // If we're not looping but still have restart attempts left, try to restart now
-
-        START_PROFILE(g_profiler,  "Restart loops" );
-        for( int i = 0; i < m_sounds.Size(); ++i )
-        {
-            if( m_sounds.ValidIndex(i) )
-            {
-                SoundInstance* instance = m_sounds[i].get();
-                {
-                    if( !instance->IsPlaying() )
-                    {
-                        if( !instance->m_loopType && instance->m_restartAttempts <= 0 )
-                        {
-                            ShutdownSound( instance );
-                        }
-                        else if( instance->m_loopType || instance->m_restartAttempts > 0 )
-                        {
-                            bool success = RequestSound( instance );
-                            if( !success && !instance->m_loopType && instance->m_restartAttempts <= 0 )
-                            {
-                                ShutdownSound( instance );
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        END_PROFILE(g_profiler,  "Restart loops" );
-
-
-        //
-        // Update our listener position
-
-        START_PROFILE(g_profiler, "UpdateListener" );
-
-        DirectX::XMFLOAT3 camUp = g_camera->GetUp();
-        if( g_prefsManager->GetInt("SoundSwapStereo",0) == 1 )
-        {
-            camUp.y *= -1.0f;
-        }
-
-        g_soundLibrary3d->SetListenerPosition( g_camera->GetPos(),
-                                            g_camera->GetFront(),
-                                            camUp,
-                                            g_camera->GetVel() );
-
-        END_PROFILE(g_profiler, "UpdateListener" );
-
-
-        //
-        // Advance our sound library
-
-        START_PROFILE(g_profiler, "SoundLibrary3d Commit" );
-        g_soundLibrary3d->CommitChanges();
-        END_PROFILE(g_profiler, "SoundLibrary3d Commit" );
-        START_PROFILE(g_profiler, "SoundLibrary3d Advance" );
-        g_soundLibrary3d->Advance();
-        END_PROFILE(g_profiler, "SoundLibrary3d Advance" );
-
-        END_PROFILE(g_profiler, "Advance SoundSystem");
-    }
-}
-*/
 
 void SoundSystem::RuntimeVerify()
 {

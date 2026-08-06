@@ -9,7 +9,6 @@ namespace Species
   class PrefsSoundWindow : public SpeciesWindow
   {
     public:
-      int m_soundLib;
       int m_numChannels;
       int m_swapStereo;
       int m_dspEffects;

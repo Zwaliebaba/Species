@@ -116,10 +116,19 @@ namespace Neuron
 
       virtual void Advance() = 0;
 
-      void WriteSilence(signed short* _data, unsigned int _numSamples);
+      // Whether there is an audio device to play through RIGHT NOW -- a LEVEL,
+      // not the edge of losing one. False covers three cases that a caller
+      // cannot tell apart and should not have to: the machine has no audio
+      // hardware, opening it failed, or it was working and has gone.
+      //
+      // The distinction matters to SoundSystem::Advance, which retries
+      // RestartSoundLibrary while this is false but only once it has seen it
+      // true. Asking "did you lose a device" instead would stop the retries
+      // dead: a rebuild that also fails produces a backend that has lost
+      // nothing, and a device unplugged and plugged back in would never return.
+      virtual bool HasOutputDevice() const = 0;
 
-      virtual void StartRecordToFile(char const* _filename) {}
-      virtual void EndRecordToFile() {}
+      void WriteSilence(signed short* _data, unsigned int _numSamples);
   };
 
 

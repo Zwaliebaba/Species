@@ -636,10 +636,6 @@ dialog_mousebuttons                    Pulsanti del mouse
 
 dialog_soundoptions                    Opzioni audio
 dialog_unavailable                     non disponibile
-dialog_soundlibrary                    Libreria audio
-dialog_directsound                     DirectSound
-dialog_xaudio2                         XAudio2
-dialog_softwaresound                   Software audio
 dialog_mixfrequency                    Frequenza
 dialog_11khz                           11 KHz: qualità bassa
 dialog_22khz                           22 KHz: qualità media

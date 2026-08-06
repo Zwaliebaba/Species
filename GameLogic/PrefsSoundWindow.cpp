@@ -2,20 +2,17 @@
 #include "Preferences.h"
 #include "TextRenderer.h"
 #include "Profiler.h"
-#include "SystemInfo.h"
 #include "LanguageTable.h"
 
 #include "PrefsSoundWindow.h"
 #include "DropDownMenu.h"
 
 #include "SoundSystem.h"
-#include "SoundLibrary3d.h"
 #include "SampleCache.h"
 
 #include "WorldPointers.h"
 
 
-#define SOUND_LIBRARY "SoundLibrary"
 #define SOUND_CHANNELS "SoundChannels"
 #define SOUND_SWAPSTEREO "SoundSwapStereo"
 #define SOUND_DSPEFFECTS "SoundDSP"
@@ -24,13 +21,6 @@
 
 namespace Species
 {
-  // The dropdown binds an int, so the three backends need numbers. Scoped
-  // constants rather than a scoped enum because DropDownMenu::RegisterInt and
-  // AddOption both deal in plain ints, and check_hygiene rejects a plain enum.
-  constexpr int SoundLibSoftware = 0;
-  constexpr int SoundLibDirectSound = 1;
-  constexpr int SoundLibXAudio2 = 2;
-
   class RestartSoundButton : public SpeciesButton
   {
     public:
@@ -44,17 +34,6 @@ namespace Species
         g_prefsManager->SetInt(SOUND_SWAPSTEREO, parent->m_swapStereo);
         g_prefsManager->SetInt(SOUND_DSPEFFECTS, parent->m_dspEffects);
         g_prefsManager->SetInt(SOUND_MEMORY, parent->m_memoryUsage);
-
-        // Only XAudio2 can be chosen here now. The other two values still
-        // resolve for a preferences file that predates the switch, so an
-        // existing dsound or software setting keeps working until T7 and T8
-        // remove those backends — but pressing Apply migrates it.
-        if (parent->m_soundLib == SoundLibSoftware)
-          g_prefsManager->SetString(SOUND_LIBRARY, "software");
-        else if (parent->m_soundLib == SoundLibDirectSound)
-          g_prefsManager->SetString(SOUND_LIBRARY, "dsound");
-        else
-          g_prefsManager->SetString(SOUND_LIBRARY, "xaudio2");
 
         g_soundSystem->RestartSoundLibrary();
 
@@ -117,15 +96,6 @@ namespace Species
     m_swapStereo = g_prefsManager->GetInt(SOUND_SWAPSTEREO, 0);
     m_dspEffects = g_prefsManager->GetInt(SOUND_DSPEFFECTS, 1);
     m_memoryUsage = g_prefsManager->GetInt(SOUND_MEMORY, 1);
-
-    char const* soundLib = g_prefsManager->GetString(SOUND_LIBRARY);
-
-    if (stricmp(soundLib, "dsound") == 0)
-      m_soundLib = SoundLibDirectSound;
-    else if (stricmp(soundLib, "software") == 0)
-      m_soundLib = SoundLibSoftware;
-    else
-      m_soundLib = SoundLibXAudio2;
   }
 
 
@@ -151,19 +121,8 @@ namespace Species
     box->SetShortProperties("invert", 10, y += border, m_w - 20, GetClientRectY2() - h * 3 - y);
     RegisterButton(box);
 
-    DropDownMenu* soundLib = new DropDownMenu();
-    soundLib->SetShortProperties(LANGUAGEPHRASE("dialog_soundlibrary"), x, y += border, buttonW, buttonH);
-    // One option, because there is one backend worth choosing. DirectSound and
-    // the software mixer are still selectable by hand in preferences.txt until
-    // T7 and T8 remove them, but they are no longer offered.
-    soundLib->AddOption(LANGUAGEPHRASE("dialog_xaudio2"), SoundLibXAudio2);
-    soundLib->RegisterInt(&m_soundLib);
-    soundLib->m_fontSize = fontSize;
-    RegisterButton(soundLib);
-    m_buttonOrder.push_back(soundLib);
-
     DropDownMenu* numChannels = new DropDownMenu();
-    numChannels->SetShortProperties(LANGUAGEPHRASE("dialog_numchannels"), x, y += h, buttonW, buttonH);
+    numChannels->SetShortProperties(LANGUAGEPHRASE("dialog_numchannels"), x, y += border, buttonW, buttonH);
     numChannels->AddOption(LANGUAGEPHRASE("dialog_8channels"), 8);
     numChannels->AddOption(LANGUAGEPHRASE("dialog_16channels"), 16);
     numChannels->AddOption(LANGUAGEPHRASE("dialog_32channels"), 32);
@@ -223,26 +182,17 @@ void PrefsSoundWindow::Render(bool _hasFocus)
 {
   SpeciesWindow::Render(_hasFocus);
 
-  unsigned int deviceId = g_systemInfo->m_audioInfo.m_preferredDevice;
-  char const* hwDescription = g_systemInfo->m_audioInfo.m_deviceNames[deviceId];
-  float fontSize = 1.2f * m_w / strlen(hwDescription);
-  g_editorFont.DrawText2DCentre(m_x + m_w / 2, m_y + GetMenuSize(30), fontSize, hwDescription);
-
   int border = GetClientRectX1() + 10;
   int x = m_x + 20;
   int y = m_y + GetClientRectY1() + border * 2 + GetMenuSize(30);
   int h = GetMenuSize(20) + border;
   int size = GetMenuSize(13);
 
-  g_editorFont.DrawText2D(x, y += border, size, LANGUAGEPHRASE("dialog_soundlibrary"));
-  g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_numchannels"));
+  g_editorFont.DrawText2D(x, y += border, size, LANGUAGEPHRASE("dialog_numchannels"));
   g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_memoryusage"));
   g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_swapstereo"));
   g_editorFont.DrawText2D(x, y += h, size, LANGUAGEPHRASE("dialog_realtimeeffects"));
 
-
-  //    int numChannels = g_soundLibrary3d->m_numChannels;
-  //    g_editorFont.DrawText2DCentre( m_x + m_w/2, m_y + m_h - 70, 12, "{} channels allocated", numChannels );
 
 #ifdef PROFILER_ENABLED
   const auto& children = g_profiler->m_rootElement->m_children;

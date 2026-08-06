@@ -4,11 +4,11 @@
 
 | | |
 |---|---|
-| OS | Windows. The code uses Win32, Winsock, WGL, XAudio2 and DirectSound directly. |
+| OS | Windows. The code uses Win32, Winsock, WGL and XAudio2 directly. |
 | Toolchain | Visual Studio 2026, MSVC toolset **v145**, Windows SDK 10 |
 | Language | C++23 (`/permissive-`). **Debug sets `stdcpplatest`, Release still sets `stdcpp20`** — see *Release* below.  |
 | Platforms | **ARM64** (primary) and **x64** |
-| Dependencies | **DirectXMath**, header-only, from the Windows SDK. Links only against `opengl32`, `glu32`, `winmm`, `dsound`, `dxguid`, `xaudio2`, `Ws2_32`. `xaudio2.lib` arrived with `sound-xaudio2` T1 and covers XAudio2, X3DAudio and XAPOFX between them — no separate `x3daudio.lib` or `xapofx.lib`, and no DirectX SDK. `dsound`/`dxguid` go when that plan deletes the DirectSound backend. |
+| Dependencies | **DirectXMath**, header-only, from the Windows SDK. Links only against `opengl32`, `glu32`, `xaudio2`, `Ws2_32`. `xaudio2.lib` arrived with `sound-xaudio2` T1 and covers XAudio2, X3DAudio and XAPOFX between them — no separate `x3daudio.lib` or `xapofx.lib`, and no DirectX SDK. `dsound`/`dxguid` went with T7 and `winmm` with T10, which deleted the waveOut device census that was its last user. |
 
 There is nothing to install, restore or vendor. Clone and build.
 
