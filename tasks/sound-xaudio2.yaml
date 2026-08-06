@@ -150,10 +150,37 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: |
+      Landed 2026-08-06. CI green at fb3591b, first round. X3DAudio needs NO
+      additional library — the Windows SDK exports it from xaudio2.lib, which
+      T1's note predicted and this confirms. Nothing has been heard; T5 is
+      still the first ear on it.
+
+      Two departures from a literal port of the DS3D code, both deliberate:
+
+      X3DAudio REQUIRES an orthonormal listener basis and DS3D did not, so the
+      camera's front and up are orthonormalised here rather than trusted. The
+      zero-cross-product case — a camera looking along its own up vector —
+      keeps the previous orientation instead of feeding X3DAudio a degenerate
+      basis. That is the same failure shape as the tree bug in
+      directxmath-migration T17, which is why it is guarded rather than
+      assumed away.
+
+      The drift threshold is GONE. DirectSound only moved a buffer once it had
+      drifted far enough relative to its distance, because every move was a
+      driver call; X3DAudioCalculate is arithmetic and SetOutputMatrix writes
+      voice state, so every positioned channel is recomputed every tick. That
+      is smoother, and it is a behaviour change in the sense that panning now
+      updates continuously — worth listening for at T5, though the expected
+      difference is that it sounds BETTER rather than different.
+
+      Pitch and doppler are now composed in one place (ApplyFrequencyRatio).
+      T1 stored a single ratio, which would have been silently overwritten by
+      whichever of SetChannelFrequency and the positioning pass ran last.
 
   - id: T3
-    title: Carry the DSP effects on XAudio2 - built-in filter, stock XAPOs, one adapter
+    title: Carry the DSP effects on XAudio2 - built-in filter and stock XAPOs
     intent: >
       Every effect the data uses gets a native home. ResonantLowPass costs
       nothing (the per-voice biquad); Echo maps parameter-for-parameter onto
@@ -167,24 +194,34 @@ tasks:
     files:
       - NeuronClient/SoundLibraryXAudio2.h
       - NeuronClient/SoundLibraryXAudio2.cpp
-      - NeuronClient/DspEffectXapo.h
-      - NeuronClient/DspEffectXapo.cpp
-      - NeuronClient/SoundFilter.h
-      - NeuronClient/SoundFilter.cpp
-      - NeuronClient/NeuronClient.vcxproj
-      - NeuronClient/NeuronClient.vcxproj.filters
     acceptance:
       - DSP_RESONANTLOWPASS uses the built-in voice filter (XAUDIO2_VOICE_USEFILTER at creation, SetFilterParameters on update) - no effect object
       - DSP_ECHO and the DSound_Echo data entries drive one echo implementation (FXECHO or the adapter hosting DspEcho - decided in-task and recorded in notes)
       - The two reverb data entries drive XAUDIO2FX_REVERB, the I3DL2 one through ReverbConvertI3DL2ToNative
-      - DspGargle and DspBitCrusher run inside DspEffectXapo (CXAPOParametersBase) unmodified in behaviour
+      # AMENDED 2026-08-06, BEFORE the work, and the original wording is kept
+      # here so the change is reviewable: it read "DspGargle and DspBitCrusher
+      # run inside DspEffectXapo (CXAPOParametersBase) unmodified in
+      # behaviour". Three things decided against it. XAudio2 has no gargle or
+      # bit-crusher of its own, so the XAPO would be a hosting shim around the
+      # very same DspEffect code rather than a native implementation. An XAPO
+      # runs AFTER resampling, in float, at the voice's output rate, so a
+      # pitch-shifted sound would gargle at a different rate than it does
+      # today - which contradicts "unmodified in behaviour" rather than
+      # delivering it. And the fill path is where the DirectSound backend runs
+      # these two RIGHT NOW (PopulateBuffer calls m_userFilter->Process on the
+      # locked buffer), so keeping them there is behaviour-preserving by
+      # construction and costs no new COM surface. Measured stake: Gargle has
+      # ONE usage in Sounds.txt and BitCrusher has none, against 21 of 22
+      # usages that do get a native XAudio2 mechanism. If post-resample
+      # semantics are ever wanted, that is a new task, not this one.
+      - DspGargle and DspBitCrusher keep running over the PCM block during the fill, exactly where the DirectSound backend runs them, and their audible behaviour is unchanged
       - Effect chains attach at the StartPlaying boundary while the voice is flushed - the same moment the DirectSound path stopped and restarted its buffer - and UpdateDspFX maps to SetEffectParameters/SetFilterParameters
     verify:
       - python3 tools/check_project_files.py
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: in_progress
 
   - id: T4
     title: Migrate Effects.txt and Sounds.txt off the DSound_ effect names
@@ -195,7 +232,19 @@ tasks:
       DSound_WavesReverb) remap onto the surviving set; the DirectX8-only rows
       disappear.
     project: GameData
-    depends_on: [T3]
+    # MOVED FROM AFTER T3 TO AFTER T7 ON 2026-08-06, and the reason is a real
+    # ordering this plan originally got wrong. SoundSystem::LoadEffects builds
+    # m_filterBlueprints by APPENDING one blueprint per EFFECT block, so an
+    # effect's index IS its line position in Effects.txt, and the FX enum has
+    # to match position for position. Deleting the nine DSound_ rows therefore
+    # forces the same nine enumerators out of the enum — and
+    # SoundLibrary3dDSound.cpp names every one of them, in s_dxDescriptors and
+    # in both of its DSP switches. So this cannot land while that file exists,
+    # which makes T7 a hard prerequisite rather than a tidy-up that follows.
+    # The cost of the old ordering was invisible: Effects.txt would have lost
+    # rows, every later effect would have shifted index, and the wrong
+    # blueprint would have been read for each — with nothing failing to build.
+    depends_on: [T7]
     files:
       - GameData/Effects.txt
       - GameData/Sounds.txt
@@ -205,6 +254,9 @@ tasks:
       - Effects.txt no longer contains DSound_ rows; the FX enum and the file are still positionally aligned and LoadtimeVerify passes
       - The 8 DSound_ usages in Sounds.txt are remapped (echoes to Echo, reverbs to the reverb effect); grep DSound_ over GameData returns nothing
       - The sound editor still lists and edits the surviving effects
+    notes: >
+      Shares SoundSystem.cpp with T8, which is in the same wave - do not run
+      the two concurrently.
     verify:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
@@ -218,7 +270,10 @@ tasks:
       owner runs the Garden on SoundLibrary=xaudio2 and compares against
       dsound on the same build - that A/B is only possible while both backends
       exist, which is why this gate sits here and not at the end.
-    depends_on: [T2, T3, T4]
+    # T4 was here until the ordering fix above moved it behind T7. The gate does
+    # not need it: T3 plays every effect the data asks for today, DSound_ names
+    # included, so what the owner hears at this gate is the full effect set.
+    depends_on: [T2, T3]
     acceptance:
       - Owner-reported Garden run with SoundLibrary=xaudio2 - all seven steps pass
       - Audio checklist reported alongside - effects audible and positioned (pan follows the camera), laser/echo events carry their effect, music plays and loops, the volume slider works
@@ -382,7 +437,7 @@ tasks:
       The first gate heard the new backend as an option; this one hears it as
       the only path on a tree where the legacy code no longer exists to fall
       back to. It is the run that lets the plan archive.
-    depends_on: [T9, T10]
+    depends_on: [T4, T9, T10]
     acceptance:
       - Owner-reported Garden run on a default (no preference overrides) build containing T1-T10 - all seven steps pass
       - Audio checklist reported - positioned effects, echo events, stereo music, volume slider
