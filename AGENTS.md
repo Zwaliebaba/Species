@@ -56,11 +56,11 @@ preference all deleted. Two remain open:
 
 | Plan | What it does | State |
 |---|---|---|
-| [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse | **12 of 13 — all code done, T12 is the owner's Garden run** |
+| [`tasks/input-native-events.yaml`](tasks/input-native-events.yaml) | Native input becomes an event stream with a UI-first consuming router and a subscription API; `WM_CHAR` text, Raw Input mouse; the gamepad mode and the control-icon plumbing deleted | **14 of 15 — all code done, T12 is the owner's Garden run** |
 | [`tasks/network-transport.yaml`](tasks/network-transport.yaml) | Bounded wire reads, one polled socket replacing both listener threads, a loopback test seam, server-assigned identity, liveness | 0 of 12 |
 
 **`input-native-events` has one node left and it is not code.** T12 is a
-seven-step Garden run on a build carrying T1–T11, and **nothing in that plan has
+seven-step Garden run on a build carrying every other node, and **nothing in that plan has
 ever been in front of a running game** — see *What working looks like*. It is
 the kind of change a green build says least about: it changes what happens on a
 keystroke, on a click over a menu, on focus loss and on every frame of camera
@@ -85,11 +85,9 @@ today:
 - **In scope, and unowned:** the leftovers the closed plans recorded rather than
   fixed. They are listed where they were found — the three raw-ownership
   survivors under *Ownership*, and under *Known issues* the unswept LCG sites,
-  the untested entity and building behaviour, and the four `input-native-events`
-  left, including the one that matters most: **a re-introduced controller has to
-  restore the gamepad art the owner deleted, or the controller UI code has to go
-  with it.** **None has a task.** Picking one up means writing a plan for it
-  first; see *How work is broken down*.
+  the untested entity and building behaviour, and the two `input-native-events`
+  left. **None has a task.** Picking one up means writing a plan for it first;
+  see *How work is broken down*.
 - **Still true:** fixing things that are outright broken, when you encounter
   them in code you are already changing.
 - **Still the rule that governs all of it:** anything larger than a single-file
@@ -149,7 +147,7 @@ NeuronCore/       ~4.8k   Foundation: sockets, threads, byte streams, the wire
                           Vector2/3, Matrix33/34 and Plane were deleted, and
                           storage is DirectXMath's own. Static library.
                           PARTLY in namespace Neuron — see Namespaces below.
-NeuronClient/     ~22k    Presentation: OpenGL renderer, sound, input drivers,
+NeuronClient/     ~23k    Presentation: OpenGL renderer, sound, input drivers,
                           the Eclipse UI toolkit, resource loading. Static
                           library, all of it in namespace Neuron.
 NeuronServer/     ~0.6k   Authoritative simulation host: Server, ServerToClient,
@@ -161,15 +159,18 @@ GameLogic/        ~65k    Entities, buildings, teams, unit behaviour, in-game
                           layering-inversion moved down out of the executable.
                           The bulk of the inherited code. Static library, all of
                           it in namespace Species.
-Species/          ~16k    Client executable: app and main loop, camera, renderer
+Species/          ~15k    Client executable: app and main loop, camera, renderer
                           entry, task manager interface, location editor. NOT
                           the world model any more. In namespace Species except
                           WinMain.
 Server/           ~0.1k   Headless server executable. Links NeuronCore and
                           NeuronServer only; ticks the host at 10 Hz.
 
-Tests/            ~0.4k   One <Name>Tests project per library, on the Microsoft
-                          Native Unit Test Framework. Built and run by CI.
+Tests/            ~4.7k   One <Name>Tests project per library, on the Microsoft
+                          Native Unit Test Framework. 235 tests, built and run
+                          by CI. This figure said ~0.4k until 2026-08-06 and was
+                          wrong by an order of magnitude; measure it, do not
+                          copy it.
 tools/                    The checks CI runs. Run them locally too.
 tasks/                    Task DAGs. See docs/TASK_DAG.md. EVERY plan is
                           finished and in tasks/Archive/; what is left here
@@ -301,7 +302,7 @@ Resource::ListResources
   switch. **Only the resolution change is left**: the gamepad switch was
   `SwitchTaskManagerForX360Controller`, and `input-native-events` T2 deleted
   it, because no driver in the tree can report the mode it waited for, so it
-  never actually executed. Taking `unique_ptr` ownership without touching those would
+  never actually executed. T14 has since deleted that mode as well. Taking `unique_ptr` ownership without touching those would
   have left App holding a freed pointer. Replacement now routes through
   `AppCommands`, whose factories install what they build. **Before converting
   a member, grep for who else deletes or reassigns it, not just who reads
@@ -889,7 +890,7 @@ Real, currently true, and worth knowing before you trip over them:
   (2026-08-05), and it is also the most recent with an explicit
   all-seven-steps breakdown — see *What working looks like*. CI builds and runs
   the unit suite; it does not launch the client, and neither does any agent
-  working on Linux. A change that compiles and passes 198 tests can still break
+  working on Linux. A change that compiles and passes 235 tests can still break
   the game on the first frame.
   - Batch 5 is the standing example in both directions. Four tasks went in on
     CI evidence alone; CI then caught two real compile errors a name-keyed
@@ -952,25 +953,25 @@ Real, currently true, and worth knowing before you trip over them:
   - **Nobody has swept the remaining LCG sites.** 186 of them were classified
     far enough to find the six; a site-by-site record of which feed simulation
     state does not exist and has no owning task.
-- **`input-native-events` LEFT FOUR THINGS RECORDED AND UNOWNED**, swept up by
-  its T11 and listed here because that plan closes without them. None has a
-  task; each is small and each is a decision rather than a defect.
-  - **A re-introduced controller has to bring its art back.** T2 deliberately
-    KEPT the twenty `INPUT_MODE_GAMEPAD` consumers — the per-mode phrase table,
-    the 360 button prompts, the whole `ControlHelp` overlay — arguing they are
-    the controller *user interface* and that deleting them turns a future
-    controller into a UI rewrite rather than a new driver. The owner then
-    deleted the 22 gamepad button BMPs under `GameData/Icons` (`ca1a5c5`). Both
-    halves are unreachable today, because no driver produces that mode and every
-    load of that art sits behind a test for it — so **adding a controller driver
-    is not sufficient on its own; the icons must be restored in the same work,
-    or that UI code must go with them.** T11 chose to write this down rather
-    than delete a coherent feature on its own authority; deleting it is a
-    one-line decision for the owner.
-  - **`controlIcon` has no consumer.** Nothing anywhere renders a control icon.
-    The `~` icon lines in the prefs files are parsed into a map that is never
-    read. Removing the plumbing is `ControlBindings` surgery and had no
-    acceptance criterion behind it in that plan.
+- **THERE IS NO GAMEPAD SUPPORT, AND NO GAMEPAD-SHAPED HOLE EITHER.** The owner
+  directed its removal on 2026-08-06 and `input-native-events` T14 carried it
+  out: `INPUT_MODE_GAMEPAD`, the whole `InputMode` enum, the `ControlHelpSystem`
+  on-screen-prompt overlay (~975 lines, and gamepad-only *by construction* — its
+  `Advance` and `Render` both early-returned unless the mode was gamepad), the
+  `[IFMODE]`/`[ELSE]`/`[ENDIF]` caption directive, the second language table and
+  its 70 `_xin` phrases per file, and the `ControlHelpEnabled` preference. The
+  22 button BMPs had already gone (`ca1a5c5`).
+  - **If a controller is ever wanted, it comes back as a new EVENT SOURCE**
+    feeding the queue described in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#input),
+    not as a mode to switch into. Whatever it needs to distinguish itself by is
+    a question to answer with a driver in hand; the enum that used to answer it
+    could hold only one value anyone could produce.
+  - This closes what T2 and T11 both declined to decide. T2 kept those consumers
+    arguing they were the controller *user interface*; T11 recorded the
+    disagreement with the deleted art and refused to resolve it on an agent's
+    own authority. The owner resolved it.
+- **`input-native-events` LEFT TWO THINGS RECORDED AND UNOWNED.** Neither has a
+  task; each is a decision rather than a defect.
   - **`ControlMenuClose` has no binding** in any file under `GameData/Input`, so
     the escape-to-close-a-window handler cannot fire. That is data, not code —
     a one-line addition if the feature is wanted.
@@ -981,6 +982,9 @@ Real, currently true, and worth knowing before you trip over them:
     line a user could write, these two are registered and still work today for
     anyone who writes such a binding. Deleting them removes a capability of the
     rebinding language, not dead code.
+  - A third, `controlIcon`, was on this list until the owner directed it out
+    with the gamepad on 2026-08-06 (T15). It was dead at both ends — no caller,
+    and no `~` icon line left in any prefs file.
 - **Mixed-architecture play is NOT SUPPORTED.** Not "unproven" — decided. The
   simulation computes on DirectXMath, which dispatches to SSE on x64 and to
   ARM-NEON on ARM64, and the owner decided on 2026-08-03 to accept that rather
@@ -1020,19 +1024,22 @@ Real, currently true, and worth knowing before you trip over them:
     catches little Debug does not, and that reasoning still holds. This bullet is
     the accepted cost of that, not an oversight — do not re-propose it without a
     Release-only break to point at.
-- **The test suite is thin.** Four projects, **198** tests as of
-  `strings-modernised` T9 (2026-08-05). The seven newest are the five in
-  `BinaryReaderTests` — the filename extension parse, including the empty
-  answer for a name with no dot and a 400-character name that the char[256]
-  behind it could not have held — and the two `FileWriterTests` gained for
-  behaviour T17 created: a percent sign in argument-free text is now a percent
-  sign, and text longer than the old 10240-byte stack buffer is written whole.
+- **The test suite is thin.** Four projects, **235** tests as of
+  `input-native-events` T11 (2026-08-06) — 117 `NeuronCoreTests`, 74
+  `NeuronClientTests`, 39 `GameLogicTests`, 5 `NeuronServerTests`. **24 of them
+  have never been compiled by anything**: `input-native-events` T6–T11 were
+  written on Linux, and `git grep -c TEST_METHOD` is what counted them.
+  The newest are the three lifts that made input testable at all —
+  `InputEventTests` over `DeriveFrameState`, `InputRouterTests` over the
+  router's ordering rule, and `ControlSubscriptionTests` over the subscription
+  token's lifetime — described in [`docs/TESTING.md`](docs/TESTING.md), which is
+  where the per-project split belongs and where the count should be read from.
   Before them, `ControlBindingsTests` characterise the control-name lookup —
   including the edge where the EMPTY STRING matches and returns a real,
-  bindable `ControlNull`. Before them the count was 184, one FEWER than the run
-  before that, which is rare here and worth spelling out: `ownership` T7 deleted
-  the transitional `SlotMap::EmptyAndDelete` helper and the single test
-  characterising it went too. The rest
+  bindable `ControlNull`. The count has gone DOWN once, which is rare here and
+  worth spelling out: `ownership` T7 deleted the transitional
+  `SlotMap::EmptyAndDelete` helper and the single test characterising it went
+  too. The rest
   cover IP conversion,
   the `speciesRandom` sequence, the `ByteStream` macros, both halves of the wire
   format (`NetworkUpdate` and `ServerToClientLetter`), the `FilesysUtils` path
@@ -1042,7 +1049,7 @@ Real, currently true, and worth knowing before you trip over them:
   emits for every format the level and profile writers use, `LevelFile`'s
   constructors, the native-math conversions and
   geometry routines, the entity grid, the routing system's waypoints, the slice
-  walker, `InputField`'s keystroke write-back, `ShapeMarker`'s parse of a marker
+  walker, `InputField`'s text handling, `ShapeMarker`'s parse of a marker
   block, and the two `Matrix33` rotation
   mappings — each with a negative control asserting that the intuitive reading
   is measurably wrong. That is the encoding, identity

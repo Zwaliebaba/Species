@@ -144,8 +144,9 @@ routing system, the landscape — lives here now, which is why this layer is the
 bulk of the tree.
 
 What did invert went behind `*Access` interfaces in `NeuronClient` — `Renderer`,
-`Camera`, `Script`, `UserInput`, `TaskManagerInterface`, `ControlHelp`,
-`LocationEditor`, `GameCursor` — and `App` went with them: the subsystem
+`Camera`, `Script`, `UserInput`, `TaskManagerInterface`, `LocationEditor`,
+`GameCursor`, and `ControlHelp` until `input-native-events` T14 deleted that
+subsystem outright — and `App` went with them: the subsystem
 pointers, the application state and the app-level actions are in
 `WorldPointers.h`, `AppState.h` and the `AppCommands` interface, so nothing
 below `Species` includes `App.h`.
@@ -374,9 +375,36 @@ went was what could not run: `Alias`, `Pipe` (never even registered), `Prefs`,
 `Value` and the whole `InputFilter` family (T1); the X360 controller path and 69
 `XInput` binding lines no driver could produce (T2); the `RegisterHotKey`
 Alt-Tab machinery and the per-message `GetForegroundWindow` polling (T4); the
-`g_keys`/`g_keyDeltas` globals (T5); and `EventHandler` plus `W32EventProcessor`,
+`g_keys`/`g_keyDeltas` globals (T5); `EventHandler` plus `W32EventProcessor`,
 two abstractions with one implementation each whose only job was to fan one
-window procedure out to one consumer (T10).
+window procedure out to one consumer (T10); and the control-icon plumbing,
+which had neither a consumer nor a line of data left to feed it (T15).
+
+### There is no input MODE
+
+`InputMode` — `NONE`, `KEYBOARD`, `GAMEPAD` — is gone, deleted by T14 on the
+owner's direction, and the shape of the deletion is the useful part:
+
+> **Nothing could report `GAMEPAD`.** So every test against the mode compared a
+> value with the only value it could hold, and `InputManager::Advance`'s
+> arbitration — commented *"this prefers the Gamepad"* — chose between one
+> candidate.
+
+What that one dead enumerator was holding up, once it went, was **~1,400 lines**:
+the entire `ControlHelpSystem` on-screen-prompt overlay, gamepad-only by
+construction because both its `Advance` and its `Render` began by returning
+unless the mode was gamepad; the `[IFMODE]`/`[ELSE]`/`[ENDIF]` caption directive,
+whose only opener asked about the mode and which appears nowhere in `GameData`;
+a second language-phrase table and the 70 `_xin` phrases per language file that
+filled it; and a preferences dropdown enabling the overlay.
+
+**A controller returns as a new EVENT SOURCE, not as a mode.** It produces
+`InputEvent`s into the same queue as everything else, and whatever it needs to
+distinguish itself by is a question to answer with a driver in hand.
+
+The `_kbd` half of the language mechanism **stays** and is live: a key spelled
+`help_camera_movement_kbd` answers a lookup for `help_camera_movement`, which is
+how a phrase that names keys is kept distinct from one that does not.
 
 ---
 
