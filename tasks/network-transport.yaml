@@ -333,7 +333,50 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: >
+      THE REAL UdpSocket.cpp WAS COMPILED AND RUN, which is more than any other
+      task in this plan can say. Winsock's names are shimmed onto POSIX in a
+      harness - SOCKET, closesocket, ioctlsocket, WSAGetLastError and the three
+      error codes are renames; recvfrom's address-length parameter is the one
+      genuine difference, int* on Windows and socklen_t* here, and the shim
+      converts it. The file itself is byte-identical to the one in the tree. It
+      builds clean under -Wall -Wextra and passes 30 checks over real loopback
+      UDP: bind, non-blocking receive reporting empty as empty, send, receive
+      with the source address and port recovered, REPLY TO THAT SOURCE (which is
+      T9's identity change working before it is wired up), a five-datagram drain
+      in one pass, sending on a closed socket, null and empty payloads,
+      reopening and double-closing.
+
+      WHAT IS STILL UNCOMPILED IS THE WIRING, not the socket: Server.cpp,
+      Server.h, ServerToClient.cpp and the test file need MSVC and the rest of
+      NeuronServer. The shapes that changed there are the ones to look at if CI
+      is red - Server owns a UdpSocket by value (so Server is no longer
+      copyable), ServerToClient::GetSocket became GetEndpoint, and Server.h
+      includes UdpSocket.h and therefore winsock2.h (safe only because every pch
+      includes WinSock2.h before Windows.h; the reverse order is the classic
+      redefinition error).
+
+      BOTH MUTEXES WENT, not just the inbox one the acceptance names. The outbox
+      mutex protected m_outbox against the same listen thread, and AdvanceSender
+      is called from Advance on the same thread as everything else, so it was
+      guarding one thread from itself.
+
+      THE PORTS ARE NAMED NOW - ServerPort and ClientPort in ProtocolLimits.h.
+      That is T11's acceptance rather than this one's, but 4000 and 4001 were
+      literals in the code this task rewrote, and putting them back as literals
+      to be swept later would have been theatre. ClientPort is deliberately
+      short-lived: T9 deletes the whole idea of a fixed reply port.
+
+      ONE THING THE ACCEPTANCE ASKS FOR THAT CANNOT BE CHECKED HERE: "Server.exe
+      --ticks 20 still advances the sequence id". That is a CI step and it needs
+      Windows. It is also the single most valuable signal on this commit,
+      because it exercises Initialise, the socket, and twenty real ticks of
+      Advance with the listen thread gone.
+
+      ServerToClient became CONSTRUCTIBLE IN A TEST as a side effect - it used
+      to open and connect a socket to exist at all - so there is now a test that
+      its endpoint is the address ConvertIPToInt produces on ClientPort.
 
   - id: T5
     title: Poll the client socket from the frame loop and fix shutdown

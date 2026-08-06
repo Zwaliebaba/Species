@@ -6,9 +6,7 @@
 #include <string>
 #include <string_view>
 
-
-// NeuronCore, still at global scope until namespace-migration T2 reaches it.
-class NetSocket;
+#include "UdpSocket.h"
 
 
 namespace Neuron
@@ -22,13 +20,18 @@ namespace Neuron
       // it. It is a per-connection registry key and is never serialised, so
       // there is no wire format to keep.
       std::string m_ip;
-      NetSocket* m_socket;
+
+      // Where replies go. It replaces a NetSocket per client — one OS socket
+      // each, "connected" to the client's address at construction, so a
+      // registry of clients was also a registry of sockets. The server has one
+      // socket now and this is just an address.
+      Endpoint m_endpoint;
 
     public:
       ServerToClient(char* _ip);
 
       std::string_view GetIP();
-      NetSocket* GetSocket();
+      [[nodiscard]] Endpoint const& GetEndpoint() const;
 
       int m_lastKnownSequenceId;
   };

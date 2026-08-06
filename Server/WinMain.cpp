@@ -95,10 +95,9 @@ int main(int argc, char* argv[])
 
   printf("Stopped at sequence id %d.\n", server.m_sequenceId);
 
-  // The listen thread Initialise started is still running and still holds a
-  // pointer to this Server. Nothing has ever stopped it — the in-process host
-  // had the same shutdown gap — so this is only safe because the process is
-  // about to exit. Giving the host an orderly shutdown is its own task.
+  // There is no listen thread to outlive this any more — network-transport T4
+  // replaced it with a socket the Server owns and polls, so the shutdown gap
+  // that used to be recorded here closed with it.
   delete profiler;
   delete g_prefsManager;
   g_prefsManager = nullptr;

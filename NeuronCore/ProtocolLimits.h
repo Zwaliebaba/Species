@@ -31,3 +31,13 @@
 // IP header and 8 of UDP. Growing it past that trades a bounded letter for
 // fragmentation, where losing any fragment loses the whole letter.
 inline constexpr int MaxDatagramSize = 1024;
+
+// The ports. Named here rather than spelled at each socket, which is where they
+// were: 4000 in the server's listen thread and 4001 in three separate places.
+//
+// ClientPort is on its way out. A client binds it today so the server has
+// somewhere fixed to reply to, which is exactly what limits a host to one
+// client and breaks through NAT — T9 replaces it with replying to the address
+// the datagram actually came from.
+inline constexpr unsigned short ServerPort = 4000;
+inline constexpr unsigned short ClientPort = 4001;

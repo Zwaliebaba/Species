@@ -5,6 +5,7 @@
 
 #include "NetworkUpdate.h"
 #include "SlotMap.h"
+#include "UdpSocket.h"
 
 // NeuronCore types. They are still at global scope — namespace-migration works
 // bottom-up and T2 has not reached NeuronClient or the rest of the core yet — so
@@ -15,8 +16,6 @@
 // std::vector of them by value now, so every translation unit that destroys a
 // Server needs the complete type.
 class NetLib;
-class NetMutex;
-class NetSocketListner;
 class ServerToClientLetter;
 class Profiler;
 
@@ -57,8 +56,9 @@ namespace Neuron
       Neuron::SlotMap<std::unique_ptr<ServerToClient>> m_clients;
       Neuron::SlotMap<std::unique_ptr<ServerTeam>> m_teams;
 
-      NetMutex* m_inboxMutex;
-      NetMutex* m_outboxMutex;
+      // No mutexes. Both of these are filled and drained by Advance on one
+      // thread now — the listen thread that used to fill the inbox is gone,
+      // and with it the only reason two threads ever touched either.
       std::vector<std::unique_ptr<NetworkUpdate>> m_inbox;
       std::vector<std::unique_ptr<ServerToClientLetter>> m_outbox;
 
@@ -69,12 +69,20 @@ namespace Neuron
       // them at the front of the next tick's letter.
       std::vector<NetworkUpdate> m_pendingUpdates;
 
+      // The one socket, bound to ServerPort and polled from Advance.
+      UdpSocket m_socket;
+
       Server();
       ~Server();
 
       // Handed its profiler rather than reaching for it through the application
       // object. Networking is always real UDP; there is no in-process shortcut.
       void Initialise(Profiler* _profiler);
+
+      // Drains everything the socket is holding into the inbox. Called at the
+      // top of Advance; separate so that T7's transport seam has one place to
+      // go in.
+      void ReceiveDatagrams();
 
       std::unique_ptr<NetworkUpdate> GetNextLetter();
 

@@ -1,11 +1,7 @@
 #include "pch.h"
 
 #include "NetLib.h"
-#include "NetMutex.h"
-#include "NetSocket.h"
-#include "NetSocketListener.h"
-#include "NetThread.h"
-#include "NetUdpPacket.h"
+#include "UdpSocket.h"
 
 #include "Debug.h"
 #include "Profiler.h"
@@ -35,44 +31,10 @@ namespace Neuron
   // Class Server
   // ****************************************************************************
 
-  // The socket listener takes a plain function pointer, so the running server has
-  // to be reachable from file scope. This replaces g_app->m_server; it is set in
-  // Initialise and is the only global state left in this file.
-  static Server* s_server = nullptr;
-
-  // ***ListenCallback
-  static NetCallBackRetType ListenCallback(NetUdpPacket* udpdata)
-  {
-    if (udpdata)
-    {
-      NetIpAddress* fromAddr = &udpdata->m_clientAddress;
-
-      if (s_server)
-      {
-        // The datagram's real length, which this had never passed: the update
-        // used to be parsed out of m_data with no bound at all, so a client
-        // could walk the server off the end of the receive buffer with one
-        // short packet.
-        auto letter = std::make_unique<NetworkUpdate>(udpdata->m_data, udpdata->m_length);
-        if (letter->IsValid())
-        {
-          s_server->ReceiveLetter(std::move(letter), IpToString(fromAddr->sin_addr));
-        }
-        //            SET_PROFILE(m_profiler,  "#Server Receive", (double) udpdata->getLength() );
-      }
-
-      delete udpdata;
-    }
-
-    return 0;
-  }
-
   Server::Server()
     : m_netLib(nullptr),
       m_profiler(nullptr),
-      m_sequenceId(0),
-      m_inboxMutex(nullptr),
-      m_outboxMutex(nullptr)
+      m_sequenceId(0)
   {
     m_sync.SetSize(0);
   }
@@ -82,45 +44,50 @@ namespace Neuron
     m_history.clear();
     m_clients.Empty();
     m_teams.Empty();
+    m_inbox.clear();
+    m_outbox.clear();
 
-    // The mutexes are created by Initialise, not by the constructor, so a Server
-    // that was built and never initialised used to null-dereference here. Species
-    // always pairs the two, which is why nothing hit it — but a class you cannot
-    // destroy without starting its network threads is a class no test can hold.
-    if (m_inboxMutex)
-    {
-      m_inboxMutex->Lock();
-      m_inbox.clear();
-      m_inboxMutex->Unlock();
-    }
-
-    if (m_outboxMutex)
-    {
-      m_outboxMutex->Lock();
-      m_outbox.clear();
-      m_outboxMutex->Unlock();
-    }
-  }
-
-  static NetCallBackRetType ListenThread(void* ptr)
-  {
-    auto m_listener = new NetSocketListener(4000);
-    m_listener->StartListening(ListenCallback);
-    return 0;
+    // No mutexes and no thread to stop. The listen thread this used to leave
+    // running — still holding a pointer to a Server about to be destroyed, and
+    // safe only because the process was about to exit — does not exist any
+    // more; the socket closes with the member.
   }
 
   void Server::Initialise(Profiler* _profiler)
   {
     m_profiler = _profiler;
-    s_server = this;
-
-    m_inboxMutex = new NetMutex();
-    m_outboxMutex = new NetMutex();
 
     m_netLib = new NetLib();
     m_netLib->Initialise();
 
-    NetStartThread(ListenThread);
+    // The file-scope Server* that used to live here went with the listen
+    // thread. It existed because a socket callback is a plain function pointer
+    // and cannot carry state; nothing takes a callback now.
+    const std::error_code failure = m_socket.Open(ServerPort);
+    if (failure)
+      NetDebugOut("Server could not open port {}: {}", ServerPort, failure.message());
+  }
+
+  // *** ReceiveDatagrams
+  void Server::ReceiveDatagrams()
+  {
+    if (!m_socket.IsOpen())
+      return;
+
+    char datagram[MaxDatagramSize];
+    int received = 0;
+    Endpoint from;
+
+    while (m_socket.TryReceive(datagram, static_cast<int>(sizeof(datagram)), received, from))
+    {
+      auto update = std::make_unique<NetworkUpdate>(datagram, received);
+      if (!update->IsValid())
+        continue;
+
+      in_addr address;
+      address.s_addr = from.m_address;
+      ReceiveLetter(std::move(update), IpToString(address));
+    }
   }
 
   int Server::GetClientId(char* _ip)
@@ -245,7 +212,6 @@ namespace Neuron
 
   std::unique_ptr<NetworkUpdate> Server::GetNextLetter()
   {
-    m_inboxMutex->Lock();
     std::unique_ptr<NetworkUpdate> letter;
 
     if (!m_inbox.empty())
@@ -254,17 +220,13 @@ namespace Neuron
       m_inbox.erase(m_inbox.begin());
     }
 
-    m_inboxMutex->Unlock();
     return letter;
   }
 
   void Server::ReceiveLetter(std::unique_ptr<NetworkUpdate> update, std::string_view fromIP)
   {
     update->SetClientIp(fromIP);
-
-    m_inboxMutex->Lock();
     m_inbox.push_back(std::move(update));
-    m_inboxMutex->Unlock();
   }
 
   void Server::SendLetter(std::unique_ptr<ServerToClientLetter> letter)
@@ -281,7 +243,6 @@ namespace Neuron
   void Server::AdvanceSender()
   {
     int bytesSentThisFrame = 0;
-    m_outboxMutex->Lock();
 
     while (!m_outbox.empty())
     {
@@ -303,15 +264,21 @@ namespace Neuron
         const int linearSize = letter->Serialise(datagram, static_cast<int>(sizeof(datagram)));
         if (linearSize > 0)
         {
+          // Every client is written to through the server's one socket, rather
+          // than through a NetSocket per client that had to be "connected"
+          // before it could be used. Identity does not change here — the reply
+          // still goes to the address the client registered with, on the fixed
+          // client port. T9 is what makes it the address the datagram actually
+          // arrived from.
           ServerToClient* client = m_clients[letter->GetClientId()].get();
-          NetSocket* socket = client->GetSocket();
-          socket->WriteData(datagram, linearSize);
-          bytesSentThisFrame += linearSize;
+          const std::error_code failure = m_socket.SendTo(client->GetEndpoint(), datagram, linearSize);
+          if (failure)
+            NetDebugOut("Server send to {} failed: {}", client->GetEndpoint().ToString(), failure.message());
+          else
+            bytesSentThisFrame += linearSize;
         }
       }
     }
-
-    m_outboxMutex->Unlock();
 
     if (bytesSentThisFrame > 0)
     {
@@ -335,6 +302,15 @@ namespace Neuron
   void Server::Advance()
   {
     START_PROFILE(m_profiler, "Advance Server");
+
+    //
+    // Take everything the socket has been holding since the last tick. This
+    // used to arrive on a listen thread as it happened, and sit in the inbox
+    // behind a mutex until exactly this point — so draining here rather than
+    // there costs nothing and removes the only reason the server had a second
+    // thread.
+
+    ReceiveDatagrams();
 
     //
     // Compile all incoming messages into a ServerToClientLetter
@@ -449,9 +425,7 @@ namespace Neuron
             auto letterCopy = std::make_unique<ServerToClientLetter>(*theLetter);
             letterCopy->SetClientId(i);
 
-            m_outboxMutex->Lock();
             m_outbox.push_back(std::move(letterCopy));
-            m_outboxMutex->Unlock();
           }
         }
       }
