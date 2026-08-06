@@ -503,10 +503,17 @@ tasks:
       - Tests/GameLogicTests/EntityGridTests.cpp
     acceptance:
       - Characterisation first, conversion second, in separate commits -
-        tests written against the dense grid (same insertions -> pinned
-        results AND result order for GetNeighbours, GetEnemies,
-        GetBestEnemy, the counting and presence variants) still pass
-        unmodified on the sparse grid
+        tests written against the dense grid still pass unmodified on the
+        sparse grid. What those tests can and cannot reach was measured
+        while writing them and is recorded in the notes - the counting and
+        presence variants are reachable, GetNeighbours and everything built
+        on it is NOT, so the tests pin what decides which cells are visited
+        and the shadow mode below owns the ordering
+      - The ORDER GetNeighbours returns ids in is proved by the Debug shadow
+        mode, not by a unit test, because it cannot be reached from a test
+        DLL - see notes. Shadow mode therefore compares result ORDER and not
+        merely membership, and the T5 Garden run is where that proof is
+        actually collected
       - Shadow-mode dual verification exists behind a Debug define - dense
         and sparse grids run side by side with every query asserting equal
         results and order - and stays on through the next Garden gate
@@ -532,6 +539,30 @@ tasks:
       is the method - characterise before converting; the first red run is
       information. EntityGridCell's 32-byte sizeof assumption from the
       design should be verified here and the doc corrected if wrong.
+
+      CHARACTERISATION LANDED 2026-08-06; the conversion has NOT. Nine tests
+      were added to Tests/GameLogicTests/EntityGridTests.cpp and the reading
+      that produced them found the thing this task most needs to know:
+      GetNeighbours CANNOT be called from a test DLL. It resolves every
+      candidate through Location::GetEntity (EntityGrid.cpp:475), which
+      dereferences m_teams (Location.cpp:448), and m_teams is null on a
+      default-constructed Location - the untested-entity-behaviour gap
+      AGENTS.md already records. GetNumNeighbours and AreNeighboursPresent
+      do not call GetEntity and are reachable, which is why every existing
+      test used them.
+
+      So the ordering property - the one that feeds target selection, which
+      feeds positions, which feed the sync value - has no unit test and
+      cannot have one without opening that gap. The shadow mode is not a
+      belt-and-braces extra on this task, it is the only instrument that can
+      see the property, and it must compare ORDER rather than membership.
+      The tests that did land pin what decides which cells are visited at
+      all: truncation toward cell zero on negative coordinates, exactness at
+      cell boundaries, multi-cell occupancy for a radius (applied as
+      _radius/2 per side, so the parameter behaves as a diameter), the
+      query-path dedup, removal clearing every occupied cell, many objects
+      in one cell exercising the free list, UpdateObject crossing a
+      boundary, off-edge clamping, and count/presence agreement.
 
   - id: T12
     title: ObstructionGrid becomes per-chunk, built at activation
