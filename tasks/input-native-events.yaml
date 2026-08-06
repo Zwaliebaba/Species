@@ -103,8 +103,12 @@ tasks:
       - python3 tools/check_layering.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
     notes: |
+      Landed 2026-08-06. CI green at 7e7b57d, first round: 19 files and 1210
+      lines gone, and the tree still builds, links and passes the suite. The
+      build and test verify commands were run by CI rather than locally.
+
       THE AUDIT, re-run 2026-08-06 before anything was deleted, as the first
       acceptance criterion requires.
 
