@@ -50,6 +50,13 @@ namespace Neuron
 
       std::vector<std::unique_ptr<ServerToClientLetter>> m_history;
 
+      // The sequence id of m_history.front(). Zero until pruning starts, which
+      // is why the history could be indexed by sequence id directly before T10.
+      int m_historyBaseSequenceId = 0;
+
+      // Drops every letter no live client can still ask for.
+      void PruneHistory();
+
     public:
       int m_sequenceId;
 
@@ -105,5 +112,11 @@ namespace Neuron
 
       void AdvanceSender();
       void Advance();
+
+      // How many letters are still held for retransmission. Exposed for
+      // HistoryStaysBoundedOverALongRun, which is the only way to observe that
+      // pruning happens at all — m_history is otherwise private and its size is
+      // not visible in anything the protocol sends.
+      [[nodiscard]] int HistorySize() const { return static_cast<int>(m_history.size()); }
   };
 } // namespace Neuron

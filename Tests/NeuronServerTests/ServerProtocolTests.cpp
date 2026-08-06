@@ -497,5 +497,156 @@ namespace NeuronServerTests
 
         Assert::AreEqual(2, server.m_clients.NumUsed(), L"two endpoints are two clients even with one token between them");
       }
+      // ------------------------------------------------------------------
+      // Liveness and bounded memory: a server that never forgets a dead client
+      // and never prunes its history cannot run longer than its memory.
+      // ------------------------------------------------------------------
+
+      TEST_METHOD(AClientThatGoesSilentIsDisconnected)
+      {
+        // There was no timeout at all before T10. RemoveClient fired only on a
+        // graceful ClientLeave, so a client that crashed was retransmitted to
+        // forever and held the history window open behind it.
+        Neuron::LoopbackNetwork network;
+        const Neuron::Endpoint serverAddress(0x0100007F, ServerPort);
+
+        Server server;
+        server.Initialise(s_profiler, std::make_unique<Neuron::LoopbackTransport>(network, serverAddress));
+
+        ScriptedClient client(network, 45001);
+        client.SendJoin(serverAddress);
+        server.Advance();
+        Assert::AreEqual(1, server.m_clients.NumUsed());
+
+        // Silence. The join tick already counted one, so this leaves the
+        // counter one short of the timeout.
+        for (int tick = 0; tick < ClientTimeoutTicks - 2; ++tick)
+          server.Advance();
+
+        Assert::AreEqual(1, server.m_clients.NumUsed(), L"still connected one tick short of the timeout");
+
+        server.Advance();
+
+        Assert::AreEqual(0, server.m_clients.NumUsed(), L"and gone at it");
+
+        // And everyone is told, which is what GoodbyeClient is for.
+        bool sawGoodbye = false;
+        for (ServerToClientLetter const& letter : client.Collect())
+          sawGoodbye = sawGoodbye || letter.m_type == ServerToClientLetter::LetterType::GoodbyeClient;
+
+        Assert::IsTrue(sawGoodbye, L"a timed-out client is announced like any other departure");
+      }
+
+      TEST_METHOD(AClientThatKeepsTalkingIsNotDisconnected)
+      {
+        // The negative control. A timeout that fires on a live client is worse
+        // than no timeout at all, and IAmAlive exists precisely so that a client
+        // with nothing to say still says something.
+        Neuron::LoopbackNetwork network;
+        const Neuron::Endpoint serverAddress(0x0100007F, ServerPort);
+
+        Server server;
+        server.Initialise(s_profiler, std::make_unique<Neuron::LoopbackTransport>(network, serverAddress));
+
+        ScriptedClient client(network, 45001);
+        client.SendJoin(serverAddress);
+        server.Advance();
+
+        for (int tick = 0; tick < ClientTimeoutTicks * 3; ++tick)
+        {
+          client.SendSelectUnit(serverAddress, server.m_sequenceId - 1, 1, tick);
+          server.Advance();
+          client.Collect();
+        }
+
+        Assert::AreEqual(1, server.m_clients.NumUsed(), L"a client that keeps talking stays connected");
+      }
+
+      TEST_METHOD(HistoryStaysBoundedOverALongRun)
+      {
+        // m_history was every letter the server had ever sent. At 10 Hz that is
+        // 36,000 letters an hour, each carrying its updates, and nothing ever
+        // removed one — so the only bound on a long game was memory.
+        Neuron::LoopbackNetwork network;
+        const Neuron::Endpoint serverAddress(0x0100007F, ServerPort);
+
+        Server server;
+        server.Initialise(s_profiler, std::make_unique<Neuron::LoopbackTransport>(network, serverAddress));
+
+        ScriptedClient client(network, 45001);
+        client.SendJoin(serverAddress);
+        server.Advance();
+        client.Collect();
+
+        int highWaterMark = 0;
+        for (int tick = 0; tick < 200; ++tick)
+        {
+          client.SendSelectUnit(serverAddress, server.m_sequenceId - 1, 1, tick);
+          server.Advance();
+          client.Collect();
+
+          const int held = server.HistorySize();
+          if (held > highWaterMark)
+            highWaterMark = held;
+        }
+
+        Assert::AreEqual(202, server.m_sequenceId, L"two hundred ticks did happen");
+        Assert::IsTrue(highWaterMark <= 4, L"and the history never grew past a handful of letters");
+      }
+
+      TEST_METHOD(HistoryIsHeldForAClientThatHasNotAcknowledged)
+      {
+        // The other half: pruning must not drop what somebody still needs. A
+        // client that acknowledges nothing holds the window open — until the
+        // timeout removes it, which is what stops that being a leak.
+        Neuron::LoopbackNetwork network;
+        const Neuron::Endpoint serverAddress(0x0100007F, ServerPort);
+
+        Server server;
+        server.Initialise(s_profiler, std::make_unique<Neuron::LoopbackTransport>(network, serverAddress));
+
+        ScriptedClient client(network, 45001);
+        client.SendJoin(serverAddress);
+        server.Advance();
+
+        // Keep the client alive without ever acknowledging anything: a join
+        // carries a last-seen id of -1, and so does every one of these.
+        for (int tick = 0; tick < 5; ++tick)
+        {
+          client.SendSelectUnit(serverAddress, -1, 1, tick);
+          server.Advance();
+        }
+
+        Assert::IsTrue(server.HistorySize() > 4, L"nothing may be dropped while a client might still ask for it");
+      }
+
+      TEST_METHOD(AFullServerRefusesATeamRatherThanAsserting)
+      {
+        // NUM_TEAMS teams exist. The NUM_TEAMS+1th request used to be a
+        // DEBUG_ASSERT, which is a Debug crash and, in Release, a team written
+        // into a table that had no room for it.
+        Neuron::LoopbackNetwork network;
+        const Neuron::Endpoint serverAddress(0x0100007F, ServerPort);
+
+        Server server;
+        server.Initialise(s_profiler, std::make_unique<Neuron::LoopbackTransport>(network, serverAddress));
+
+        std::vector<std::unique_ptr<ScriptedClient>> clients;
+        for (int i = 0; i < NUM_TEAMS + 2; ++i)
+        {
+          clients.push_back(std::make_unique<ScriptedClient>(network, static_cast<unsigned short>(45001 + i)));
+          clients.back()->SendJoin(serverAddress);
+        }
+
+        server.Advance();
+        Assert::AreEqual(NUM_TEAMS + 2, server.m_clients.NumUsed());
+
+        for (auto const& client : clients)
+          client->SendRequestTeam(serverAddress);
+
+        server.Advance();
+
+        Assert::AreEqual(NUM_TEAMS, server.m_teams.NumUsed(), L"a full server hands out no more teams and does not fall over");
+      }
   };
 } // namespace NeuronServerTests

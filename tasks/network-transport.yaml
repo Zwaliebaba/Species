@@ -767,7 +767,52 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: >
+      THE TIMEOUT IS COUNTED IN TICKS, NOT SECONDS, and that is a deliberate
+      reading of "ten times IAMALIVE_PERIOD". The server has no clock inside
+      Advance; the server tick period and IAMALIVE_PERIOD are the same number,
+      so ten ticks IS ten IAmAlive periods; and a tick count is reachable by a
+      test where a wall clock is not. The client's side of it is in seconds,
+      because the client has a clock and no tick of its own.
+
+      PRUNING BROKE AN INVARIANT NOTHING WROTE DOWN: m_history was indexed by
+      SEQUENCE ID, because the two were the same number while nothing was ever
+      removed. Dropping from the front makes them differ, so the broadcast loop
+      now subtracts m_historyBaseSequenceId. That is the kind of thing that
+      would have compiled, run, and silently retransmitted the wrong letters.
+
+      A CLIENT THAT ACKNOWLEDGES NOTHING HOLDS THE WINDOW OPEN, by design -
+      pruning must not drop what somebody can still ask for. What stops that
+      being a leak is the timeout: the client is removed, and the window goes
+      with it. Both halves have a test, and so does the negative control, a
+      client that keeps talking and is not disconnected.
+
+      TWO DEBUG_ASSERTS BECAME RUNTIME BEHAVIOUR. The desync check logged
+      nothing and stopped nothing in Release - two clients simulating different
+      worlds played on, and the divergence compounds - so it now names the
+      sequence id and both sync values and disconnects the client that
+      disagrees. The team-capacity check was a Debug crash and a Release write
+      past the end of the table for the ordinary event of a fifth player asking
+      for a team on a four-team server; it refuses and says so.
+
+      THE DESYNC IS ACTED ON AFTER THE DRAIN, not inside it: removing a client
+      mid-loop invalidates the id the rest of that iteration uses. The timeout
+      loop has the same hazard in a smaller form and takes a COPY of the
+      endpoint before calling RemoveClient, which destroys the object the
+      reference points into.
+
+      WHAT IS EXPOSED AND NOT YET USED: ClientToServer::IsServerSilent. The
+      acceptance asks the client to expose the state rather than to act on it,
+      and nothing does act on it - there is no UI for "the server has gone
+      away". Recorded as a gap rather than left to be discovered.
+
+      NOT COMPILED. Nothing in this task is reachable by the g++ harness: it is
+      all Server and ClientToServer. The tick and sequence arithmetic in the
+      three counting tests was traced by hand against Advance's order of
+      operations, and one boundary was wrong on the first attempt - the join
+      tick itself increments the silence counter, so the timeout arrives a tick
+      earlier than the obvious reading suggests.
 
   - id: T11
     title: Closing sweep - greps at zero, constants named, checks green

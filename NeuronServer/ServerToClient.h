@@ -30,5 +30,10 @@ namespace Neuron
       [[nodiscard]] int GetConnectionId() const;
 
       int m_lastKnownSequenceId;
+
+      // Server ticks since anything arrived from this client. Reset by every
+      // datagram it sends, including the IAmAlive it sends when it has nothing
+      // else to say.
+      int m_ticksSinceHeardFrom;
   };
 } // namespace Neuron

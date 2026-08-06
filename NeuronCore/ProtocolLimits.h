@@ -42,6 +42,24 @@ inline constexpr int MaxDatagramSize = 1024;
 // so a client binds port 0 and lets the OS choose.
 inline constexpr unsigned short ServerPort = 4000;
 
+// LIVENESS. A client that stops sending is disconnected after this many server
+// ticks — ten, which at SERVER_ADVANCE_PERIOD is ten times IAMALIVE_PERIOD, the
+// rate a live client sends at.
+//
+// Counted in TICKS rather than seconds, deliberately: the server has no clock
+// in Advance, a tick count is exactly what "ten IAmAlive periods" means when
+// the two periods are equal, and it makes the timeout reachable by a test
+// without one. There was NO timeout at all before — RemoveClient fired only on
+// a graceful ClientLeave, so a client that crashed was retransmitted to forever
+// while its history grew without bound.
+inline constexpr int ClientTimeoutTicks = 10;
+
+// The other direction, and this one IS in seconds because the client has a
+// clock and no tick of its own. A client that has heard nothing for this long
+// has lost the server; it used to advance its simulation forward on an empty
+// inbox indefinitely and never say so.
+inline constexpr double ServerSilenceTimeout = 5.0;
+
 // ****************************************************************************
 //  THE DATAGRAM FRAME. Four bytes in front of everything that goes out.
 // ****************************************************************************

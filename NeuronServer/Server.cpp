@@ -173,7 +173,16 @@ namespace Neuron
     }
     else
     {
-      DEBUG_ASSERT(m_teams.NumUsed() < NUM_TEAMS);
+      if (m_teams.NumUsed() >= NUM_TEAMS)
+      {
+        // A refusal, not an assert. There are NUM_TEAMS teams and a fifth
+        // player asking for one is an ordinary thing to happen on a full
+        // server — it used to be a Debug crash and, in Release, a team written
+        // past the end of the table.
+        NetDebugOut("SERVER: refusing a team request, all {} teams are taken", NUM_TEAMS);
+        return;
+      }
+
       int teamId = m_teams.PutData(std::make_unique<ServerTeam>(clientId));
 
       auto letter = std::make_unique<ServerToClientLetter>();
@@ -267,6 +276,38 @@ namespace Neuron
     }
   }
 
+  // *** PruneHistory
+  void Server::PruneHistory()
+  {
+    // Everything at or below the lowest sequence id every live client has
+    // acknowledged can never be asked for again, so it is dropped. Without
+    // this the history is every letter the server has ever sent: a host that
+    // runs for an hour at 10 Hz holds 36,000 of them, and one that runs for a
+    // day cannot.
+    //
+    // With no clients there is nobody to retransmit to and the whole window
+    // goes. That is also what makes a crashed client's history recoverable —
+    // it is the timeout above that eventually removes the client holding the
+    // window open.
+    int lowestAcknowledged = m_sequenceId - 1;
+
+    for (int i = 0; i < m_clients.Size(); ++i)
+    {
+      if (m_clients.ValidIndex(i) && m_clients[i]->m_lastKnownSequenceId < lowestAcknowledged)
+        lowestAcknowledged = m_clients[i]->m_lastKnownSequenceId;
+    }
+
+    const int dropUpTo = lowestAcknowledged + 1 - m_historyBaseSequenceId;
+    if (dropUpTo <= 0)
+      return;
+
+    const int available = static_cast<int>(m_history.size());
+    const int drop = dropUpTo < available ? dropUpTo : available;
+
+    m_history.erase(m_history.begin(), m_history.begin() + static_cast<std::ptrdiff_t>(drop));
+    m_historyBaseSequenceId += drop;
+  }
+
   void FillLetter(ServerToClientLetter& _letter, std::vector<NetworkUpdate>& _pending)
   {
     size_t taken = 0;
@@ -298,6 +339,11 @@ namespace Neuron
 
     auto letter = std::make_unique<ServerToClientLetter>();
     letter->SetType(ServerToClientLetter::LetterType::Update);
+
+    // A desync is acted on after the drain rather than inside it: removing a
+    // client mid-loop would invalidate the id the rest of this iteration uses.
+    bool clientDesynced = false;
+    Endpoint desyncedClient;
 
     std::unique_ptr<NetworkUpdate> incoming = GetNextLetter();
 
@@ -349,8 +395,18 @@ namespace Neuron
           if (m_sync.ValidIndex(sequenceId))
           {
             unsigned char lastKnownSync = m_sync[sequenceId];
-            DEBUG_ASSERT(lastKnownSync == sync);
-            // DebugTrace( "Sync %02d verified as %03d\n", sequenceId, sync );
+            if (lastKnownSync != sync)
+            {
+              // A DESYNC, AT RUNTIME. This was a DEBUG_ASSERT, so a Release
+              // build played on with two clients simulating different worlds and
+              // nothing said so — which is the worst outcome available, because
+              // the divergence compounds silently. The offending client is told
+              // to go rather than left in a session it no longer agrees with.
+              NetDebugOut("SERVER: desync at sequence {} — client {} says {}, everyone else says {}", sequenceId, GetClientId(incoming->m_source),
+                          static_cast<int>(sync), static_cast<int>(lastKnownSync));
+              desyncedClient = incoming->m_source;
+              clientDesynced = true;
+            }
           }
           else
           {
@@ -371,11 +427,38 @@ namespace Neuron
       if (clientId != -1)
       {
         ServerToClient* sToc = m_clients[clientId].get();
+        sToc->m_ticksSinceHeardFrom = 0;
         if (incoming->m_lastSequenceId > sToc->m_lastKnownSequenceId)
           sToc->m_lastKnownSequenceId = incoming->m_lastSequenceId;
       }
 
       incoming = GetNextLetter();
+    }
+
+    if (clientDesynced && GetClientId(desyncedClient) != -1)
+      RemoveClient(desyncedClient);
+
+    //
+    // Anything that has not been heard from for long enough is gone. There was
+    // no timeout at all before this: RemoveClient fired only on a graceful
+    // ClientLeave, so a client that crashed was retransmitted to forever and
+    // its unacknowledged history could never be pruned.
+
+    for (int i = 0; i < m_clients.Size(); ++i)
+    {
+      if (!m_clients.ValidIndex(i))
+        continue;
+
+      ++m_clients[i]->m_ticksSinceHeardFrom;
+      if (m_clients[i]->m_ticksSinceHeardFrom >= ClientTimeoutTicks)
+      {
+        NetDebugOut("SERVER: client {} silent for {} ticks, disconnecting", i, m_clients[i]->m_ticksSinceHeardFrom);
+
+        // A copy, not GetEndpoint()'s reference: RemoveClient destroys the
+        // ServerToClient that reference points into.
+        const Endpoint endpoint = m_clients[i]->GetEndpoint();
+        RemoveClient(endpoint);
+      }
     }
 
     FillLetter(*letter, m_pendingUpdates);
@@ -394,15 +477,19 @@ namespace Neuron
       {
         ServerToClient* s2c = m_clients[i].get();
         int sendFrom = s2c->m_lastKnownSequenceId + 1;
-        int sendTo = static_cast<int>(m_history.size());
+        int sendTo = m_historyBaseSequenceId + static_cast<int>(m_history.size());
         if (sendTo - sendFrom > maxUpdates)
           sendTo = sendFrom + maxUpdates;
 
         for (int l = sendFrom; l < sendTo; ++l)
         {
-          if (l >= 0 && l < static_cast<int>(m_history.size()))
+          // l is a SEQUENCE ID and m_history is a window, so the two are only
+          // the same while nothing has been pruned. They were the same thing
+          // before pruning existed, which is why this used to index directly.
+          const int index = l - m_historyBaseSequenceId;
+          if (index >= 0 && index < static_cast<int>(m_history.size()))
           {
-            ServerToClientLetter* theLetter = m_history[l].get();
+            ServerToClientLetter* theLetter = m_history[index].get();
             auto letterCopy = std::make_unique<ServerToClientLetter>(*theLetter);
             letterCopy->SetClientId(i);
 
@@ -412,6 +499,7 @@ namespace Neuron
       }
     }
 
+    PruneHistory();
     AdvanceSender();
 
     END_PROFILE(m_profiler, "Advance Server");

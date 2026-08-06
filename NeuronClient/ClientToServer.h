@@ -46,6 +46,11 @@ namespace Neuron
 
       int m_connectionId;
 
+      // When a letter last arrived. Set at construction rather than left at
+      // zero, so a client that never hears from the server at all — which is
+      // the case most worth reporting — is measured from when it started.
+      double m_lastHeardFromServer;
+
       // Chosen once, sent with ClientJoin, and echoed back in the HelloClient
       // that belongs to this client. Every client receives every letter, so
       // this is how one is told apart from another's.
@@ -71,6 +76,16 @@ namespace Neuron
       // ProcessServerLetters compared every TeamAssign against, so on a real
       // network every client believed every team assignment was its own.
       [[nodiscard]] int GetConnectionId() const { return m_connectionId; }
+
+      // True when nothing has arrived from the server for ServerSilenceTimeout.
+      //
+      // The client used to have no opinion about this at all: an empty inbox
+      // and a server that had gone away look identical from here, so it sat
+      // there with the simulation stalled and nothing to say about why. This is
+      // the state to say it with — no caller acts on it yet, which is a gap
+      // recorded in the task rather than an oversight.
+      [[nodiscard]] bool IsServerSilent() const;
+      [[nodiscard]] double TimeSinceServerHeard() const;
 
       // Releases the head of the inbox only when it is the letter the caller is
       // next expecting. The caller owns that counter — it tracks how far the

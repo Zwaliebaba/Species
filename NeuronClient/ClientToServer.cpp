@@ -41,6 +41,7 @@ namespace Neuron
   {
     m_connectionId = -1;
     m_joinToken = MakeJoinToken();
+    m_lastHeardFromServer = GetHighResTime();
     m_lastValidSequenceIdFromServer = -1;
     m_startTime = DBL_MAX; // Same initial value g_startTime carried in Main.cpp
 
@@ -74,9 +75,15 @@ namespace Neuron
     // a client, and a test has neither. Nothing in the game calls it.
     m_connectionId = -1;
     m_joinToken = MakeJoinToken();
+    m_lastHeardFromServer = GetHighResTime();
     m_lastValidSequenceIdFromServer = -1;
     m_startTime = DBL_MAX;
   }
+
+
+  double ClientToServer::TimeSinceServerHeard() const { return GetHighResTime() - m_lastHeardFromServer; }
+
+  bool ClientToServer::IsServerSilent() const { return TimeSinceServerHeard() > ServerSilenceTimeout; }
 
 
   ClientToServer::~ClientToServer()
@@ -196,6 +203,13 @@ namespace Neuron
       return;
     }
 #endif
+
+    //
+    // The server is alive. After the drop hook rather than before it, so a
+    // packet the debug build is pretending to lose does not count as having
+    // been heard.
+
+    m_lastHeardFromServer = GetHighResTime();
 
     //
     // Our own welcome, recognised by the token we chose and the server echoed.
