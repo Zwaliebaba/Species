@@ -43,6 +43,7 @@ namespace Neuron
     MouseButtonDown,
     MouseButtonUp,
     MouseMove,
+    MouseRawMove,
     Wheel,
     FocusLost
   };
@@ -75,7 +76,10 @@ namespace Neuron
       // MouseButtonDown, MouseButtonUp. An index into the NUM_MB arrays.
       int m_button{0};
 
-      // MouseMove. Client-area pixels.
+      // MouseMove: client-area pixels, an absolute position.
+      // MouseRawMove: a RELATIVE step straight off the device, in whatever
+      // units it counts in. The two are different quantities in the same
+      // fields, and which one a reader is looking at is decided by m_type.
       int m_x{0};
       int m_y{0};
 
@@ -101,6 +105,23 @@ namespace Neuron
       // which is how the wheel has always been expressed to the bindings.
       int m_mousePos[NUM_AXES]{};
       int m_mouseVel[NUM_AXES]{};
+
+      // THIS FRAME'S RELATIVE MOUSE TRAVEL, summed from Raw Input, and the
+      // reason it is a separate pair rather than reusing m_mouseVel: they are
+      // not the same measurement.
+      //
+      // m_mouseVel[X] and [Y] are the difference between two CLIENT-AREA
+      // positions, so they stop at the edge of the screen — push the mouse
+      // right at the right-hand edge and the position cannot go any further, so
+      // the velocity reads zero and the camera stops turning while the hand is
+      // still moving. They also include Windows' pointer acceleration, and they
+      // move when the game WARPS the cursor, which is what the whole
+      // suppress-the-velocity dance existed to undo.
+      //
+      // Raw deltas have none of those properties: they are what the device
+      // reported, unclamped, unaccelerated, and silent when a warp moves the
+      // pointer without anybody touching it.
+      int m_mouseRelative[2]{};
 
       // Wheel movement too small to be a whole detent, carried between frames.
       // Dividing each message's delta on its own threw all of them away on a

@@ -162,8 +162,28 @@ namespace Neuron
     case InputCondition::COND_MOVED:
       if (MOUSE_MOVEMENT == spec.control_id)
       {
-        details.x = m_state.m_mouseVel[X];
-        details.y = m_state.m_mouseVel[Y];
+        // RAW WHEN THERE IS RAW, and the difference is what this task exists
+        // for: a client-position difference saturates at the edge of the
+        // screen, so pushing the mouse right with the pointer already against
+        // the right-hand edge produced zero and the camera stopped turning
+        // while the hand kept moving. Raw deltas are unclamped.
+        //
+        // The fallback is not decoration. RegisterRawInputDevices can fail, and
+        // a device can report absolute coordinates instead of relative — a
+        // tablet, some remote-desktop stacks — in which case no relative packet
+        // ever arrives. Without a fallback either of those leaves the game with
+        // no mouse aim whatsoever, which is a worse failure than the saturation
+        // this replaces.
+        if (UsingRawMouseMovement())
+        {
+          details.x = m_state.m_mouseRelative[X];
+          details.y = m_state.m_mouseRelative[Y];
+        }
+        else
+        {
+          details.x = m_state.m_mouseVel[X];
+          details.y = m_state.m_mouseVel[Y];
+        }
         return reading || (details.x != 0 || details.y != 0);
       }
       else if (MOUSE_WHEEL == spec.control_id)
@@ -180,13 +200,33 @@ namespace Neuron
   }
 
 
+  // Is the mouse's motion coming from the device rather than from client-area
+  // position differences? True once a relative raw packet has actually been
+  // seen, which is a stronger claim than "the registration succeeded": a device
+  // that reports ABSOLUTE coordinates registers fine and then never sends one.
+  bool W32InputDriver::UsingRawMouseMovement() const { return m_rawMouseMovementSeen && g_windowManager->RawMouseInput(); }
+
+
   bool W32InputDriver::isIdle()
   {
     static const InputFrameState idle;
 
+    // MOVEMENT IS READ WHEREVER MOVEMENT IS COMING FROM, and on the raw path
+    // that is an improvement rather than a translation: m_mouseVel moves when
+    // the GAME warps the cursor, which it does every frame in the camera modes,
+    // so this could only ever have answered "idle" in a menu. A raw delta
+    // arrives when a hand moves the mouse and at no other time.
+    bool mouseStill = memcmp(idle.m_mouseVel, m_state.m_mouseVel, sizeof(idle.m_mouseVel)) == 0;
+    if (UsingRawMouseMovement())
+    {
+      // The wheel still comes from m_mouseVel[Z]; only X and Y move over.
+      mouseStill =
+        memcmp(idle.m_mouseRelative, m_state.m_mouseRelative, sizeof(idle.m_mouseRelative)) == 0 && idle.m_mouseVel[Z] == m_state.m_mouseVel[Z];
+    }
+
     return memcmp(idle.m_keys, m_state.m_keys, sizeof(idle.m_keys)) == 0 &&
            memcmp(idle.m_keyDeltas, m_state.m_keyDeltas, sizeof(idle.m_keyDeltas)) == 0 && memcmp(idle.m_mb, m_state.m_mb, sizeof(idle.m_mb)) == 0 &&
-           memcmp(idle.m_mouseVel, m_state.m_mouseVel, sizeof(idle.m_mouseVel)) == 0;
+           mouseStill;
   }
 
 
@@ -211,15 +251,21 @@ namespace Neuron
 
   void W32InputDriver::SetMousePosNoVelocity(int _x, int _y)
   {
-    // A warp, so the position moves and the velocity does not follow. Any
-    // MouseMove still queued would undo that by reporting travel from the OLD
-    // position, so they go: the caller has just told us where the mouse is.
-    std::erase_if(m_events, [](InputEvent const& _event) { return _event.m_type == InputEventType::MouseMove; });
+    // THE POSITION IS ALL THIS STILL OWES ON THE RAW PATH. Raw deltas come from
+    // the device, so a warp — and the camera modes warp the cursor every single
+    // frame — produces none, and there is no phantom travel to suppress. The
+    // queue surgery and the zeroed velocity below are load-bearing ONLY for the
+    // WM_MOUSEMOVE fallback, where a queued MouseMove from before the warp
+    // would report travel from the position this call just overwrote.
+    if (!UsingRawMouseMovement())
+    {
+      std::erase_if(m_events, [](InputEvent const& _event) { return _event.m_type == InputEventType::MouseMove; });
+      m_state.m_mouseVel[X] = 0;
+      m_state.m_mouseVel[Y] = 0;
+    }
 
     m_state.m_mousePos[X] = _x;
     m_state.m_mousePos[Y] = _y;
-    m_state.m_mouseVel[X] = 0;
-    m_state.m_mouseVel[Y] = 0;
   }
 
 
@@ -413,6 +459,42 @@ namespace Neuron
       const int raw = GET_WHEEL_DELTA_WPARAM(wParam);
       Enqueue(InputEventType::Wheel, [raw](InputEvent& _e) { _e.m_wheelDelta = raw; });
       break;
+    }
+
+    case WM_INPUT:
+    {
+      // The mouse, as the device reports it: a relative step, unclamped by the
+      // screen and untouched by the pointer acceleration Windows applies on the
+      // way to WM_MOUSEMOVE.
+      RAWINPUT raw;
+      UINT size = sizeof(raw);
+      if (GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, &raw, &size, sizeof(RAWINPUTHEADER)) != static_cast<UINT>(-1) &&
+          raw.header.dwType == RIM_TYPEMOUSE && (raw.data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) == 0)
+      {
+        // A device that reports ABSOLUTE coordinates — a tablet, some
+        // remote-desktop stacks — is skipped rather than differenced, and that
+        // is what m_rawMouseMovementSeen is for: until a RELATIVE packet has
+        // actually arrived, the driver keeps aiming from WM_MOUSEMOVE, so such
+        // a device is left with the aim it always had rather than with none.
+        const int dx = raw.data.mouse.lLastX;
+        const int dy = raw.data.mouse.lLastY;
+        if (dx != 0 || dy != 0)
+        {
+          m_rawMouseMovementSeen = true;
+          Enqueue(InputEventType::MouseRawMove,
+                  [dx, dy](InputEvent& _e)
+                  {
+                    _e.m_x = dx;
+                    _e.m_y = dy;
+                  });
+        }
+      }
+
+      // DELIBERATELY REPORTED AS NOT PROCESSED, which is what routes it on to
+      // DefWindowProc — the system needs to see WM_INPUT to clean the raw input
+      // up after us. This is the one message here that is both read and passed
+      // along.
+      return -1;
     }
 
     case WM_MOUSEMOVE:

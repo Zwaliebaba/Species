@@ -47,6 +47,7 @@ namespace Neuron
       bool m_windowed; //
       bool m_mouseCaptured;
       bool m_waitVRT;
+      bool m_rawMouseInput; // Did RegisterRawInputDevices take?
 
       int m_mouseOffsetX;
       int m_mouseOffsetY;
@@ -92,6 +93,14 @@ namespace Neuron
       bool Windowed();
       bool Captured();
       bool MouseVisible();
+
+      // True once the window has been registered for raw mouse input, which is
+      // where the relative motion the camera aims with comes from. The input
+      // driver asks, because RegisterRawInputDevices can fail — a locked-down
+      // session, an unusual remote-desktop stack — and the fallback matters:
+      // without one, a failure would leave the game with no mouse aim at all.
+      // The answer is per WINDOW, so a resolution change re-registers.
+      bool RawMouseInput() const;
 
       void SaveDesktop();
       void RestoreDesktop();

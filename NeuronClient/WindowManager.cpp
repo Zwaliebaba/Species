@@ -41,6 +41,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 WindowManager::WindowManager()
   : m_mousePointerVisible(true),
     m_mouseCaptured(false),
+    m_rawMouseInput(false),
     m_mouseOffsetX(INT_MAX)
 {
   DEBUG_ASSERT(g_windowManager == nullptr);
@@ -260,6 +261,25 @@ bool WindowManager::CreateWin(int _width, int _height, bool _windowed, int _colo
   if (!m_win32Specific->m_hWnd)
     return false;
 
+  // RAW MOUSE INPUT, which is what WM_INPUT delivers and what the camera aims
+  // with. Registered here rather than once at startup because the registration
+  // names a window and this function builds a new one on every resolution
+  // change; a second call with the same usage page and usage REPLACES the
+  // earlier registration rather than adding to it, so there is nothing to undo.
+  //
+  // Usage page 1, usage 2 is the generic desktop mouse. No flags: raw input
+  // then follows the keyboard focus, so the game hears nothing while it is in
+  // the background — which is what it wants, and what RIDEV_INPUTSINK would
+  // change.
+  RAWINPUTDEVICE rawMouse;
+  rawMouse.usUsagePage = 0x01;
+  rawMouse.usUsage = 0x02;
+  rawMouse.dwFlags = 0;
+  rawMouse.hwndTarget = m_win32Specific->m_hWnd;
+  m_rawMouseInput = RegisterRawInputDevices(&rawMouse, 1, sizeof(rawMouse)) != FALSE;
+  if (!m_rawMouseInput)
+    DebugTrace("RegisterRawInputDevices failed ({}); mouse aim falls back to WM_MOUSEMOVE deltas\n", GetLastError());
+
   m_mouseOffsetX = INT_MAX;
 
   // Enable OpenGL for the window
@@ -272,6 +292,11 @@ void WindowManager::DestroyWin()
 {
   DisableOpenGL();
   DestroyWindow(m_win32Specific->m_hWnd);
+
+  // The raw input registration named that window. Nothing needs unregistering
+  // — the next CreateWin replaces it — but the flag must stop claiming raw
+  // deltas are arriving, because between here and there they are not.
+  m_rawMouseInput = false;
 }
 
 void WindowManager::Flip() { SwapBuffers(m_win32Specific->m_hDC); }
@@ -326,6 +351,8 @@ void WindowManager::NastyMoveMouse(int x, int y)
 }
 
 bool WindowManager::Captured() { return m_mouseCaptured; }
+
+bool WindowManager::RawMouseInput() const { return m_rawMouseInput; }
 
 void WindowManager::CaptureMouse()
 {

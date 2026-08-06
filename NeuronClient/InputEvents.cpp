@@ -32,6 +32,7 @@ namespace Neuron
     // m_mousePos and m_wheelRemainder are state and carry over.
     std::memset(_state.m_keyDeltas, 0, sizeof(_state.m_keyDeltas));
     std::memset(_state.m_mbDeltas, 0, sizeof(_state.m_mbDeltas));
+    std::memset(_state.m_mouseRelative, 0, sizeof(_state.m_mouseRelative));
 
     const int startX = _state.m_mousePos[AxisX];
     const int startY = _state.m_mousePos[AxisY];
@@ -133,6 +134,15 @@ namespace Neuron
         // the start, so intermediate positions add nothing.
         _state.m_mousePos[AxisX] = event.m_x;
         _state.m_mousePos[AxisY] = event.m_y;
+        break;
+
+      case InputEventType::MouseRawMove:
+        // SUMMED, not overwritten — the opposite of MouseMove above, and for
+        // the obvious reason: two absolute positions in one frame mean the
+        // second one is where the mouse is, and two relative steps mean it
+        // travelled the total of them.
+        _state.m_mouseRelative[AxisX] += event.m_x;
+        _state.m_mouseRelative[AxisY] += event.m_y;
         break;
 
       case InputEventType::Wheel:

@@ -40,6 +40,11 @@ namespace Neuron
 
       bool getMouseInput(InputSpec const& spec, InputDetails& details);
 
+      // True when mouse movement should be read from the raw deltas rather than
+      // from client-position differences. See the definition — it is a claim
+      // about packets actually seen, not about the registration succeeding.
+      bool UsingRawMouseMovement() const;
+
     public:
       W32InputDriver();
 
@@ -117,6 +122,12 @@ namespace Neuron
       // door — is unaffected. T8 replaces all of this with the router's
       // consuming sinks, of which this is the one case that could not wait.
       bool m_textConsumedKeys[KEY_MAX]{};
+
+      // Has a RELATIVE raw mouse packet ever arrived? Registration succeeding
+      // is not enough to answer it — an absolute-reporting device registers
+      // fine and then never sends one — and the answer decides which of the two
+      // movement sources the bindings are served from.
+      bool m_rawMouseMovementSeen{false};
 
       // Shift, control and alt as they were at one particular moment. Passed
       // through the side-effect walk rather than read off the frame state,

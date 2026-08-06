@@ -598,6 +598,10 @@ tasks:
     depends_on: [T5, T6]
     files:
       - NeuronClient/InputEvents.h
+      # The frame's relative axis is derived here, and the derivation is what
+      # InputEventTests covers. Added during the work, per docs/TASK_DAG.md.
+      - NeuronClient/InputEvents.cpp
+      - Tests/NeuronClientTests/InputEventTests.cpp
       - NeuronClient/InputDriverWin32.h
       - NeuronClient/InputDriverWin32.cpp
       - NeuronClient/WindowManager.h
@@ -605,13 +609,90 @@ tasks:
     acceptance:
       - RegisterRawInputDevices is called for the mouse; WM_INPUT deltas accumulate into the frame's relative axis
       - The MOUSE_MOVEMENT read condition serves raw deltas; absolute cursor position still comes from WM_MOUSEMOVE
-      - SetMousePosNoVelocity shrinks to warping the visible cursor - raw deltas need no velocity suppression
-      - Manual check recorded in notes - camera rotation continues while the cursor is pinned at a screen edge, which the old path could not do
+      # AMENDED 2026-08-06, DURING the work, original wording kept: it read
+      # "SetMousePosNoVelocity shrinks to warping the visible cursor - raw
+      # deltas need no velocity suppression". The first half is true and is
+      # done; the second half assumed raw deltas are the ONLY movement source,
+      # and they cannot be. RegisterRawInputDevices can fail, and a device that
+      # reports ABSOLUTE coordinates - a tablet, some remote-desktop stacks -
+      # registers successfully and then never sends a relative packet. With no
+      # fallback, either of those leaves the game with no mouse aim at all,
+      # which is a worse failure than the edge saturation this task exists to
+      # fix. So the WM_MOUSEMOVE path stays as a fallback, and the velocity
+      # suppression stays with it - reached only when the fallback is live.
+      - SetMousePosNoVelocity does nothing but record the position on the raw path; its queue surgery and velocity zeroing are reached only by the WM_MOUSEMOVE fallback, and say so at the site
+      # AMENDED 2026-08-06: this task was done on Linux, where the client cannot
+      # be launched at all, so the manual check could not be performed. It is
+      # not dropped - T12's gate already names it in exactly these words
+      # ("rotation continues at screen edges (the Raw Input improvement),
+      # reported explicitly"), so the owner run is where it lands.
+      - The screen-edge behaviour is pinned by a test at frame granularity (RawTravelSurvivesAPositionThatCannotMoveAnyFurther); the manual check is owed by T12, which already names it
     verify:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: todo
+    status: done
+    notes: |
+      Landed 2026-08-06. Written on Linux: no MSVC build, no vstest run and NO
+      RUNNING GAME. CI answers the first two; the third is T12's.
+
+      WHAT MOVED. WM_INPUT is registered for usage page 1 usage 2 in
+      WindowManager::CreateWin - there, not once at startup, because the
+      registration names a window and that function builds a new one on every
+      resolution change; a second call with the same usage REPLACES the first,
+      so there is nothing to unregister. Relative packets become MouseRawMove
+      events, DeriveFrameState SUMS them into a new m_mouseRelative pair, and
+      MOUSE_MOVEMENT reads that instead of the client-position difference.
+
+      SUMMED, WHERE MouseMove OVERWRITES, and it is worth stating because
+      getting it backwards is silent: two absolute positions in a frame mean the
+      second one is where the mouse is, two relative steps mean it travelled the
+      total of them.
+
+      WM_INPUT IS THE ONE MESSAGE THIS DRIVER BOTH READS AND PASSES ON. It
+      returns -1 - "not processed" - so the window procedure hands it to
+      DefWindowProc, which the system needs in order to clean the raw input up.
+
+      THE FALLBACK, and the amended criterion above is where the reasoning is.
+      Two independent failure modes end with no relative packet ever arriving,
+      and the guard is deliberately NOT "did the registration succeed" but "has
+      a relative packet actually been seen" - m_rawMouseMovementSeen - because
+      an absolute-reporting device satisfies the first and never the second.
+      Until one arrives the driver aims exactly as it did before this task.
+
+      A CONSEQUENCE THE SMOKE TEST HAS TO JUDGE, and it is the thing to look at
+      first: RAW DELTAS DO NOT CARRY WINDOWS' POINTER ACCELERATION, and in this
+      tree that reaches further than camera aim. TargetCursor does not read the
+      OS cursor position at all - it accumulates ControlTargetMove into its own
+      m_screenCoords and WARPS the OS cursor to match - so the same control
+      moves the visible cursor and the camera. Serving it raw deltas therefore
+      changes how the cursor feels in menus as well as how the camera turns.
+      That is what the acceptance asks for and the plan's intent describes, and
+      it is not something a green build can have an opinion about.
+
+      WHAT THAT SAME MEASUREMENT SAYS ABOUT THIS TASK'S INTENT FIELD, recorded
+      because it is wrong rather than because it matters: "the visible cursor
+      keeps riding WM_MOUSEMOVE for the UI" describes a design this code does
+      not have. NOTHING reads the driver's absolute mouse position - m_mousePos
+      exists to difference into m_mouseVel and for nothing else, because the
+      cursor is game-driven as above. The absolute position is still tracked
+      from WM_MOUSEMOVE, as the acceptance requires, and T8 is the task that
+      gives it a consumer when the Eclipse sink starts receiving mouse events
+      directly.
+
+      isIdle GOT BETTER RATHER THAN JUST DIFFERENT. It compared m_mouseVel,
+      which moves when the GAME warps the cursor - every frame, in every camera
+      mode - so outside a menu it could never have answered "idle". On the raw
+      path it compares m_mouseRelative, which is silent unless a hand moved the
+      mouse. The wheel still comes from m_mouseVel[Z].
+
+      VERIFIED AS FAR AS LINUX ALLOWS. Three new InputEventTests, and the same
+      rules run again in the standalone g++ harness under ASan and UBSan: deltas
+      summing across a frame and resetting on the next, raw moves never
+      deferring what is behind them, and the named case - a pinned position
+      reporting zero velocity while the raw axis reports 12. That last one is
+      the whole task at frame granularity, and it is still not the same claim as
+      turning the camera with the pointer against the edge of a real screen.
 
   - id: T8
     title: Dispatch events through a router with consuming sinks, UI first
