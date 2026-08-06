@@ -9,6 +9,7 @@
 #include "Debug.h"
 #include "Preferences.h"
 #include "Profiler.h"
+#include "Random.h"
 #include "Input.h"
 
 // Server.h was included here and never used — no Server appears in this file.
