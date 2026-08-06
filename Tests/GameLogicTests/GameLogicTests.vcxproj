@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="TerrainChunkTests.cpp" />
     <ClCompile Include="EntityGridTests.cpp" />
     <ClCompile Include="InputFieldTests.cpp" />
     <ClCompile Include="LevelFileTests.cpp" />
