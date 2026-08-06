@@ -88,6 +88,12 @@ namespace Neuron
     DEBUG_ASSERT(0 <= button && button < KEY_MAX);
     details.type = InputType::INPUT_TYPE_BOOL;
 
+    // The UI took this one. See m_textConsumedKeys — the state underneath is
+    // untouched and still says what the keyboard is doing; this is the read
+    // being answered as though the key were not there.
+    if (m_textConsumedKeys[button])
+      return false;
+
     // spec.condition is a driver-defined int; this driver reads it as an
     // InputCondition, which is what the cast says. See InputSpec.h.
     switch (static_cast<InputCondition>(spec.condition))
@@ -260,6 +266,16 @@ namespace Neuron
 
   void W32InputDriver::Advance()
   {
+    // A key the text field took stays taken until it comes back up. This runs
+    // BEFORE the derivation, so it reads the PREVIOUS frame's held state: a key
+    // released last frame had its up edge suppressed last frame, and clearing
+    // the mark now is the first moment at which nothing is left to hide.
+    for (int key = 0; key < KEY_MAX; ++key)
+    {
+      if (m_textConsumedKeys[key] && m_state.m_keys[key] == 0)
+        m_textConsumedKeys[key] = false;
+    }
+
     // Pump first, so everything Windows has for us is in the queue, then
     // derive one frame from it. What the frame cannot represent stays queued
     // and is the first thing the next frame sees.
@@ -283,6 +299,12 @@ namespace Neuron
   // driver entirely.
   void W32InputDriver::ApplyConsumedEventSideEffects(size_t _consumed, ModifierState _modifiers)
   {
+    // Which key produced the character that is about to arrive. Windows sends
+    // WM_CHAR from TranslateMessage on the WM_KEYDOWN before it, so the most
+    // recent key down in this walk IS the one — and it is the key the mark has
+    // to land on, because a character carries no key code of its own.
+    int lastKeyDown = -1;
+
     for (size_t i = 0; i < _consumed; ++i)
     {
       InputEvent const& event = m_events[i];
@@ -318,6 +340,9 @@ namespace Neuron
         break;
 
       case InputEventType::KeyDown:
+        if (event.m_key >= 0 && event.m_key < KEY_MAX)
+          lastKeyDown = event.m_key;
+
         // Eclipse's keyboard hook, with the modifier state AS OF THIS EVENT,
         // which is why it is called from the loop rather than once afterwards.
         //
@@ -326,6 +351,16 @@ namespace Neuron
         // and this is not the task that changes that.
         if (!event.m_systemKey)
           EclUpdateKeyboard(event.m_key, _modifiers.m_shift, _modifiers.m_control, _modifiers.m_alt);
+        break;
+
+      case InputEventType::Char:
+        // IN EVENT ORDER, not batched at the end of the frame, and that is the
+        // whole reason characters are dispatched from here rather than off a
+        // per-frame list. Typing "ab" and pressing enter inside one frame has to
+        // append both letters BEFORE the enter reaches EclUpdateKeyboard and
+        // commits the field; the other order commits an empty name.
+        if (EclUpdateChar(event.m_char) && lastKeyDown >= 0)
+          m_textConsumedKeys[lastKeyDown] = true;
         break;
 
       default:
@@ -397,12 +432,21 @@ namespace Neuron
     {
       // Windows has already applied the keyboard layout and the dead keys, so
       // this is the character the user typed rather than a guess from a virtual
-      // key code. Nothing consumes it yet — T6 routes it to text input — but it
-      // is produced here because this is the message that carries it.
+      // key code. The window class is registered with RegisterClassA, so it is
+      // one byte in the active code page — the same encoding the edit buffers
+      // and the 8-bit font downstream of them use.
       const unsigned int character = static_cast<unsigned int>(wParam);
       Enqueue(InputEventType::Char, [character](InputEvent& _e) { _e.m_char = character; });
       break;
     }
+
+    case WM_SYSCHAR:
+      // SWALLOWED, AND THE EMPTY BODY IS THE POINT: it enqueues nothing and
+      // returns 0, so this never reaches DefWindowProc. Alt+key is a game
+      // binding here and never text, and the default handling of a WM_SYSCHAR
+      // with no menu to open is the system beep — one per keystroke for every
+      // Alt combination the game binds.
+      break;
 
     case WM_SYSKEYUP:
     case WM_KEYUP:

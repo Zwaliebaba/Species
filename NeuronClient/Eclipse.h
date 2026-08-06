@@ -14,6 +14,14 @@ namespace Neuron
 
   void EclUpdateMouse(int mouseX, int mouseY, bool lmb, bool rmb);
   void EclUpdateKeyboard(int keyCode, bool shift, bool ctrl, bool alt);
+
+  // One decoded character, offered to whatever the focused window has in text
+  // edit. Returns TRUE if a widget took it — the caller uses that to stop the
+  // key that produced it from also firing a game binding, which is the capture
+  // rule the router formalises in T8. A character Windows decoded is not a
+  // virtual key code: it is already correct for the user's keyboard layout,
+  // which is the whole reason this exists alongside EclUpdateKeyboard.
+  bool EclUpdateChar(unsigned int character);
   void EclRender();
   void EclUpdate();
 

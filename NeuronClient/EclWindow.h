@@ -70,6 +70,14 @@ namespace Neuron
       virtual void Render(bool hasFocus);
 
       virtual void Keypress(int keyCode, bool shift, bool ctrl, bool alt);
+
+      // A decoded character for the widget currently in text edit. Returns true
+      // if it was taken; a window with nothing being edited takes nothing.
+      // Keypress keeps its void signature and its job — the editing keys,
+      // backspace and enter and whatever a widget binds — because those are
+      // keys rather than text and are the same on every layout.
+      virtual bool Char(unsigned int character);
+
       virtual void MouseEvent(bool lmb, bool rmb, bool up, bool down);
   };
 } // namespace Neuron

@@ -22,7 +22,10 @@
 // API, no globals and no window — which is what lets InputEventTests cover the
 // rules above on a machine with no window at all.
 
-#include <vector>
+// For size_t, in the DeriveFrameState signature below. It used to arrive
+// transitively through <vector>, which T6 removed along with the character
+// collection that needed it.
+#include <cstddef>
 
 #include "KeyDefs.h"
 
@@ -104,10 +107,13 @@ namespace Neuron
       // high-resolution wheel.
       int m_wheelRemainder{0};
 
-      // Characters decoded this frame, in order. Nothing consumes this yet — T6
-      // routes it to text input — and it is here rather than in a later task
-      // because the event that fills it is produced by the same window procedure.
-      std::vector<unsigned int> m_chars;
+      // NO CHARACTERS HERE. T5 collected them into an m_chars vector as a
+      // placeholder for T6, and T6 retired it: a character has to reach the
+      // focused widget INTERLEAVED with the key events around it, because
+      // typing "ab" and then pressing enter must append both letters before the
+      // enter commits the field. A per-frame collection cannot express that
+      // ordering, so the driver dispatches Char events from its side-effect
+      // walk instead, where they sit in event order with EclUpdateKeyboard.
   };
 
 

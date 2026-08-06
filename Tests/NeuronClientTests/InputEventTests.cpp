@@ -238,18 +238,22 @@ namespace NeuronClientTests
         Assert::AreEqual(0, static_cast<int>(state.m_keys[TestKeyA]));
       }
 
-      TEST_METHOD(CharactersArriveInOrderAndAreClearedEachFrame)
+      // T5 collected characters into an m_chars vector and T6 removed it: a
+      // character has to reach the focused widget interleaved with the key
+      // events around it, so the driver dispatches it from its side-effect walk
+      // and the derivation has nothing to say about it. What the derivation
+      // still owes is that a character never DEFERS — it edges no control, so it
+      // can never be the second edge that stops a frame, and a burst of typing
+      // must not hold the keys behind it back.
+      TEST_METHOD(CharactersAreConsumedWithoutEdgingAnythingOrDeferring)
       {
         InputFrameState state;
-        std::vector<InputEvent> queue{CharEvent('h'), CharEvent('i')};
+        std::vector<InputEvent> queue{KeyEvent(InputEventType::KeyDown, TestKeyA), CharEvent('a'), CharEvent('b'),
+                                      KeyEvent(InputEventType::KeyDown, TestKeyB)};
 
-        Frame(queue, state);
-        Assert::AreEqual(size_t(2), state.m_chars.size());
-        Assert::AreEqual(static_cast<unsigned int>('h'), state.m_chars[0]);
-        Assert::AreEqual(static_cast<unsigned int>('i'), state.m_chars[1]);
-
-        Frame(queue, state);
-        Assert::IsTrue(state.m_chars.empty(), L"characters belong to the frame that received them");
+        Assert::AreEqual(size_t(4), Frame(queue, state), L"characters consume without deferring what is behind them");
+        Assert::AreEqual(1, static_cast<int>(state.m_keyDeltas[TestKeyA]));
+        Assert::AreEqual(1, static_cast<int>(state.m_keyDeltas[TestKeyB]));
       }
 
       // The key comes off wParam and the button off a message id, so neither is

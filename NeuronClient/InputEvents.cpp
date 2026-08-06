@@ -32,7 +32,6 @@ namespace Neuron
     // m_mousePos and m_wheelRemainder are state and carry over.
     std::memset(_state.m_keyDeltas, 0, sizeof(_state.m_keyDeltas));
     std::memset(_state.m_mbDeltas, 0, sizeof(_state.m_mbDeltas));
-    _state.m_chars.clear();
 
     const int startX = _state.m_mousePos[AxisX];
     const int startY = _state.m_mousePos[AxisY];
@@ -89,7 +88,11 @@ namespace Neuron
       }
 
       case InputEventType::Char:
-        _state.m_chars.push_back(event.m_char);
+        // Consumed, and it changes no state. A character is not a control: it
+        // has no held-or-not, no edge, and nothing in the bindings reads one.
+        // It is delivered to the focused widget by the driver's side-effect
+        // walk over these same consumed events, which is what keeps it in order
+        // with the key events either side of it.
         break;
 
       case InputEventType::MouseButtonDown:

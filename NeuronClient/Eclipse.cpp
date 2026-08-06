@@ -239,6 +239,12 @@ namespace Neuron
     }
   }
 
+  bool EclUpdateChar(unsigned int _character)
+  {
+    EclWindow* currentWindow = EclGetWindow(windowFocus);
+    return currentWindow && currentWindow->Char(_character);
+  }
+
   void EclRegisterTooltipCallback(void (*_callback)(EclWindow*, EclButton*)) { tooltipCallback = _callback; }
 
   void EclRender()

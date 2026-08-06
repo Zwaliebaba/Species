@@ -498,7 +498,92 @@ tasks:
       - python3 tools/check_format.py
       - msbuild Species.slnx /p:Configuration=Debug /p:Platform=x64 /m
       - vstest.console.exe x64\Debug\*Tests.dll
-    status: in_progress
+    status: done
+    notes: |
+      Landed 2026-08-06. The build and test verify commands were run by CI
+      rather than locally - this was written on Linux and no MSVC build or
+      vstest run happened here.
+
+      THE SHAPE. WM_CHAR was already being enqueued by T5 with nothing reading
+      it. It now reaches the focused widget through a new EclUpdateChar ->
+      EclWindow::Char -> EclButton::Char chain, and InputField overrides the
+      last of those. Keypress keeps the editing keys - backspace and enter - and
+      lost the letter, digit and full-stop branches, which is where the layout
+      bug lived: they rebuilt a character from a virtual key code plus a shift
+      flag, which is only correct on a US layout.
+
+      DISPATCHED FROM THE SIDE-EFFECT WALK, NOT FROM A PER-FRAME LIST, and that
+      decision is what retired T5's InputFrameState::m_chars. Typing "ab" and
+      pressing enter inside one frame has to append both letters BEFORE the
+      enter reaches EclUpdateKeyboard and commits the field; a collection of the
+      frame's characters delivered after the frame's key events commits an empty
+      name. The events are already in order, so the walk over them is where the
+      ordering already exists.
+
+      THE CAPTURE RULE, and it is deliberately narrower than "the UI has focus,
+      so the keyboard is gone". A key whose character the field TOOK is marked
+      in the driver, and getKeyInput answers false for it until it is released -
+      so typing a name does not also fire the control that letter is bound to,
+      and `key g up` does not fire when you let go. Enter, escape and the arrows
+      produce only control codes, which InputField refuses, so they are never
+      marked and still reach the bindings exactly as before. That is what keeps
+      menu navigation and escape-to-close working while the cursor is in a text
+      box - a blanket suppression would have broken both, in the one window
+      where a player is most likely to want them.
+
+      The mask is over READS, not over the state. m_keys and m_keyDeltas stay
+      truthful underneath it, so nothing is left stuck when a mark clears, and
+      getFirstActiveInput - the key-rebinding window's door - and isIdle are
+      both unaffected because they read the state directly.
+
+      A CONTROL CODE IS NOT TEXT, and refusing them is load-bearing rather than
+      tidy. Windows sends WM_CHAR for enter, escape, tab and backspace too;
+      consuming a character is what tells the driver the UI swallowed the key,
+      so taking enter's carriage return would stop enter committing the field
+      and escape's would stop escape closing the window.
+
+      WM_SYSCHAR IS SWALLOWED WITH AN EMPTY BODY. It enqueues nothing and
+      returns 0, so it never reaches DefWindowProc - whose handling of a
+      WM_SYSCHAR with no menu to open is the system beep, once per keystroke for
+      every Alt combination the game binds.
+
+      TWO THINGS THE REWRITE FIXED ON THE WAY, neither of them the task:
+
+      * The old Keypress ended its ignore-everything-else branch by writing the
+        buffer back and calling Refresh - which CLICKS the registered callback
+        button - for keys it had just decided to do nothing with. It returns now.
+      * The length bound covers letters. It did not: the digit and full-stop
+        branches tested before appending and the letter branch wrote at
+        m_buf[len] and [len + 1] of a char[256] with nothing stopping it.
+
+      AND ONE STALE COMMENT CORRECTED RATHER THAN LEFT. Render said m_buf was a
+      format string and that '%' could not be typed anyway. Neither half is
+      true: the call passes one argument, so it resolves to DrawText2D's PLAIN
+      string_view overload and formats nothing - which is what makes accepting
+      every printable character safe, because '%' and '{' are typeable now.
+
+      VERIFIED AS FAR AS LINUX ALLOWS. The eight InputEventTests over characters
+      and the capture mask's lifecycle were also transcribed into a standalone
+      g++ program and run under ASan and UBSan: character events consuming
+      without deferring what is behind them, the "ab" then enter ordering, the
+      mark surviving across frames and covering the up edge and clearing the
+      frame after, an arrow and an escape NOT being captured, the numeric
+      filter, a 0xE4 byte staying one byte, and a full field dropping the
+      character. All pass. That is not MSVC and it type-checks no call site.
+
+      A LATENT BREAK THE HARNESS FOUND. Removing m_chars removed <vector> from
+      InputEvents.h, and DeriveFrameState's signature had been getting size_t
+      through it. <cstddef> is included explicitly now. This is the failure mode
+      AGENTS.md records from sound-xaudio2 T7 and T8 - deleting an include
+      withdraws everything it included, not just what it declared - and it would
+      have cost a CI round.
+
+      InputFieldTests went from 12 tests to 17 and every one of them changed
+      meaning: Type() sends CHARACTERS now, so the tests that asserted the
+      reassembly ('A' with no shift means 'a') assert the absence of it instead.
+      The two the acceptance named are TheVirtualKeyContributesNothingOnANonUsLayout
+      - the German z/y swap, VK 89 and the character 'z' - and
+      AShiftedPunctuationCharacterIsTakenFromTheMessage.
 
   - id: T7
     title: Raw Input for relative mouse motion

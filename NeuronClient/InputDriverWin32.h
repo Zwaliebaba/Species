@@ -99,6 +99,25 @@ namespace Neuron
       // arrays; nothing outside this class reads them now.
       InputFrameState m_state;
 
+      // THE CAPTURE RULE, in its first and narrowest form. A key whose
+      // character a focused text field took is marked here, and getKeyInput
+      // answers false for it until it is released — so typing a name does not
+      // also fire whatever game control that letter is bound to, and `key g up`
+      // does not fire when you let go either.
+      //
+      // It is deliberately NOT "suppress every key while a field has focus".
+      // Enter, escape and the arrows produce no character the field accepts, so
+      // they are not marked and still reach the bindings exactly as they did —
+      // which is what keeps menu navigation and escape-to-close working while
+      // the cursor is in a text box.
+      //
+      // The mask is a mask over READS, not over the state: m_keys and
+      // m_keyDeltas stay truthful underneath it, so nothing is left stuck when
+      // the mark clears, and getFirstActiveInput — the key-rebinding window's
+      // door — is unaffected. T8 replaces all of this with the router's
+      // consuming sinks, of which this is the one case that could not wait.
+      bool m_textConsumedKeys[KEY_MAX]{};
+
       // Shift, control and alt as they were at one particular moment. Passed
       // through the side-effect walk rather than read off the frame state,
       // because the frame state is what the modifiers ended up as and Eclipse
@@ -111,8 +130,8 @@ namespace Neuron
       };
 
       // Applies the side effects of the events a frame consumed -- mouse
-      // capture and the Eclipse keyboard notification. Separate from
-      // DeriveFrameState so that stays pure and testable.
+      // capture, the Eclipse keyboard notification and the character delivery.
+      // Separate from DeriveFrameState so that stays pure and testable.
       void ApplyConsumedEventSideEffects(size_t _consumed, ModifierState _modifiers);
 
       // Appends one event, or drops it if the queue has hit its bound. The

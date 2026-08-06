@@ -47,5 +47,10 @@ namespace Neuron
       virtual void MouseDown();
       virtual void MouseMove();
       virtual void Keypress(int keyCode, bool shift, bool ctrl, bool alt);
+
+      // A decoded character, offered to this widget because its window has it
+      // in text edit. Returns true if the widget took it. The base widget is
+      // not a text field and takes nothing — InputField is the one override.
+      virtual bool Char(unsigned int character);
   };
 } // namespace Neuron
