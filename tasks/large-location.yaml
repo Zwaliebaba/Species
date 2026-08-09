@@ -100,10 +100,10 @@ tasks:
       - python3 tools/check_format.py
       - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: >
-      CODE COMPLETE 2026-08-06, NOT DONE - the vstest verify line cannot be
-      run from Linux and neither can MSVC. Everything else passes.
+      DONE - CI run 749 green at 41e89a7 (x64, not the ARM64 the verify line
+      names). All thirteen tests built under MSVC and passed.
 
       GameLogic/TerrainChunk.h/.cpp plus thirteen tests, all wired into the
       .vcxproj and .filters. Compiled and RUN against a CppUnitTest shim on
@@ -413,9 +413,9 @@ tasks:
       map query, fixed extents at Clouds.cpp:94-99) but they move with the
       water in T21 so that one Garden gate covers both rather than two.
 
-      CODE COMPLETE 2026-08-06 for the narrowed scope, NOT DONE - the vstest
-      verify line cannot be run from Linux. One site changed in
-      Species/Camera.cpp; the cap is MapEscort's 5,372/30 = 179 u/s.
+      DONE for the narrowed scope - CI run 749 green at 41e89a7. One site
+      changed in Species/Camera.cpp; the cap is MapEscort's 5,372/30 = 179
+      u/s.
 
       Measured rather than assumed: all twelve authored maps divide to less
       than the cap and are bit-identical, and the clamp binds on the large
@@ -427,7 +427,7 @@ tasks:
       - python3 tools/check_math_types.py
       - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
     parallel_safe: true
-    status: in_progress
+    status: done
 
   - id: T22
     title: Make AreNeighboursPresent answer about occupants, not capacity

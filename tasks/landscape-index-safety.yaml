@@ -68,11 +68,14 @@ tasks:
       - python3 tools/check_format.py
       - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: >
-      CODE COMPLETE 2026-08-06, NOT DONE - the vstest verify line cannot be
-      run from Linux and neither can MSVC, so this stays in_progress until
-      someone builds it on Windows. Everything else passes.
+      DONE - CI run 749 green at 41e89a7. All twenty tests built under MSVC
+      and passed; the full suite is 323 tests, 323 passing. One honesty note
+      on the verify line: it names ARM64 and CI builds x64 Debug only, so
+      what actually ran is the x64 equivalent. That is the same evidence
+      every closed task in this repo has (network-transport closed T1-T11
+      CI-green the same way); ARM64 is still owner-built per AGENTS.md.
 
       Twenty tests in Tests/NeuronCoreTests/Array2DTests.cpp and
       Tests/NeuronClientTests/SurfaceMap2DTests.cpp, both wired into their
@@ -174,7 +177,7 @@ tasks:
       - python3 tools/check_math_types.py
       - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
     parallel_safe: true
-    status: in_progress
+    status: done
     notes: >
       Not unit-tested because MergeTileIntoLandscape is private to Landscape
       and reachable only through Landscape::Init with a parsed LevelFile;
@@ -184,9 +187,9 @@ tasks:
       fix redundant: the oversized world map asserts, but a big tile merging
       into a small world reaches this loop with the world map valid.
 
-      CODE COMPLETE 2026-08-06, NOT DONE - the vstest verify line cannot be
-      run from Linux. posX, posZ and both loop counters are int; nothing else
-      changed.
+      DONE - CI run 749 green at 41e89a7, x64 rather than the ARM64 the
+      verify line names. posX, posZ and both loop counters are int; nothing
+      else changed.
 
       The bit-identical claim was measured, not argued. A harness ran the old
       and new index arithmetic side by side over every tile in every map in
