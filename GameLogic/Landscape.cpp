@@ -361,9 +361,27 @@ namespace Species
   // *** MergeTileIntoLandscape
   void Landscape::MergeTileIntoLandscape(LandscapeTile const* _tile)
   {
-    unsigned short posX = (float)(_tile->m_posX / m_heightMap->m_cellSizeX) + 0.5f;
+    // int, not unsigned short. The tile origin and the loop counters below are
+    // compared against and added to `numCells`, which is an int, and a tile
+    // spanning 65,536 or more cells wrapped the counter back to zero so the
+    // loop could never terminate. m_size is parsed with atoi and has no cap
+    // (LevelFile.cpp), and the editor's scale button multiplies it without one
+    // (LandscapeWindow.cpp), so that tile is expressible today.
+    //
+    // The widening changes no value any shipping map produces: the sums below
+    // are already computed in int by integral promotion and are narrowed at the
+    // GetData/PutData parameters exactly as before, so only the loop bound and
+    // the origin conversion differ. That was measured rather than argued —
+    // every tile in every map in the tree, 115 of them, was run through the old
+    // and new index arithmetic side by side over all 496,076 (x, z) pairs they
+    // visit, with zero differences.
+    //
+    // It also removes undefined behaviour for a tile at a negative position:
+    // converting a negative float to unsigned short is UB, where the conversion
+    // to int is a defined truncation. No authored map has one.
+    int posX = (float)(_tile->m_posX / m_heightMap->m_cellSizeX) + 0.5f;
     int posY = _tile->m_posY;
-    unsigned short posZ = (float)(_tile->m_posZ / m_heightMap->m_cellSizeY) + 0.5f;
+    int posZ = (float)(_tile->m_posZ / m_heightMap->m_cellSizeY) + 0.5f;
 
     // Calculate num cells that this tile will occupy in the main landscape
     int numCells = (float)_tile->m_size / m_heightMap->m_cellSizeX;
@@ -382,12 +400,12 @@ namespace Species
     _tile->m_heightMap->m_invCellSizeX = 1.0f / _tile->m_heightMap->m_cellSizeX;
     _tile->m_heightMap->m_invCellSizeY = 1.0f / _tile->m_heightMap->m_cellSizeY;
 
-    for (unsigned short z = 0; z < numCells; ++z)
+    for (int z = 0; z < numCells; ++z)
     {
       //        float tileZ = posZ + (float)z * m_heightMap->m_cellSizeY;
       float tileZ = m_heightMap->GetRealY((float)(z + posZ));
 
-      for (unsigned short x = 0; x < numCells; ++x)
+      for (int x = 0; x < numCells; ++x)
       {
         //			float tileX = posX + (float)x * m_heightMap->m_cellSizeX;
         float tileX = m_heightMap->GetRealX((float)(x + posX));

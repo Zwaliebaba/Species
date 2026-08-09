@@ -84,9 +84,28 @@ void Camera::AdvanceDebugMode()
   // takes GetRight() and is a different vector, not a repeat of this.
   DirectX::XMVECTOR const right = DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&m_front), DirectX::XMLoadFloat3(&m_up));
 
+  // Pan speed is a thirtieth of the world per second, which was a reasonable
+  // reading of "cross the map in half a minute" while every map was a couple of
+  // thousand units across. At the 65,536-unit map (docs/LARGE_LOCATION.md D1)
+  // it is 2,185 units per second, which is unusable near the ground and would
+  // outrun chunk streaming besides — so the derivation is capped rather than
+  // followed off the end.
+  //
+  // The cap is the speed the LARGEST authored map already produces, so all
+  // twelve of them are bit-identical to before and only the large map clamps.
+  // MapEscort is that map at 5,372 units; anything at or below it divides to
+  // less than the cap and is untouched.
+  //
+  // What the cap means for traversal is decided, not accidental: about six
+  // minutes corner to corner at this speed and about thirty-seven seconds on
+  // the existing ten-times sprint below. That was put to the owner and accepted
+  // (D18), and fast travel is deliberately out of scope for this milestone.
+  constexpr float LARGEST_AUTHORED_MAP_SIZE = 5372.0f;
+  constexpr float MAX_PAN_SPEED = LARGEST_AUTHORED_MAP_SIZE / 30.0f;
+
   float speedSideways = g_globalWorld->GetSize() / 30.0f;
   if (g_locationId != -1)
-    speedSideways = g_location->m_landscape.GetWorldSizeX() / 30.0f;
+    speedSideways = std::min(g_location->m_landscape.GetWorldSizeX() / 30.0f, MAX_PAN_SPEED);
   float speedVertical = speedSideways;
   float speedForwards = speedSideways;
 

@@ -19,6 +19,7 @@
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="RoutingSystem.cpp" />
     <ClCompile Include="ObstructionGrid.cpp" />
+    <ClCompile Include="TerrainChunk.cpp" />
     <ClCompile Include="EntityGrid.cpp" />
     <ClCompile Include="LevelFile.cpp" />
     <ClCompile Include="Unit.cpp" />
@@ -306,6 +307,7 @@
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="RoutingSystem.h" />
     <ClInclude Include="ObstructionGrid.h" />
+    <ClInclude Include="TerrainChunk.h" />
     <ClInclude Include="EntityGrid.h" />
     <ClInclude Include="LevelFile.h" />
     <ClInclude Include="Unit.h" />
