@@ -204,7 +204,22 @@ namespace GameLogicTests
         Assert::AreEqual(1, grid.GetNumNeighbours(centre, centre, CELL_SIZE * 2.0f, ALL_TEAMS), L"four cells, one object, one count");
       }
 
-      TEST_METHOD(RemoveClearsEveryCellTheObjectOccupied)
+      // DEFECT, characterised, and it is a live one in shipped code — these
+      // assertions were written expecting removal to clear the cell, and CI
+      // failed them. See AGENTS.md Known issues and large-location T22.
+      //
+      // AreNeighboursPresent answers `ogc->m_arraySize > 0`, which is the
+      // cell's array CAPACITY, not whether any slot holds a valid id
+      // (EntityGrid.cpp, AreNeighboursPresent). AddObjectId grows m_arraySize
+      // and RemoveObjectId only calls SetInvalid and pushes the slot onto the
+      // free list, so a cell that has EVER held an object answers "neighbours
+      // present" forever.
+      //
+      // GetNumNeighbours does it correctly — it skips `!objId.IsValid()` — so
+      // the two variants disagree after any removal, and this test pins both
+      // halves side by side. When T22 fixes the presence query, the IsTrue
+      // assertions below become IsFalse and this comment goes.
+      TEST_METHOD(RemoveClearsTheCountButDefectLeavesPresenceTrue)
       {
         EmptyWorld world;
         EntityGrid grid(CELL_SIZE, CELL_SIZE);
@@ -214,13 +229,21 @@ namespace GameLogicTests
         grid.AddObject(id, centre, centre, CELL_SIZE);
         grid.RemoveObject(id, centre, centre, CELL_SIZE);
 
-        // Every cell it was in, checked individually rather than in one sweep,
-        // so a removal that missed a cell is not hidden by the dedup.
-        Assert::IsFalse(grid.AreNeighboursPresent(CELL_SIZE * 1.1f, CELL_SIZE * 1.1f, 1.0f, ALL_TEAMS));
-        Assert::IsFalse(grid.AreNeighboursPresent(CELL_SIZE * 2.9f, CELL_SIZE * 1.1f, 1.0f, ALL_TEAMS));
-        Assert::IsFalse(grid.AreNeighboursPresent(CELL_SIZE * 1.1f, CELL_SIZE * 2.9f, 1.0f, ALL_TEAMS));
-        Assert::IsFalse(grid.AreNeighboursPresent(CELL_SIZE * 2.9f, CELL_SIZE * 2.9f, 1.0f, ALL_TEAMS));
-        Assert::AreEqual(0, grid.GetNumNeighbours(centre, centre, CELL_SIZE * 2.0f, ALL_TEAMS));
+        // The count is right: the object is gone.
+        Assert::AreEqual(0, grid.GetNumNeighbours(centre, centre, CELL_SIZE * 2.0f, ALL_TEAMS), L"the counting variant sees the removal");
+
+        // The presence query is wrong, in every cell the object occupied.
+        // Checked one cell at a time rather than in one sweep, so the extent of
+        // the defect is visible rather than collapsed into a single answer.
+        Assert::IsTrue(grid.AreNeighboursPresent(CELL_SIZE * 1.1f, CELL_SIZE * 1.1f, 1.0f, ALL_TEAMS), L"DEFECT: stale capacity reads as occupied");
+        Assert::IsTrue(grid.AreNeighboursPresent(CELL_SIZE * 2.9f, CELL_SIZE * 1.1f, 1.0f, ALL_TEAMS), L"DEFECT");
+        Assert::IsTrue(grid.AreNeighboursPresent(CELL_SIZE * 1.1f, CELL_SIZE * 2.9f, 1.0f, ALL_TEAMS), L"DEFECT");
+        Assert::IsTrue(grid.AreNeighboursPresent(CELL_SIZE * 2.9f, CELL_SIZE * 2.9f, 1.0f, ALL_TEAMS), L"DEFECT");
+
+        // A cell the object never reached still answers false, which is what
+        // shows the defect is stale state rather than the query being broken
+        // outright.
+        Assert::IsFalse(grid.AreNeighboursPresent(CELL_SIZE * 8.5f, CELL_SIZE * 8.5f, 1.0f, ALL_TEAMS), L"an untouched cell is still empty");
       }
 
       // Several objects in one cell, so the conversion cannot quietly turn a
@@ -257,9 +280,17 @@ namespace GameLogicTests
         grid.AddObject(id, from, from, 0.0f);
         grid.UpdateObject(id, from, from, to, to, 0.0f);
 
-        Assert::IsFalse(grid.AreNeighboursPresent(from, from, 1.0f, ALL_TEAMS), L"gone from the old cell");
+        // The counting variant sees the move correctly, in both directions.
+        Assert::AreEqual(0, grid.GetNumNeighbours(from, from, 1.0f, ALL_TEAMS), L"gone from the old cell");
+        Assert::AreEqual(1, grid.GetNumNeighbours(to, to, CELL_SIZE, ALL_TEAMS), L"present in the new one, once");
+
         Assert::IsTrue(grid.AreNeighboursPresent(to, to, 1.0f, ALL_TEAMS), L"present in the new one");
-        Assert::AreEqual(1, grid.GetNumNeighbours(to, to, CELL_SIZE, ALL_TEAMS), L"and only once");
+
+        // Same defect as the removal test above: the old cell keeps its grown
+        // array, so the presence query still claims an occupant. Every moving
+        // entity calls UpdateObject every tick, so in a running game this
+        // spreads across the whole path anything has ever walked.
+        Assert::IsTrue(grid.AreNeighboursPresent(from, from, 1.0f, ALL_TEAMS), L"DEFECT: the vacated cell still reads as occupied");
       }
 
       // A query whose rectangle runs off the grid is clamped rather than
@@ -283,9 +314,12 @@ namespace GameLogicTests
         Assert::AreEqual(0, grid.GetNumNeighbours(CELL_SIZE * 50.0f, CELL_SIZE * 50.0f, CELL_SIZE, ALL_TEAMS));
       }
 
-      // The counting and presence variants must agree with each other, since
-      // the conversion touches the walk they share.
-      TEST_METHOD(CountAndPresenceVariantsAgree)
+      // The counting and presence variants agree with each other WHILE NOTHING
+      // HAS BEEN REMOVED, which is the only case in which they do — see the two
+      // DEFECT tests above for what happens after a removal or a move. The
+      // conversion touches the walk they share, so the agreement that does hold
+      // is pinned.
+      TEST_METHOD(CountAndPresenceVariantsAgreeBeforeAnyRemoval)
       {
         EmptyWorld world;
         EntityGrid grid(CELL_SIZE, CELL_SIZE);

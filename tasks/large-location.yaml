@@ -429,6 +429,58 @@ tasks:
     parallel_safe: true
     status: in_progress
 
+  - id: T22
+    title: Make AreNeighboursPresent answer about occupants, not capacity
+    intent: >
+      EntityGrid::AreNeighboursPresent returns true on ogc->m_arraySize > 0 -
+      the cell's array CAPACITY - so a cell that has ever held an object
+      answers "present" for the rest of the level, because RemoveObjectId
+      only invalidates a slot and never shrinks the array. GetNumNeighbours
+      gets this right by skipping invalid ids, so the two disagree after any
+      removal. Three simulation callers ask the question it gets wrong:
+      Citizen.cpp:1654, Virii.cpp:41 and Triffid.cpp:508. After this task the
+      presence query means what its name says.
+
+      NOT part of the chunking work, and lifted out of T11 deliberately - T11
+      promises a storage change with no behaviour change, and this is the
+      opposite. It sits in this plan only because T11 owns EntityGrid.cpp and
+      serialising on that file avoids a collision; it would be equally at
+      home in a plan of its own if the owner would rather have it sooner.
+    project: GameLogic
+    depends_on: [T11]
+    files:
+      - GameLogic/EntityGrid.cpp
+      - Tests/GameLogicTests/EntityGridTests.cpp
+    acceptance:
+      - AreNeighboursPresent returns true only when a cell in the rectangle
+        holds a VALID id, and stops early on the first one it finds so it
+        stays the cheap query its callers expect
+      - The two DEFECT tests in EntityGridTests - the removal one and the
+        UpdateObject one - flip from IsTrue to IsFalse, and their DEFECT
+        comments go with them
+      - A test pins that the counting and presence variants now agree AFTER a
+        removal and after a move, which is the case they disagree on today
+      - The behaviour change is recorded like determinism T5 was - AI
+        decisions change, so the syncrand sequence changes and a build
+        carrying this desyncs against one without it. State it in AGENTS.md
+        when it lands, and remove the Known issues bullet this task closes
+      - Whether to also drop the dead rangeSqrd local in both fast variants,
+        and whether the missing distance test in them is a defect or the
+        intended cheap-and-approximate contract, is answered in the notes
+        rather than left as a silent decision
+    verify:
+      - python3 tools/check_format.py
+      - python3 tools/check_project_files.py
+      - vstest.console.exe ARM64\Debug\*Tests.dll /Platform:ARM64
+    parallel_safe: true
+    status: todo
+    notes: >
+      Needs an owner Garden run before it can close, for the same reason
+      determinism T5 did - it changes what entities decide, and no test in
+      the suite can tell whether the new behaviour is BETTER, only that it is
+      different. Fold that run into the T5 or T16 gate rather than asking for
+      a separate one.
+
   - id: T21
     title: Water and clouds follow the camera at constant vertex counts
     intent: >
@@ -599,6 +651,19 @@ tasks:
       query-path dedup, removal clearing every occupied cell, many objects
       in one cell exercising the free list, UpdateObject crossing a
       boundary, off-edge clamping, and count/presence agreement.
+
+      AND THE FIRST CI RUN OF THEM WAS RED, WHICH IS THE POINT OF WRITING
+      THEM FIRST. Two assertions failed - that removal clears a cell, and
+      that a moved object leaves its old one - and the tests were right:
+      AreNeighboursPresent answers on m_arraySize, the cell's array CAPACITY,
+      so a cell that has ever held an object reads as occupied for the rest
+      of the level. That is a live bug in shipped code with three simulation
+      callers, now recorded in AGENTS.md Known issues and owned by T22. The
+      two tests were changed to pin the real behaviour, marked DEFECT, with
+      the values T22 flips them to; they are not evidence the conversion is
+      safe, they are evidence of a bug that predates it. Same shape as the
+      preferences tests in containers-replaced T19, which found access
+      violations the same way.
 
   - id: T12
     title: ObstructionGrid becomes per-chunk, built at activation

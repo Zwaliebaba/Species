@@ -951,6 +951,31 @@ Real, currently true, and worth knowing before you trip over them:
   going away. They are gone, and `SoundLibraryXAudio2` sizes its channel vector
   from `GetNumMainChannels()` so the callback can only ever be handed an index
   the array holds.
+- **`AreNeighboursPresent` ANSWERS "HAS THIS CELL EVER HELD ANYTHING", NOT "IS
+  ANYTHING HERE".** Found 2026-08-06 by the characterisation tests written for
+  `large-location` T11 — they asserted that removal clears a cell, and CI failed
+  them. The tests, not the assertions, were right about what should happen;
+  [`tasks/large-location.yaml`](tasks/large-location.yaml) T22 owns the fix.
+  - `EntityGrid::AreNeighboursPresent` returns true on `ogc->m_arraySize > 0`,
+    which is the cell's array CAPACITY. `EntityGridCell::AddObjectId` grows
+    `m_arraySize`, and `RemoveObjectId` only calls `SetInvalid()` and pushes the
+    slot onto the free list — it never shrinks. So a cell that has ever held an
+    object answers "present" for the rest of the level.
+  - **`GetNumNeighbours` does it correctly**, skipping `!objId.IsValid()`, so
+    the counting and presence variants disagree after any removal. Both halves
+    are pinned side by side in `EntityGridTests`.
+  - **Three simulation callers**, all asking the question it gets wrong:
+    `Citizen.cpp:1654` (are friends nearby), `Virii.cpp:41` (`m_enemiesFound`)
+    and `Triffid.cpp:508` (trigger radius). Every moving entity calls
+    `UpdateObject` every tick and that vacates cells the same way, so in a
+    running game the staleness spreads across every path anything has walked.
+  - **Not a desync**: every client computes the same wrong answer from the same
+    state. It is a gameplay bug — entities reacting to neighbours that left —
+    and fixing it CHANGES AI decisions and therefore the sync sequence, which is
+    why it is a task with an owner gate rather than a quick correction.
+  - Two smaller things recorded in the same read: neither fast variant does a
+    distance test at all, so `_range` selects a cell rectangle and nothing more,
+    and the `rangeSqrd` local both of them compute is dead.
 - **THE LANDSCAPE CONTAINERS DO 16-BIT INDEX ARITHMETIC, AND THREE DEFECTS ARE
   REACHABLE AT SIZES TODAY'S TOOLS ALREADY PERMIT.** Found 2026-08-06 while
   scoping [`tasks/_large-location-prompt.md`](tasks/_large-location-prompt.md);
