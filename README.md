@@ -78,11 +78,6 @@ python3 tools/check_hygiene.py         # changed lines do not reintroduce NULL,
 then build and run the suite. CI runs the same eight and fails on anything
 skipped; [`AGENTS.md`](AGENTS.md) explains what each one exists to catch.
 
-## Licence
-
-**Internal research project. Not for commercial use, and not for distribution.**
-See [`LICENSE`](LICENSE).
-
 Species derives from the Darwinia source by Introversion Software. The terms in
 `LICENSE` cover this project's own contributions only — the licence covering the
 original source has not been established, so treat the provenance as unresolved
